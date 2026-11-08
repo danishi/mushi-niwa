@@ -187,6 +187,7 @@ export function houseFor(id: SpeciesDef['id']) {
     tobizumukade: 'bark',
     madarasasori: 'bark',
     gomadara: 'branch',
+    ookuwagata: 'log',
   };
   return map[id];
 }

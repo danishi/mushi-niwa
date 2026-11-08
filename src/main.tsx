@@ -19,7 +19,8 @@ registerPwa();
 
 // E2E テスト用のフック（?e2e のときだけ）
 if (new URLSearchParams(location.search).has('e2e')) {
-  void Promise.all([import('./state/game'), import('./state/ui'), import('./state/settings'), import('./state/progress'), import('./state/photos')]).then(([g, u, st, pr, ph]) => {
-    (window as unknown as Record<string, unknown>).__mushi = { game: g.useGame, ui: u.useUi, settings: st.useSettings, progress: pr.useProgress, photos: ph.usePhotos };
+  void Promise.all([import('./state/game'), import('./state/ui'), import('./state/settings'), import('./state/progress'), import('./state/photos'), import('./app/SimDriver')]).then(([g, u, st, pr, ph, sd]) => {
+    // night: { value: true } で 夜に できる（おきゃくさんの 夜の 出かたの 確認用）
+    (window as unknown as Record<string, unknown>).__mushi = { game: g.useGame, ui: u.useUi, settings: st.useSettings, progress: pr.useProgress, photos: ph.usePhotos, night: sd.nightOverride };
   });
 }

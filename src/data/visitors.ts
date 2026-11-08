@@ -2,20 +2,41 @@
  * にわに ときどき 来る「おきゃくさん」。育てる ことは できないが、見つけて タップすると ずかんに のる。
  * 事実は docs/visitors-research.md の 出典つき 調査に もとづく。
  */
-export type VisitorId = 'shiokara' | 'monshiro' | 'tonosama' | 'dangomushi' | 'aburazemi';
+export type VisitorId =
+  | 'shiokara'
+  | 'monshiro'
+  | 'tonosama'
+  | 'dangomushi'
+  | 'aburazemi'
+  | 'akiakane'
+  | 'kanabun'
+  | 'kurooari'
+  | 'shouryou'
+  | 'hotaru'
+  | 'enmakorogi'
+  | 'jorougumo'
+  | 'katatsumuri';
 
 export interface VisitorDef {
   id: VisitorId;
   name: string;
   kana: string;
   scientific: string;
-  /** どこに 来るか（air: 空中で ホバリング / ground: 草の上 / post: 棚の 柱に とまる） */
+  /** どこに 来るか（air: 空中で ホバリング / ground: 上の 段の 板の 上 / post: 棚の 奥の 板に とまる） */
   where: 'air' | 'ground' | 'post';
-  /** タップした ときの 反応 */
-  react: 'fly' | 'hop' | 'curl';
+  /** タップした ときの 反応（fly: とんで いく / hop: はねて いく / walk: あるいて いく / curl: まるまる・ひっこむ / stay: そのまま じっと） */
+  react: 'fly' | 'hop' | 'walk' | 'curl' | 'stay';
+  /** はねで とぶ（帰る ときに とんで いく） */
+  flier: boolean;
+  /** 来る 時間（夜は 暗いので night と any の 子だけ） */
+  time: 'day' | 'night' | 'any';
+  /** いる あいだ ときどき 鳴く */
+  call?: 'cicada' | 'chirp';
   /** 豆知識（ルビ記法） */
   facts: string[];
   notInsect?: string;
+  /** 大人向けの 注意（ずかんの「おとなの かたへ」に 出す） */
+  caution?: string;
   color: string;
   /** 3D の 大きさ（育てる 虫と 見た目の 大きさを そろえる） */
   scale: number;
@@ -30,6 +51,8 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
     scientific: 'Orthetrum albistylum speciosum',
     where: 'air',
     react: 'fly',
+    flier: true,
+    time: 'day',
     facts: [
       'オスは おとなに なると、しおを ふいたように しろっぽく なるよ。めは みずいろだよ。メスは むぎわらいろで「ムギワラトンボ」とも よばれるよ',
       '{幼虫|ようちゅう}の ヤゴは、いけや たんぼの みずの なかで くらすよ',
@@ -45,6 +68,8 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
     scientific: 'Pieris rapae',
     where: 'air',
     react: 'fly',
+    flier: true,
+    time: 'day',
     facts: [
       '{幼虫|ようちゅう}は キャベツなど アブラナの なかまの はを たべる あおむしだよ',
       'まえの はねに くろい もんが ふたつ あるよ。それで「もんしろちょう」って いうんだよ',
@@ -60,6 +85,8 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
     scientific: 'Locusta migratoria',
     where: 'ground',
     react: 'hop',
+    flier: true,
+    time: 'day',
     facts: ['ふとくて ながい うしろあしで ぴょーんと はねて、はねを ひろげて とおくまで とぶよ', 'みどりいろの こと ちゃいろの こが いるよ'],
     color: '#7b9442',
     scale: 1.6,
@@ -72,6 +99,8 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
     scientific: 'Armadillidium vulgare',
     where: 'ground',
     react: 'curl',
+    flier: false,
+    time: 'any',
     facts: ['さわると くるんと まるく なるよ', 'あしは 14ほん あるよ。こんちゅうの あしは 6ぽんだから、かぞえて くらべて みてね'],
     notInsect: 'こんちゅうでは なくて、エビや カニの なかま（{甲殻類|こうかくるい}）だよ',
     color: '#6b6a66',
@@ -85,6 +114,9 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
     scientific: 'Graptopsaltria nigrofuscata',
     where: 'post',
     react: 'fly',
+    flier: true,
+    time: 'day',
+    call: 'cicada',
     facts: [
       'はねが ちゃいろで、すけて いないよ。クマゼミの はねは すけて いるから、くらべて みてね',
       '{幼虫|ようちゅう}は つちの なかで なんねんも くらすよ',
@@ -94,6 +126,206 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
     scale: 1.7,
     sources: ['https://kotobank.jp/word/%E6%B2%B9%E8%9D%89', 'https://www.city.meguro.tokyo.jp/midori/kurashi/kankyou/semi.html'],
   },
+  akiakane: {
+    id: 'akiakane',
+    name: 'アキアカネ',
+    kana: 'あきあかね',
+    scientific: 'Sympetrum frequens',
+    where: 'air',
+    react: 'fly',
+    flier: true,
+    time: 'day',
+    facts: [
+      'なつの あいだは すずしい やまで すごして、あきに さとへ おりてくるよ',
+      'オスは おとなに なると、おなかが まっかに なるよ。むねの よこは あかく ならないよ',
+      'たんぼで うまれた たまごの まま、ふゆを こすよ',
+    ],
+    color: '#c8321e',
+    scale: 1.7,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%82%E3%81%8D%E3%81%82%E3%81%8B%E3%81%AD-3140629',
+      'https://kotobank.jp/word/%E3%81%AA%E3%81%A4%E3%81%82%E3%81%8B%E3%81%AD-3161934',
+      'https://fncc.pref.fukui.lg.jp/wp-content/uploads/2019/09/2018akatonbo_kekka.pdf',
+      'https://www.city.akita.lg.jp/kurashi/recycle/1006075/1045739.html',
+    ],
+  },
+  kanabun: {
+    id: 'kanabun',
+    name: 'カナブン',
+    kana: 'かなぶん',
+    scientific: 'Pseudotorynorrhina japonica',
+    where: 'post',
+    react: 'fly',
+    flier: true,
+    time: 'day',
+    facts: [
+      '{木|き}の しる（じゅえき）や、じゅくした くだものに あつまるよ',
+      'かたい はねは ほとんど ひらかずに、その したから はねを だして ブーンと とぶよ',
+      'からだは どういろや みどりいろに ぴかぴか ひかるよ',
+    ],
+    color: '#6a6a2a',
+    scale: 1.9,
+    sources: ['https://kotobank.jp/word/%E3%81%8B%E3%81%AA%E3%81%B6%E3%82%93-3147522', 'https://kotobank.jp/word/%E3%81%AF%E3%81%AA%E3%82%80%E3%81%90%E3%82%8A-3163537'],
+  },
+  kurooari: {
+    id: 'kurooari',
+    name: 'クロオオアリ',
+    kana: 'くろおおあり',
+    scientific: 'Camponotus japonicus',
+    where: 'ground',
+    react: 'walk',
+    flier: false,
+    time: 'day',
+    facts: [
+      'つちの なかに ふかい すを つくって、みんなで くらしているよ',
+      'アリも こんちゅう。からだは あたま・むね・はらの 3つ、あしは 6ぽんだよ',
+      'アブラムシから あまい みつを もらうかわりに、テントウムシから まもってあげるよ',
+    ],
+    caution: '毒針はありませんが、つかまえるとかむことがあります。そっと観察しましょう。',
+    color: '#2a2626',
+    scale: 3.4,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%8F%E3%82%8D%E3%81%8A%E3%81%8A%E3%81%82%E3%82%8A-3150287',
+      'https://web.tohoku.ac.jp/garden/aobayama/102Camponotus.html',
+      'https://chushikoku.env.go.jp/blog/2014/07/1276.html',
+    ],
+  },
+  shouryou: {
+    id: 'shouryou',
+    name: 'ショウリョウバッタ',
+    kana: 'しょうりょうばった',
+    scientific: 'Acrida cinerea',
+    where: 'ground',
+    react: 'hop',
+    flier: true,
+    time: 'day',
+    facts: [
+      'オスは とぶときに はねを うちあわせて「キチキチ」と おとを だすよ',
+      'メスは オスの 2ばいくらい おおきいよ',
+      'あたまが ながい さんかくに つきでていて、からだが ほそながいよ',
+    ],
+    color: '#7aa848',
+    scale: 2.2,
+    sources: ['https://kotobank.jp/word/%E3%81%97%E3%82%88%E3%81%86%E3%82%8A%E3%82%88%E3%81%86%E3%81%B0%E3%81%A4%E3%81%9F-3154671'],
+  },
+  hotaru: {
+    id: 'hotaru',
+    name: 'ゲンジボタル',
+    kana: 'げんじぼたる',
+    scientific: 'Luciola cruciata',
+    where: 'air',
+    react: 'fly',
+    flier: true,
+    time: 'night',
+    facts: [
+      'おしりを ひからせて、なかまに あいずを おくるよ。オスは とびながら ひかって、メスは はっぱの うえで まっているよ',
+      '{幼虫|ようちゅう}は きれいな かわの なかで、カワニナと いう まきがいを たべて そだつよ',
+      'ひがしと にしで、ひかる はやさが ちがうと いわれているよ',
+    ],
+    caution: '実際には、きれいな川の近くでしか見られません。観察では捕まえず、懐中電灯を向けないようにしましょう。ほかの地域のホタルを移して放さないでください。',
+    color: '#2a2a1a',
+    scale: 3.4,
+    sources: [
+      'https://kotobank.jp/word/%E6%BA%90%E6%B0%8F%E8%9B%8D-492148',
+      'https://www.town.tatsuno.lg.jp/gyosei/soshiki/sangyoshinkoka/kankosite/1/1208.html',
+      'https://www.city.akita.lg.jp/kurashi/recycle/1006075/1006103.html',
+      'https://hp.brs.nihon-u.ac.jp/~baehozen/imgs/theme/h26/1503yr/26_y01.pdf',
+    ],
+  },
+  enmakorogi: {
+    id: 'enmakorogi',
+    name: 'エンマコオロギ',
+    kana: 'えんまこおろぎ',
+    scientific: 'Teleogryllus emma',
+    where: 'ground',
+    react: 'hop',
+    flier: false,
+    time: 'night',
+    call: 'chirp',
+    facts: [
+      'オスだけが はねを こすりあわせて「コロコロリー」と なくよ。メスは なかないよ',
+      'かおが えんまさまに にているから この なまえが ついたよ',
+      'みみは まえあしに あるよ',
+    ],
+    color: '#3a2618',
+    scale: 2.3,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%88%E3%82%93%E3%81%BE%E3%81%93%E3%81%8A%E3%82%8D%E3%81%8E-3145792',
+      'https://kotobank.jp/word/%E9%96%BB%E9%AD%94%E8%9F%8B%E8%9F%80-448217',
+      'https://www.skr.mlit.go.jp/kagawa/river/tanken/no65/no65.htm',
+      'https://biodiversity.pref.fukuoka.lg.jp/rdb/kids/detail/5/61',
+    ],
+  },
+  jorougumo: {
+    id: 'jorougumo',
+    name: 'ジョロウグモ',
+    kana: 'じょろうぐも',
+    scientific: 'Trichonephila clavata',
+    where: 'post',
+    // 触ったときの 反応は 出典が ないので、じっと している だけに する
+    react: 'stay',
+    flier: false,
+    time: 'any',
+    facts: [
+      'きんいろの いとで、おおきな あみを はるよ。よこから みると 3まいに かさなって みえるよ',
+      'おおきいのは メス。ちいさい オスは メスの あみの すみっこで くらしているよ',
+    ],
+    notInsect: 'こんちゅうでは なくて クモの なかま。あしは 8ほん、からだは 2つに わかれているよ',
+    caution: '人間には無害です。おなか側の赤い模様で毒グモのセアカゴケグモとまちがわれますが、黄色い横じまと高い位置の円い網で見分けられます。素手ではつかまないようにしましょう。旧学名は Nephila clavata です。',
+    color: '#e6c53a',
+    scale: 1.7,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%98%E3%82%88%E3%82%8D%E3%81%86%E3%81%90%E3%82%82-3155775',
+      'https://kotobank.jp/word/%E3%81%8F%E3%82%82-3149858',
+      'https://wsc.nmbe.ch/species/22434',
+      'https://www.city.honjo.lg.jp/kankyo_machizukuri/kankyo_petto/eko_kankyohozen/1413873489620.html',
+      'https://biodiversity.pref.fukuoka.lg.jp/futsushu/picturebook/jyorougumo.html',
+    ],
+  },
+  katatsumuri: {
+    id: 'katatsumuri',
+    name: 'カタツムリ',
+    kana: 'かたつむり',
+    scientific: 'Acusta despecta sieboldiana（ウスカワマイマイ）',
+    where: 'ground',
+    react: 'curl',
+    flier: false,
+    time: 'any',
+    facts: [
+      'ながい つのの さきに めが あるよ',
+      'さわると からだを からの なかに ひっこめるよ。あめの ひは ひるまでも でてくるよ',
+      'さむいときや かわいたときは、からの くちに まくを はって やすむよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、かいの なかま。おなかの ひらたい「あし」で すべるように すすむよ',
+    caution: '広東住血線虫という寄生虫がいることがあります。なるべく直接さわらず、さわったら必ず手をよく洗いましょう。',
+    color: '#c9a565',
+    scale: 2.9,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%86%E3%81%99%E3%81%8B%E3%82%8F%E3%81%BE%E3%81%84%E3%81%BE%E3%81%84-3144288',
+      'https://kotobank.jp/word/%E3%81%8B%E3%81%9F%E3%81%A4%E3%82%80%E3%82%8A-701463',
+      'https://www.city.urasoe.lg.jp/sites/urasoe-envmap/daikouen/daikouen-kata.htm',
+      'https://www.forth.go.jp/moreinfo/topics/name15.html',
+    ],
+  },
 };
 
-export const VISITOR_ORDER: VisitorId[] = ['monshiro', 'shiokara', 'tonosama', 'dangomushi', 'aburazemi'];
+export const VISITOR_ORDER: VisitorId[] = [
+  'monshiro',
+  'shiokara',
+  'akiakane',
+  'tonosama',
+  'shouryou',
+  'aburazemi',
+  'kanabun',
+  'kurooari',
+  'hotaru',
+  'enmakorogi',
+  'dangomushi',
+  'jorougumo',
+  'katatsumuri',
+];
+
+/** その 時間に 来られる おきゃくさん */
+export function visitorsAt(night: boolean): VisitorId[] {
+  return VISITOR_ORDER.filter((id) => (night ? VISITORS[id].time !== 'day' : VISITORS[id].time !== 'night'));
+}

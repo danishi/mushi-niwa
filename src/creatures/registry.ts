@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { CreatureAnim } from './anim';
 import { AgehaAdult, AgehaEgg, AgehaLarva, AgehaPupa } from './ageha';
 import { KabutoAdult, KabutoLarva, KabutoPupa } from './kabuto';
+import { KuwaAdult, KuwaPupa } from './kuwagata';
 import { KaikoAdult, KaikoCocoon, KaikoEgg, KaikoLarva, MiideraAdult, TentouAdult, TentouEgg, TentouLarva, TentouPupa } from './others';
 import { CentipedeAdult, CentipedeYoung, GomadaraAdult, GomadaraLarva, GomadaraPupa, MantisAdult, MantisNymph, MantisOotheca, ScorpionAdult, ScorpionYoung } from './predators';
 import { SuzuAdult, SuzuNymph } from './suzumushi';
@@ -56,6 +57,10 @@ export const MODELS: Record<string, ModelEntry> = {
   'scorpion-adult': { C: ScorpionAdult, locomotion: 'crawl', length: 1.2, speed: 0.22 },
   'gomadara-larva': { C: GomadaraLarva, locomotion: 'burrow', length: 0.9, speed: 0.08 },
   'gomadara-pupa': { C: GomadaraPupa, locomotion: 'still', length: 0.8, speed: 0 },
+  // クワガタの 幼虫は カブトムシと 同じ 白い C 字形（くち木の 中で 育つ）
+  'kuwa-larva': { C: KabutoLarva, locomotion: 'burrow', length: 1.3, speed: 0.1 },
+  'kuwa-pupa': { C: KuwaPupa, locomotion: 'still', length: 1.15, speed: 0 },
+  'kuwa-adult': { C: KuwaAdult, locomotion: 'crawl', length: 1.25, speed: 0.3 },
   'gomadara-adult': { C: GomadaraAdult, locomotion: 'crawl', length: 1.1, speed: 0.3 },
 };
 

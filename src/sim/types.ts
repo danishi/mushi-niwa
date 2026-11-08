@@ -12,7 +12,8 @@ export type SpeciesId =
   | 'ookamakiri'
   | 'tobizumukade'
   | 'madarasasori'
-  | 'gomadara';
+  | 'gomadara'
+  | 'ookuwagata';
 
 export type NeedKey = 'hunger' | 'moisture' | 'clean' | 'mood';
 /** 0..1。1 が「満たされている」 */
@@ -39,7 +40,7 @@ export type FoodId =
   | 'aphid' // アブラムシ
   | 'mulberry' // クワの葉
   | 'smallInsect' // 小さな虫・ミミズなど
-  | 'wood' // 生きた木の枝（カミキリムシの幼虫は 木の中を 食べる）
+  | 'wood' // 木の中（カミキリムシの幼虫は 生きた木、クワガタの幼虫は くち木）
   | 'twig' // 若い枝（カミキリムシの成虫は 樹皮を かじる）
   | 'none';
 

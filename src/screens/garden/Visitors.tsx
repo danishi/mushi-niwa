@@ -3,8 +3,8 @@ import { useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { audio } from '../../audio/audio';
 import { newAnim } from '../../creatures/anim';
-import { VISITOR_MODELS } from '../../creatures/visitors';
-import { VISITORS, VISITOR_ORDER, type VisitorId } from '../../data/visitors';
+import { JoroWeb, VISITOR_MODELS } from '../../creatures/visitors';
+import { VISITORS, visitorsAt, type VisitorId } from '../../data/visitors';
 import { FIRST_VISIT_AFTER, nextGap, pickSpot, pickVisitor, STAY_SECONDS } from '../../sim/visitors';
 import { env } from '../../state/env';
 import { useProgress } from '../../state/progress';
@@ -49,10 +49,16 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
   // 来る 方向（画面の 外がわから）
   const from = useMemo(() => {
     const side = at[0] >= 0 ? 1 : -1;
-    if (def.where === 'ground') return home.clone().add(new THREE.Vector3(side * 1.1, 0, 0));
+    // カタツムリは ゆっくりなので ちかくから
+    if (def.where === 'ground') return home.clone().add(new THREE.Vector3(side * (id === 'katatsumuri' ? 0.45 : 1.1), 0, 0));
+    // クモは 上から 糸で おりてくる
+    if (!def.flier) return home.clone().add(new THREE.Vector3(0, 1.0, 0));
     return home.clone().add(new THREE.Vector3(side * 5, 1.5, 1));
-  }, [home, def.where, at]);
-  const away = useMemo(() => from.clone().add(new THREE.Vector3(0, def.where === 'ground' ? 0 : 2, -1)), [from, def.where]);
+  }, [home, def.where, def.flier, at, id]);
+  const away = useMemo(() => {
+    if (def.where === 'ground' || !def.flier) return from.clone();
+    return from.clone().add(new THREE.Vector3(0, 2, -1));
+  }, [from, def.where, def.flier]);
   const lastBuzz = useRef(0);
 
   useFrame((_, rawDt) => {
@@ -63,7 +69,7 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
     const s = st.current;
     a.t += dt;
     s.t += dt;
-    const flier = def.where !== 'ground';
+    const flier = def.flier && def.where !== 'ground';
     if (s.phase === 'arrive') {
       const k = Math.min(1, s.t / 1.6);
       const e = 1 - (1 - k) ** 3;
@@ -80,12 +86,13 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
       a.walk = 0;
       if (def.where === 'air') {
         // ホバリング（トンボは ぴたっと、チョウは ふわふわ）
-        const wob = id === 'monshiro' ? 0.18 : 0.05;
+        const soft = id === 'monshiro' || id === 'hotaru';
+        const wob = soft ? 0.18 : 0.05;
         g.position.set(home.x + Math.sin(a.t * 0.9) * wob * 2, home.y + Math.sin(a.t * 2.1) * wob, home.z + Math.cos(a.t * 0.7) * wob);
-        a.flap = id === 'monshiro' ? 0.6 + Math.sin(a.t * 0.5) * 0.4 : 1;
+        a.flap = soft ? 0.6 + Math.sin(a.t * 0.5) * 0.4 : 1;
       } else if (def.where === 'post') {
         a.flap = 0;
-        if (a.t - lastBuzz.current > 7) {
+        if (def.call === 'cicada' && a.t - lastBuzz.current > 7) {
           lastBuzz.current = a.t;
           audio.play('cicada');
         }
@@ -94,7 +101,16 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         // ときどき ちょこちょこ 歩く
         const step = Math.max(0, Math.sin(a.t * 0.8));
         a.walk = step > 0.7 ? 1 : 0;
-        if (a.walk) a.gait += dt * 8;
+        if (a.walk) a.gait += dt * (id === 'katatsumuri' ? 2 : 8);
+        // コオロギは ときどき はねを こすって なく
+        if (def.call === 'chirp') {
+          if (a.t - lastBuzz.current > 4.5) {
+            lastBuzz.current = a.t;
+            audio.play('chirp');
+          }
+          a.sing = a.t - lastBuzz.current < 1.4 ? 1 : 0;
+          if (a.sing) a.walk = 0;
+        }
       }
       if (s.t > STAY_SECONDS) {
         s.phase = 'leave';
@@ -102,8 +118,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
       }
     } else {
       // react（タップ）・leave（時間ぎれ）
-      if (def.react === 'curl' && s.phase === 'react') {
-        a.spray = Math.min(1, a.spray + dt * 4);
+      if ((def.react === 'curl' || def.react === 'stay') && s.phase === 'react') {
+        if (def.react === 'curl') a.spray = Math.min(1, a.spray + dt * 4);
         if (s.t > 3.2) {
           s.phase = 'leave';
           s.t = 0;
@@ -119,6 +135,7 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         }
         a.flap = flier ? 1 : 0;
         a.walk = flier || def.react === 'hop' ? 0 : 1;
+        a.sing = 0;
         a.gait += dt * 12;
         if (k >= 1) {
           onGone();
@@ -127,7 +144,7 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         }
       }
     }
-    // 進む 向きを 向く（柱の セミは 上むき）
+    // 進む 向きを 向く（奥の 板に とまる 子は 上むきの まま）
     if (def.where !== 'post') {
       const target = s.phase === 'arrive' ? home : s.phase === 'stay' ? null : away;
       if (target) {
@@ -139,45 +156,59 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
   });
 
   return (
-    <group
-      ref={root}
-      position={from}
-      userData={{ visitor: id }}
-      onClick={(e) => {
-        e.stopPropagation();
-        const s = st.current;
-        if (s.tapped || s.phase === 'leave') return;
-        s.tapped = true;
-        s.phase = 'react';
-        s.t = 0;
-        const first = !useProgress.getState().visitors.includes(id);
-        useProgress.getState().foundVisitor(id);
-        audio.play(def.react === 'curl' ? 'pop' : def.where === 'post' ? 'cicada' : 'flap');
-        audio.play('sparkle');
-        const p = root.current?.position ?? home;
-        emitParticles('sparkle', [p.x, p.y + 0.3, p.z], 18);
-        useUi.getState().setDiscovery({ id, first, at: performance.now() });
-        const fact = def.notInsect ?? def.facts[0]!;
-        speak(`${def.kana}！ ${toPlain(fact)}`, true);
-      }}
-    >
-      <group scale={def.scale}>
-        {def.where === 'post' ? (
-          // 柱に 頭を 上に して とまる（背中が こちら）
+    <>
+      {id === 'jorougumo' ? (
+        // あみは その場に のこる（クモは 糸で おりてくる）
+        <group position={at} scale={def.scale}>
           <group rotation={[0, 0, Math.PI]}>
             <group rotation={[Math.PI / 2, 0, 0]}>
-              <Model anim={anim} />
+              <JoroWeb />
             </group>
           </group>
-        ) : (
-          <Model anim={anim} />
-        )}
+        </group>
+      ) : null}
+      <group
+        ref={root}
+        position={from}
+        userData={{ visitor: id }}
+        onClick={(e) => {
+          e.stopPropagation();
+          const s = st.current;
+          if (s.tapped || s.phase === 'leave') return;
+          s.tapped = true;
+          s.phase = 'react';
+          s.t = 0;
+          const first = !useProgress.getState().visitors.includes(id);
+          useProgress.getState().foundVisitor(id);
+          audio.play(def.react === 'curl' || def.react === 'walk' || def.react === 'stay' ? 'pop' : def.call === 'cicada' ? 'cicada' : 'flap');
+          // ホタルは タップで ぱっと ひかる（ほかの 子は spray を 反応に 使う）
+          if (id === 'hotaru') anim.current.spray = 1;
+          audio.play('sparkle');
+          const p = root.current?.position ?? home;
+          emitParticles('sparkle', [p.x, p.y + 0.3, p.z], 18);
+          useUi.getState().setDiscovery({ id, first, at: performance.now() });
+          const fact = def.notInsect ?? def.facts[0]!;
+          speak(`${def.kana}！ ${toPlain(fact)}`, true);
+        }}
+      >
+        <group scale={def.scale}>
+          {def.where === 'post' ? (
+            // 柱に 頭を 上に して とまる（背中が こちら）
+            <group rotation={[0, 0, Math.PI]}>
+              <group rotation={[Math.PI / 2, 0, 0]}>
+                <Model anim={anim} />
+              </group>
+            </group>
+          ) : (
+            <Model anim={anim} />
+          )}
+        </group>
+        {/* 小さい 子の 指でも あたる 大きめの 当たり判定 */}
+        <mesh visible={false} scale={def.where === 'ground' ? [0.7, 0.5, 0.7] : 0.7}>
+          <sphereGeometry args={[1, 8, 6]} />
+        </mesh>
       </group>
-      {/* 小さい 子の 指でも あたる 大きめの 当たり判定 */}
-      <mesh visible={false} scale={def.where === 'ground' ? [0.7, 0.5, 0.7] : 0.7}>
-        <sphereGeometry args={[1, 8, 6]} />
-      </mesh>
-    </group>
+    </>
   );
 }
 
@@ -194,8 +225,8 @@ export function GardenVisitors({ shelfWidth, shelfFront }: { shelfWidth: number;
     if (visit) return;
     timer.current -= Math.min(dt, 0.1);
     if (timer.current > 0) return;
-    // 夜は 夜も 動く ダンゴムシだけ
-    const ids = env.night > 0.5 ? (['dangomushi'] as VisitorId[]) : VISITOR_ORDER;
+    // 夜は 夜に うごく 子（ホタル・コオロギ・ダンゴムシ など）だけ
+    const ids = visitorsAt(env.night > 0.5);
     const forced = e2e ? ((window as unknown as Record<string, unknown>).__forceVisitor as VisitorId | undefined) : undefined;
     const id = forced ?? (pickVisitor(ids, useProgress.getState().visitors, last.current, Math.random) as VisitorId);
     const list = spots[VISITORS[id].where];

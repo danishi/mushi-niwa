@@ -7,7 +7,7 @@
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア）と `window.__r3f`（three のシーン）。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる） |
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア）と `window.__r3f`（three のシーン）。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる） |
 | `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
 | `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
 | `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要 |
@@ -26,7 +26,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 
 - **Canvas は 1 つだけ常駐**させ、画面遷移では中身（シーン）と DOM の HUD だけを入れ替える（iOS で WebGL コンテキストを作り直さない）。画面→シーン/カメラの対応は `src/app/scenes.ts`、HUD は `src/app/App.tsx`。
 - **ゲームロジックは `src/sim/` の純 TS**。React / three を import しない。固定ステップ（1 秒）で進め、描画 FPS とは独立。Vitest で検証する。
-- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md`（最初の 6 種）と `docs/species-research-2.md`（オオカマキリ・トビズムカデ・マダラサソリ・ゴマダラカミキリ）、`docs/visitors-research.md`（にわの おきゃくさん 5 種）の出典付き調査に基づく。ムカデ・サソリは昆虫ではないので `notInsect` を付け、ずかんで説明する。
+- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md`（最初の 6 種）と `docs/species-research-2.md`（オオカマキリ・トビズムカデ・マダラサソリ・ゴマダラカミキリ）、`docs/visitors-research.md`（にわの おきゃくさん 最初の 5 種）、`docs/species-research-3.md`（オオクワガタ と おきゃくさん 8 種）の出典付き調査に基づく。ムカデ・サソリは昆虫ではないので `notInsect` を付け、ずかんで説明する。
 - **むしずもう（異種対戦）**: ユーザー要望で入れる。ケガ・罰なしの押し合いミニゲーム。得意技は各種の実際の防御行動から取り、「実際には異なる種どうしは戦わない」注記を出す。
 - **ケースは 6 つまで**（ユーザー判断）: いっぱいのときは「あたらしい むし」→ どの子を もりに かえすか選ぶ → 思い出カード → あいたケースで種を選ぶ。途中で送り出しても罰はない。
 - **さわると いかく**: `SpeciesDef.threat`（spray / display / squeak）。かんさつモードで何度も触ると出る安全学習。生きた虫を捕まえる場面は描かず、えさは小皿の「ちいさな むし」で表す。
@@ -45,7 +45,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **`useBodyMotion` の group には position を付けない**（毎フレーム上書きされる）。持ち上げたいときは外側に group を重ねる。
 - **あきずに 遊べる しかけ**（ユーザーから「任せる」で追加）: どれも罰なし・失うものなし。
   - シールちょう: `src/data/stickers.ts`（条件はデータ）＋ `src/sim/progress.ts`（判定）＋ `src/state/progress.ts`（保存・トースト）。遊びの できごとは `playEvents`（`src/state/events.ts`）で中継し、ストアどうしは直接 import しあわない。トーストはクイズ回答中は出さない。
-  - にわの おきゃくさん: `src/data/visitors.ts`（5 種、事実は `docs/visitors-research.md`）、モデルは `src/creatures/visitors.tsx`、出かたは `src/sim/visitors.ts` と `src/screens/garden/Visitors.tsx`。1 匹ずつ、まだ見つけていない子が来やすい。夜はダンゴムシだけ。出る場所は手前の本・立てふだ・切り株の当たり判定と重ならない所（上の段・棚の奥板・空中）。
+  - にわの おきゃくさん: `src/data/visitors.ts`（13 種。昼の虫・夜の虫（ホタル・コオロギ）・昆虫じゃない仲間（ダンゴムシ・クモ・カタツムリ））、モデルは `src/creatures/visitors.tsx`、出かたは `src/sim/visitors.ts` と `src/screens/garden/Visitors.tsx`。1 匹ずつ、まだ見つけていない子が来やすい。来る時間は データの `time`（day / night / any、`visitorsAt()`）。ジョロウグモは 奥の板に あみを はって 上から おりてくる。出る場所は手前の本・立てふだ・切り株の当たり判定と重ならない所（上の段・棚の奥板・空中）。
   - かんさつ しゃしん: `src/three/snapshot.ts`（`addAfterEffect` で描画直後に読む。preserveDrawingBuffer は使わない）→ `src/state/photos.ts`（端末内、30 枚まで）。ずかんの「しゃしん」タブで見る。大人は設定で消せる。
   - むしクイズ: `src/sim/quiz.ts` が種データから 3 択を作る（手書きの問題を増やさない）。入口は にわの「？」立てふだ。画面は `quiz`。
   - ずかんは タブ（むし／おきゃくさん／シール／しゃしん）。おきゃくさんも むしと 同じく 台の 上の 3D（`GuestSpecimen`、外接箱で 大きさを そろえる）＋説明パネル（`ui.zukanGuest`）。説明パネル（`DetailSheet`）は 続きが あると 下に「↓」を 出す。

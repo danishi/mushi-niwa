@@ -129,6 +129,17 @@ export const BATTLE: Record<SpeciesId, BattleDef> = {
       sfx: 'chirp',
     },
   },
+  ookuwagata: {
+    power: 1.2,
+    special: {
+      label: '{大|おお}あご がっちり',
+      effect: 'push',
+      strength: 0.4,
+      seconds: 0,
+      fact: 'オスの 大あごは、メスや ごはんの ばしょを とりあう ケンカの どうぐだよ。がっちり はさんで ぐいぐい おすよ',
+      sfx: 'bounce',
+    },
+  },
   miidera: {
     power: 1.0,
     special: {

@@ -9,6 +9,7 @@ import { madarasasori } from './madarasasori';
 import { ookamakiri } from './ookamakiri';
 import { suzumushi } from './suzumushi';
 import { tobizumukade } from './tobizumukade';
+import { ookuwagata } from './ookuwagata';
 
 /** 新しい種はここに足すだけ（＋ src/creatures にモデルを登録） */
 export const SPECIES: Record<SpeciesId, SpeciesDef> = {
@@ -22,10 +23,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   tobizumukade,
   madarasasori,
   gomadara,
+  ookuwagata,
 };
 
 export const SPECIES_ORDER: SpeciesId[] = [
   'kabutomushi',
+  'ookuwagata',
   'namiageha',
   'suzumushi',
   'nanahoshi',

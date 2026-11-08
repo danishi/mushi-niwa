@@ -102,7 +102,9 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
       ref={spin}
       position={[0, 0.62, 0]}
       onPointerDown={() => {
-        anim.current.spray = 1;
+        // 出典の ある 反応だけ（まるまる・ひっこむ・あしを けって はねる・ひかる）
+        const r = VISITORS[id].react;
+        if (r === 'curl' || r === 'hop' || id === 'hotaru') anim.current.spray = 1;
         anim.current.bounce = 1;
       }}
     >

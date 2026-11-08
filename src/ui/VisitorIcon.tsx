@@ -59,6 +59,101 @@ const DRAW: Record<VisitorId, ReactElement> = {
       <circle cx="64" cy="28" r="5" fill="#5a4a32" {...S} strokeWidth={2} />
     </g>
   ),
+  akiakane: (
+    <g>
+      <path d="M50 30 C30 22 10 24 6 30 C12 36 32 36 50 34 Z M50 30 C70 22 90 24 94 30 C88 36 68 36 50 34 Z" fill="#f6efe6" {...S} strokeWidth={2.5} />
+      <path d="M50 38 C32 36 14 42 12 48 C20 52 36 48 50 42 Z M50 38 C68 36 86 42 88 48 C80 52 64 48 50 42 Z" fill="#f6efe6" {...S} strokeWidth={2.5} />
+      <rect x="46" y="38" width="8" height="54" rx="4" fill="#d8382a" {...S} strokeWidth={2.5} />
+      <ellipse cx="50" cy="32" rx="7" ry="8" fill="#9a5a34" {...S} strokeWidth={2.5} />
+      <circle cx="43" cy="20" r="7" fill="#8a3a22" {...S} strokeWidth={2.5} />
+      <circle cx="57" cy="20" r="7" fill="#8a3a22" {...S} strokeWidth={2.5} />
+    </g>
+  ),
+  kanabun: (
+    <g>
+      {[44, 58, 72].map((y) => (
+        <path key={y} d={`M32 ${y} L16 ${y + 8} M68 ${y} L84 ${y + 8}`} {...S} />
+      ))}
+      <path d="M30 46 Q30 88 50 90 Q70 88 70 46 Z" fill="#7a7a2e" {...S} />
+      <path d="M50 46 V90" {...S} strokeWidth={2} />
+      <path d="M32 34 Q50 26 68 34 L66 48 Q50 52 34 48 Z" fill="#8a6a2a" {...S} />
+      <path d="M40 30 Q50 16 60 30 Z" fill="#5a4a20" {...S} />
+      <path d="M44 22 l-8 -8 M56 22 l8 -8" {...S} strokeWidth={3} />
+    </g>
+  ),
+  kurooari: (
+    <g>
+      {[40, 48, 56].map((y, i) => (
+        <path key={y} d={`M46 ${y} L${22 - i * 2} ${y + 10 + i * 6} M54 ${y} L${78 + i * 2} ${y + 10 + i * 6}`} {...S} strokeWidth={3} />
+      ))}
+      <ellipse cx="50" cy="74" rx="15" ry="17" fill="#2a2626" {...S} />
+      <circle cx="50" cy="56" r="4" fill="#2a2626" {...S} strokeWidth={2.5} />
+      <ellipse cx="50" cy="44" rx="7" ry="10" fill="#2a2626" {...S} />
+      <circle cx="50" cy="24" r="12" fill="#2a2626" {...S} />
+      <path d="M44 16 L36 8 L28 12 M56 16 L64 8 L72 12" fill="none" {...S} strokeWidth={3} />
+      <circle cx="44" cy="22" r="2.5" fill="#fff" />
+      <circle cx="56" cy="22" r="2.5" fill="#fff" />
+    </g>
+  ),
+  shouryou: (
+    <g>
+      <path d="M44 40 L30 70 L26 94 M56 40 L70 70 L74 94" fill="none" stroke="#6a9a3a" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M44 34 L34 42 M56 34 L66 42" {...S} strokeWidth={3} />
+      <ellipse cx="50" cy="60" rx="8" ry="32" fill="#86b552" {...S} />
+      <path d="M50 30 L42 8 L58 8 Z" fill="#86b552" {...S} />
+      <circle cx="45" cy="22" r="2.5" fill="#4a5a2a" />
+      <circle cx="55" cy="22" r="2.5" fill="#4a5a2a" />
+      <path d="M46 8 L40 0 M54 8 L60 0" {...S} strokeWidth={4} />
+    </g>
+  ),
+  hotaru: (
+    <g>
+      <circle cx="50" cy="76" r="20" fill="#e8ff7a" opacity={0.45} />
+      <path d="M38 42 Q36 82 50 86 Q64 82 62 42 Z" fill="#1e1c1c" {...S} />
+      <path d="M50 42 V86" stroke="#4a4444" strokeWidth={2} />
+      <ellipse cx="50" cy="80" rx="9" ry="7" fill="#f4ff9a" {...S} strokeWidth={2.5} />
+      <ellipse cx="50" cy="34" rx="15" ry="9" fill="#ec8f8f" {...S} />
+      <path d="M50 27 V41 M44 34 H56" stroke="#1e1c1c" strokeWidth={3} />
+      <circle cx="50" cy="20" r="7" fill="#1e1c1c" {...S} />
+      <path d="M46 14 Q40 6 34 4 M54 14 Q60 6 66 4" fill="none" {...S} strokeWidth={2} />
+    </g>
+  ),
+  enmakorogi: (
+    <g>
+      <path d="M40 52 L22 40 L16 86 M60 52 L78 40 L84 86" fill="none" stroke="#3a2618" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M44 72 L40 94 M56 72 L60 94" {...S} strokeWidth={2.5} />
+      <ellipse cx="50" cy="60" rx="15" ry="24" fill="#5a3c22" {...S} />
+      <ellipse cx="50" cy="32" rx="16" ry="14" fill="#2a1c14" {...S} />
+      <path d="M38 28 Q50 22 62 28" fill="none" stroke="#e8d9b0" strokeWidth={4} />
+      <circle cx="42" cy="34" r="3" fill="#8a6a4a" />
+      <circle cx="58" cy="34" r="3" fill="#8a6a4a" />
+      <path d="M44 20 Q30 4 10 2 M56 20 Q70 4 90 2" fill="none" {...S} strokeWidth={2} />
+    </g>
+  ),
+  jorougumo: (
+    <g>
+      <path d="M50 50 L10 10 M50 50 L90 10 M50 50 L10 90 M50 50 L90 90 M50 50 L50 4 M50 50 L50 96 M50 50 L4 50 M50 50 L96 50" stroke="#c9c2ad" strokeWidth={1.2} />
+      {[
+        [42, 40, 14, 18], [42, 44, 8, 34], [42, 52, 10, 62], [42, 56, 18, 84],
+        [58, 40, 86, 18], [58, 44, 92, 34], [58, 52, 90, 62], [58, 56, 82, 84],
+      ].map(([x1, y1, x2, y2], i) => (
+        <path key={i} d={`M${x1} ${y1} L${(x1! + x2!) / 2} ${Math.min(y1!, y2!) - 6} L${x2} ${y2}`} fill="none" stroke="#2a2a22" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      ))}
+      <ellipse cx="50" cy="68" rx="12" ry="20" fill="#e6c53a" {...S} />
+      <path d="M40 62 H60 M39 70 H61 M41 78 H59" stroke="#2a3446" strokeWidth={4} />
+      <ellipse cx="50" cy="44" rx="8" ry="9" fill="#4a4a3a" {...S} />
+    </g>
+  ),
+  katatsumuri: (
+    <g>
+      <path d="M14 82 Q14 72 30 72 L80 72 Q90 72 92 82 Z" fill="#c8b48e" {...S} />
+      <path d="M78 72 L84 46 M86 74 L92 54" {...S} strokeWidth={3} />
+      <circle cx="84" cy="45" r="3.5" fill="#3a3226" />
+      <circle cx="92" cy="53" r="3" fill="#3a3226" />
+      <circle cx="46" cy="52" r="24" fill="#d8b46a" {...S} />
+      <path d="M46 52 m-14 0 a14 14 0 1 0 14 -14 a9 9 0 1 0 -9 9 a4 4 0 1 0 4 -4" fill="none" stroke="#8a6a32" strokeWidth={3} />
+    </g>
+  ),
 };
 
 export function VisitorIcon({ id, silhouette = false }: { id: VisitorId; silhouette?: boolean }) {

@@ -1,4 +1,6 @@
 import type { StickerDef } from '../sim/progress';
+import { SPECIES_ORDER } from './species';
+import { VISITOR_ORDER } from './visitors';
 
 /**
  * ごほうびシール。どれも「やってみた」「見つけた」で もらえる（失敗で 失う ものは ない）。
@@ -23,7 +25,9 @@ export const STICKERS: readonly StickerDef[] = [
   { id: 'sumo-1', label: 'むしずもう かち', how: 'むしずもうで かつ', need: { stat: 'sumoWin', n: 1 }, icon: 'check', color: '#e9a23b' },
   { id: 'photo-10', label: 'しゃしんか', how: 'しゃしんを 10まい とる', need: { stat: 'photo', n: 10 }, icon: 'camera', color: '#9b8cff' },
   { id: 'quiz-perfect', label: 'クイズ まんてん', how: 'むしクイズで ぜんぶ せいかい', need: { stat: 'quizPerfect', n: 1 }, icon: 'star', color: '#ff7aa2' },
-  { id: 'visitor-all', label: 'おきゃくさん ぜんいん', how: '5しゅるいの おきゃくさんを みつける', need: { stat: 'visitorKinds', n: 5 }, icon: 'bug', color: '#5fb35f' },
+  { id: 'visitor-5', label: 'おきゃくさん 5しゅるい', how: '5しゅるいの おきゃくさんを みつける', need: { stat: 'visitorKinds', n: 5 }, icon: 'bug', color: '#7cc46a' },
+  { id: 'visitor-10', label: 'おきゃくさん 10しゅるい', how: '10しゅるいの おきゃくさんを みつける（よるにも くるよ）', need: { stat: 'visitorKinds', n: 10 }, icon: 'moon', color: '#5b6bb5' },
+  { id: 'visitor-all', label: 'おきゃくさん ぜんいん', how: `${VISITOR_ORDER.length}しゅるいの おきゃくさんを みつける`, need: { stat: 'visitorKinds', n: VISITOR_ORDER.length }, icon: 'bug', color: '#5fb35f' },
   { id: 'met-6', label: 'なかま 6しゅるい', how: '6しゅるいの むしを そだてる', need: { stat: 'met', n: 6 }, icon: 'book', color: '#a47148' },
-  { id: 'met-all', label: 'むし はかせ', how: 'ぜんぶの むしを そだてる', need: { stat: 'met', n: 10 }, icon: 'star', color: '#d4a017' },
+  { id: 'met-all', label: 'むし はかせ', how: 'ぜんぶの むしを そだてる', need: { stat: 'met', n: SPECIES_ORDER.length }, icon: 'star', color: '#d4a017' },
 ];

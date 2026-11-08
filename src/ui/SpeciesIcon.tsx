@@ -152,6 +152,21 @@ const DRAW: Record<SpeciesId, ReactElement> = {
       <ellipse cx="50" cy="36" rx="10" ry="7" fill="#16161c" {...S} />
     </g>
   ),
+  ookuwagata: (
+    <g>
+      {[46, 60, 74].map((y) => (
+        <path key={y} d={`M32 ${y} L16 ${y + 8} M68 ${y} L84 ${y + 8}`} {...S} />
+      ))}
+      <rect x="30" y="50" width="40" height="40" rx="16" fill="#2a2622" {...S} />
+      <path d="M50 52 V88" stroke="#5a524a" strokeWidth={2} />
+      <rect x="31" y="40" width="38" height="14" rx="6" fill="#2a2622" {...S} />
+      <rect x="32" y="28" width="36" height="14" rx="6" fill="#2a2622" {...S} />
+      <path d="M38 30 C30 22 30 12 40 6 M62 30 C70 22 70 12 60 6" fill="none" stroke="#2a2622" strokeWidth={8} strokeLinecap="round" />
+      <path d="M38 30 C30 22 30 12 40 6 M62 30 C70 22 70 12 60 6" fill="none" {...S} strokeWidth={2} />
+      <path d="M33 18 L40 16 M67 18 L60 16" {...S} strokeWidth={4} />
+      <Eyes y={34} dx={13} r={3.5} />
+    </g>
+  ),
   miidera: (
     <g>
       {[44, 58, 72].map((y) => (

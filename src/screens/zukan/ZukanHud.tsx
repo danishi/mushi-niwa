@@ -173,7 +173,8 @@ function GuestDetail({ id }: { id: VisitorId }) {
           ))}
         </ul>
         <details className="adult-note">
-          <summary>おとなの かたへ（出典）</summary>
+          <summary>おとなの かたへ（出典・注意）</summary>
+          {v.caution ? <p>{v.caution}</p> : null}
           <ul>
             {v.sources.map((u) => (
               <li key={u}>{decodeURI(u)}</li>
