@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { deviceStorage } from '../save/storage';
 import * as sim from '../sim/simulate';
 import type { GameState, SpeciesId, ToolId } from '../sim/types';
-import { simEvents } from './events';
+import { playEvents, simEvents } from './events';
 
 interface GameStore extends GameState {
   hydrated: boolean;
@@ -37,14 +37,23 @@ export const useGame = create<GameStore>()(
         set({ ...state, lastTickAt: now });
         for (const e of events) simEvents.emit(e);
       },
-      adopt: (species, slot) => set(sim.adopt(pick(get()), species, slot, Date.now())),
+      adopt: (species, slot) => {
+        set(sim.adopt(pick(get()), species, slot, Date.now()));
+        playEvents.emit('adopt');
+      },
       useTool: (id, tool, amount) => {
         const r = sim.useTool(pick(get()), id, tool, amount);
         if (r.ok) set(r.state);
         return r.ok;
       },
-      pet: (id) => set(sim.pet(pick(get()), id)),
-      farewell: (id) => set(sim.farewell(pick(get()), id, Date.now())),
+      pet: (id) => {
+        set(sim.pet(pick(get()), id));
+        playEvents.emit('pet');
+      },
+      farewell: (id) => {
+        set(sim.farewell(pick(get()), id, Date.now()));
+        playEvents.emit('farewell');
+      },
       resetAll: () => set(sim.newGame(Date.now())),
     }),
     {

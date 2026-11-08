@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import type { SpeciesId } from '../sim/types';
 
-export type Screen = 'boot' | 'title' | 'garden' | 'care' | 'observe' | 'zukan' | 'battle';
+export type Screen = 'boot' | 'title' | 'garden' | 'care' | 'observe' | 'zukan' | 'battle' | 'quiz';
+
+export type ZukanTab = 'mushi' | 'guest' | 'sticker' | 'photo';
 
 export interface Cinematic {
   kind: 'grow' | 'farewell' | 'tool';
@@ -34,6 +36,12 @@ export interface UiState {
   /** ずかんで見ている種と段階 */
   zukan: { species: SpeciesId; stage: number } | null;
   setZukan: (z: { species: SpeciesId; stage: number } | null) => void;
+  /** ずかんの タブ */
+  zukanTab: ZukanTab;
+  setZukanTab: (t: ZukanTab) => void;
+  /** にわで おきゃくさんを 見つけた ときの カード */
+  discovery: { id: string; first: boolean; at: number } | null;
+  setDiscovery: (d: { id: string; first: boolean; at: number } | null) => void;
   go: (screen: Screen, selectedId?: string | null) => void;
   openSettings: (open: boolean) => void;
   setDragging: (v: boolean) => void;
@@ -51,6 +59,10 @@ export const useUi = create<UiState>()((set) => ({
   observedPart: null,
   pickingSlot: null,
   zukan: null,
+  zukanTab: 'mushi',
+  setZukanTab: (zukanTab) => set({ zukanTab }),
+  discovery: null,
+  setDiscovery: (discovery) => set({ discovery }),
   reaction: null,
   overlays: 0,
   pushOverlay: (d) => set((s) => ({ overlays: Math.max(0, s.overlays + d) })),
@@ -64,6 +76,7 @@ export const useUi = create<UiState>()((set) => ({
       selectedId: selectedId === undefined ? s.selectedId : selectedId,
       observedPart: null,
       cinematic: null,
+      discovery: null,
     })),
   openSettings: (settingsOpen) => set({ settingsOpen }),
   setDragging: (dragging) => set({ dragging }),

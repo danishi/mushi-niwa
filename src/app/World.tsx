@@ -9,6 +9,7 @@ import { Lights } from '../three/Lights';
 import { Particles } from '../three/Particles';
 import { QualityManager, useTier } from '../three/QualityManager';
 import { effectiveDpr, QUALITY, useQuality } from '../three/quality';
+import { registerSnapshotCanvas } from '../three/snapshot';
 import { sceneFor } from './scenes';
 
 function usePageVisible() {
@@ -64,6 +65,7 @@ export function World() {
       camera={{ fov: 40, near: 0.05, far: 80, position: [0, 4, 12] }}
       data-testid="world-canvas"
       onCreated={(state) => {
+        registerSnapshotCanvas(state.gl.domElement);
         // E2E・デバッグ用（?e2e のときだけ）
         if (new URLSearchParams(location.search).has('e2e')) (window as unknown as Record<string, unknown>).__r3f = state;
       }}

@@ -3,6 +3,7 @@ import { audio } from '../../audio/audio';
 import { BATTLE } from '../../data/battle';
 import { SPECIES, SPECIES_ORDER } from '../../data/species';
 import { BATTLE_SECONDS } from '../../sim/battle';
+import { playEvents } from '../../state/events';
 import { useBattle } from '../../state/battle';
 import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
@@ -71,6 +72,7 @@ function Fight() {
   }, [fact]);
   useEffect(() => {
     if (s.result) speak(RESULT_TEXT[s.result]);
+    if (s.result === 'win') playEvents.emit('sumoWin');
   }, [s.result]);
   const sp = BATTLE[s.player].special;
   const pct = Math.round(((s.meter + 1) / 2) * 100);

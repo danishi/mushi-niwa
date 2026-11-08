@@ -5,6 +5,7 @@ import { actors } from '../../creatures/Actor';
 import { SPECIES } from '../../data/species';
 import { CaseView } from '../../habitat/CaseView';
 import { partsFor } from '../../sim/simulate';
+import { playEvents } from '../../state/events';
 import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
 import { speak } from '../../text/speech';
@@ -55,6 +56,7 @@ export function explainPart(id: string, part: string, at?: THREE.Vector3) {
   const info = partsFor(c).find((p) => p.id === part);
   if (!info) return;
   useUi.getState().setObservedPart(part);
+  playEvents.emit('parts');
   audio.play('sparkle');
   speak(`${info.label}。${info.text}`);
   const pos = at ?? findPartPosition(id, part);

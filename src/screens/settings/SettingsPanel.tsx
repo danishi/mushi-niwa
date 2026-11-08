@@ -2,6 +2,8 @@ import { useEffect, type ReactNode } from 'react';
 import { audio } from '../../audio/audio';
 import { useSettings, type QualitySetting } from '../../state/settings';
 import { useGame } from '../../state/game';
+import { usePhotos } from '../../state/photos';
+import { useProgress } from '../../state/progress';
 import { useUi } from '../../state/ui';
 import { speak } from '../../text/speech';
 import { Icon } from '../../ui/Icon';
@@ -17,6 +19,7 @@ const QUALITIES: Array<{ v: QualitySetting; label: string }> = [
 export function SettingsPanel({ extra }: { extra?: ReactNode }) {
   const s = useSettings();
   const close = useUi((u) => u.openSettings);
+  const photoCount = usePhotos((p) => p.photos.length);
 
   useEffect(() => {
     audio.setVolumes(s.bgmVolume, s.sfxVolume);
@@ -76,8 +79,24 @@ export function SettingsPanel({ extra }: { extra?: ReactNode }) {
         </label>
         <div className="row">
           <span>
+            写真をすべて消す
+            <small>かんさつで撮った写真（{photoCount}枚）を消します</small>
+          </span>
+          <button
+            className="danger-btn"
+            data-testid="clear-photos"
+            disabled={photoCount === 0}
+            onClick={() => {
+              if (window.confirm('かんさつ写真をすべて消します。元に戻せません。よろしいですか？')) usePhotos.getState().clear();
+            }}
+          >
+            消す
+          </button>
+        </div>
+        <div className="row">
+          <span>
             データをすべて消す
-            <small>育てている虫・ずかん・おもいでカードが消えます（元に戻せません）</small>
+            <small>育てている虫・ずかん・おもいでカード・シール・写真が消えます（元に戻せません）</small>
           </span>
           <button
             className="danger-btn"
@@ -85,6 +104,8 @@ export function SettingsPanel({ extra }: { extra?: ReactNode }) {
             onClick={() => {
               if (window.confirm('この端末の むしにわ のデータをすべて消します。元に戻せません。よろしいですか？')) {
                 useGame.getState().resetAll();
+                useProgress.getState().reset();
+                usePhotos.getState().clear();
                 close(false);
                 useUi.getState().go('title', null);
               }

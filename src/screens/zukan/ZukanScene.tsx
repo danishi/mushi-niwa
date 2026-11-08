@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { newAnim } from '../../creatures/anim';
 import { modelFor } from '../../creatures/registry';
 import { SPECIES } from '../../data/species';
+import type { SpeciesId } from '../../sim/types';
 import { useUi } from '../../state/ui';
 import type { CameraShot } from '../../three/CameraRig';
 import { Meadow } from '../../three/Diorama';
@@ -22,6 +23,11 @@ export const zukanShot = (): CameraShot => ({
 /** 台座の上で ゆっくり回る虫（ずかんの 3D 標本） */
 function Specimen() {
   const z = useUi((s) => s.zukan);
+  return z ? <SpecimenView species={z.species} stage={z.stage} /> : null;
+}
+
+export function SpecimenView({ species, stage }: { species: SpeciesId; stage: number }) {
+  const z = { species, stage };
   const tier = useTier();
   const spin = useRef<THREE.Group>(null);
   const anim = useRef(newAnim());
@@ -35,7 +41,6 @@ function Specimen() {
     a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
     if (spin.current) spin.current.rotation.y += dt * 0.5;
   });
-  if (!z) return null;
   const st = SPECIES[z.species].stages[z.stage];
   if (!st) return null;
   const entry = modelFor(st.model);
@@ -47,6 +52,18 @@ function Specimen() {
         <Model key={`${z.species}-${z.stage}`} anim={anim} sex="male" molts={st.molts ?? 0} outlines={QUALITY[tier].outlines} />
       </group>
     </group>
+  );
+}
+
+/** 木の 台座 */
+export function Pedestal() {
+  const wood = useMemo(() => mat('#c8a27a'), []);
+  const top = useMemo(() => mat('#fffaf0'), []);
+  return (
+    <>
+      <mesh geometry={GEO.cylinder()} material={wood} position={[0, 0.3, 0]} scale={[0.9, 0.6, 0.9]} castShadow receiveShadow />
+      <mesh geometry={GEO.cylinder()} material={top} position={[0, 0.61, 0]} scale={[0.85, 0.03, 0.85]} receiveShadow />
+    </>
   );
 }
 

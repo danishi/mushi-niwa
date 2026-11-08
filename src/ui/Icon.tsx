@@ -31,11 +31,32 @@ export type IconName =
   | 'bag'
   | 'eggplant'
   | 'aphid'
-  | 'log';
+  | 'log'
+  | 'camera'
+  | 'star'
+  | 'question'
+  | 'next';
 
 const S = { stroke: '#4a3b2a', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
 const PATHS: Record<IconName, ReactElement> = {
+  camera: (
+    <g {...S}>
+      <path d="M20 36 H36 L42 26 H58 L64 36 H80 V74 H20 Z" fill="#8fa3b8" />
+      <circle cx="50" cy="55" r="14" fill="#2f3e4e" />
+      <circle cx="50" cy="55" r="6" fill="#9fd3e6" strokeWidth={2} />
+      <circle cx="72" cy="44" r="3" fill="#ffd166" strokeWidth={2} />
+    </g>
+  ),
+  star: <path d="M50 16 L60 40 L86 42 L66 58 L72 84 L50 70 L28 84 L34 58 L14 42 L40 40 Z" fill="#ffd166" {...S} />,
+  question: (
+    <g {...S}>
+      <circle cx="50" cy="50" r="34" fill="#ffadad" />
+      <path d="M38 40 C38 26 62 26 62 40 C62 50 50 50 50 60" fill="none" strokeWidth={9} />
+      <circle cx="50" cy="73" r="4" fill="#4a3b2a" />
+    </g>
+  ),
+  next: <path d="M30 50 H70 M52 30 L72 50 L52 70" fill="none" {...S} strokeWidth={10} />,
   play: <path d="M36 26 L76 50 L36 74 Z" fill="#fff" {...S} stroke="#fff" />,
   gear: (
     <g {...S} fill="#c9b79c">

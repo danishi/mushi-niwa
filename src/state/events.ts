@@ -15,3 +15,19 @@ export const simEvents = {
     };
   },
 };
+
+/** 遊びの できごと（シールの 記録に つかう）。ストアどうしが 直接 import しあわないための 中継 */
+export type PlayEvent = 'care' | 'pet' | 'farewell' | 'adopt' | 'parts' | 'threat' | 'sumoWin' | 'photo';
+type PlayListener = (e: PlayEvent) => void;
+const playListeners = new Set<PlayListener>();
+export const playEvents = {
+  emit(e: PlayEvent) {
+    for (const l of playListeners) l(e);
+  },
+  on(l: PlayListener): () => void {
+    playListeners.add(l);
+    return () => {
+      playListeners.delete(l);
+    };
+  },
+};

@@ -21,7 +21,10 @@ export type SfxName =
   | 'pickup'
   | 'drop'
   | 'nope'
-  | 'squeak';
+  | 'squeak'
+  | 'cicada'
+  | 'shutter'
+  | 'correct';
 
 export type BgmMood = 'day' | 'night' | 'title';
 
@@ -201,6 +204,18 @@ class AudioEngine {
       case 'squeak':
         // カミキリムシの「キィキィ」（むねを こする 音）
         for (let i = 0; i < 5; i++) this.noiseBurst(t + i * 0.11, 0.07, { type: 'bandpass', freq: 3200, q: 6, gain: 0.25 });
+        break;
+      case 'cicada':
+        // アブラゼミの「ジジジ…」（ざらついた 連続音）
+        for (let i = 0; i < 14; i++) this.noiseBurst(t + i * 0.05, 0.05, { type: 'bandpass', freq: 4200 + (i % 3) * 300, q: 4, gain: 0.12 });
+        break;
+      case 'shutter':
+        this.noiseBurst(t, 0.05, { type: 'highpass', freq: 2500, gain: 0.35 });
+        this.noiseBurst(t + 0.09, 0.06, { type: 'highpass', freq: 1800, gain: 0.3 });
+        break;
+      case 'correct':
+        this.tone(midi(79), t, 0.18, { type: 'triangle', gain: 0.22 });
+        this.tone(midi(84), t + 0.12, 0.4, { type: 'triangle', gain: 0.22 });
         break;
       case 'nope':
         this.tone(330, t, 0.12, { type: 'sine', gain: 0.2 });

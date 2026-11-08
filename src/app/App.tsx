@@ -4,11 +4,13 @@ import { BattleHud } from '../screens/battle/BattleHud';
 import { CareHud } from '../screens/care/CareHud';
 import { GardenHud } from '../screens/garden/GardenHud';
 import { ObserveHud } from '../screens/observe/ObserveHud';
+import { QuizHud } from '../screens/quiz/QuizHud';
 import { TitleHud } from '../screens/title/TitleHud';
 import { ZukanHud } from '../screens/zukan/ZukanHud';
 import { useSettings } from '../state/settings';
 import { useUi, type Screen } from '../state/ui';
 import { FpsMeter } from '../ui/FpsMeter';
+import { StickerToast } from '../ui/Sticker';
 import { Boot } from './Boot';
 import { SimDriver } from './SimDriver';
 import { hasWebGL } from './webgl';
@@ -21,6 +23,7 @@ const HUDS: Partial<Record<Screen, ComponentType>> = {
   observe: ObserveHud,
   zukan: ZukanHud,
   battle: BattleHud,
+  quiz: QuizHud,
 };
 
 export function App() {
@@ -44,6 +47,7 @@ export function App() {
         )}
       </div>
       {Hud ? <Hud /> : null}
+      <StickerToast />
       {screen === 'boot' ? <Boot /> : null}
       {settingsOpen ? <SettingsPanel /> : null}
       {showFps || fpsQuery ? <FpsMeter /> : null}

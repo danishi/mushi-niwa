@@ -19,7 +19,7 @@ registerPwa();
 
 // E2E テスト用のフック（?e2e のときだけ）
 if (new URLSearchParams(location.search).has('e2e')) {
-  void Promise.all([import('./state/game'), import('./state/ui'), import('./state/settings')]).then(([g, u, st]) => {
-    (window as unknown as Record<string, unknown>).__mushi = { game: g.useGame, ui: u.useUi, settings: st.useSettings };
+  void Promise.all([import('./state/game'), import('./state/ui'), import('./state/settings'), import('./state/progress'), import('./state/photos')]).then(([g, u, st, pr, ph]) => {
+    (window as unknown as Record<string, unknown>).__mushi = { game: g.useGame, ui: u.useUi, settings: st.useSettings, progress: pr.useProgress, photos: ph.usePhotos };
   });
 }

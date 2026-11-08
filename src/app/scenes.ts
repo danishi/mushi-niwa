@@ -3,6 +3,7 @@ import { BattleScene, battleShot } from '../screens/battle/BattleScene';
 import { CareScene, careShot } from '../screens/care/CareScene';
 import { GardenScene, gardenShot } from '../screens/garden/GardenScene';
 import { ObserveScene, observeShot } from '../screens/observe/ObserveScene';
+import { QuizScene, quizShot } from '../screens/quiz/QuizScene';
 import { TitleScene, titleShot } from '../screens/title/TitleScene';
 import { ZukanScene, zukanShot } from '../screens/zukan/ZukanScene';
 import type { Screen } from '../state/ui';
@@ -21,6 +22,7 @@ const REGISTRY: Partial<Record<Screen, SceneEntry>> = {
   observe: { Scene: ObserveScene, shot: observeShot },
   zukan: { Scene: ZukanScene, shot: zukanShot },
   battle: { Scene: BattleScene, shot: battleShot },
+  quiz: { Scene: QuizScene, shot: quizShot },
 };
 
 export function registerScene(screen: Screen, entry: SceneEntry) {

@@ -10,6 +10,7 @@ import { houseFor } from '../../habitat/Terrarium';
 import { stageOf } from '../../sim/simulate';
 import type { Creature, SpeciesDef, ToolId } from '../../sim/types';
 import { foodPositions, toolAction } from '../../state/drag';
+import { playEvents } from '../../state/events';
 import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
 import { speak } from '../../text/speech';
@@ -159,6 +160,7 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
       g.position.lerpVectors(goal, start, ease(k));
     } else {
       if (st.ok > 0) {
+        playEvents.emit('care');
         audio.play('sparkle');
         const h = actors.get(creature.id);
         if (h) {

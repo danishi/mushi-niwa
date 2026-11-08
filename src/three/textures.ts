@@ -478,3 +478,80 @@ export function woodCrossTexture() {
     g.putImageData(img, 0, 0);
   }, { repeat: 2 });
 }
+
+/** モンシロチョウの はね：白地に、前ばねの 先が 灰黒色で、黒い 紋が 2 つ（メスは 濃い） */
+export function monshiroWing(which: 'fore' | 'hind') {
+  return make(`monshiro:${which}`, 256, (g, s) => {
+    const grad = g.createLinearGradient(0, 0, s, 0);
+    grad.addColorStop(0, '#d9d6cc');
+    grad.addColorStop(0.18, '#f7f5ee');
+    grad.addColorStop(1, '#fbfaf5');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, s, s);
+    g.fillStyle = '#3a3835';
+    if (which === 'fore') {
+      // 先端（右上）の 灰黒色
+      g.beginPath();
+      g.ellipse(s * 0.98, s * 0.98, s * 0.22, s * 0.16, 0, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();
+      g.arc(s * 0.62, s * 0.55, s * 0.055, 0, Math.PI * 2);
+      g.arc(s * 0.6, s * 0.25, s * 0.045, 0, Math.PI * 2);
+      g.fill();
+    } else {
+      g.beginPath();
+      g.arc(s * 0.18, s * 0.9, s * 0.04, 0, Math.PI * 2);
+      g.fill();
+    }
+  });
+}
+
+/** トンボ・セミの すける はね：細かい 翅脈 */
+export function veinWing(base: string, vein: string, alpha: number) {
+  return make(`vein:${base}:${vein}:${alpha}`, 256, (g, s) => {
+    g.fillStyle = base;
+    g.globalAlpha = alpha;
+    g.fillRect(0, 0, s, s);
+    g.globalAlpha = 1;
+    g.strokeStyle = vein;
+    for (let i = 0; i < 9; i++) {
+      g.lineWidth = i % 3 === 0 ? 2 : 1;
+      g.beginPath();
+      g.moveTo(0, s * (0.15 + i * 0.09));
+      g.bezierCurveTo(s * 0.3, s * (0.2 + i * 0.08), s * 0.7, s * (0.3 + i * 0.07), s, s * (0.35 + i * 0.065));
+      g.stroke();
+    }
+    g.lineWidth = 0.8;
+    for (let i = 0; i < 40; i++) {
+      const x = (i / 40) * s;
+      g.beginPath();
+      g.moveTo(x, s * 0.1);
+      g.lineTo(x + 6, s);
+      g.stroke();
+    }
+  });
+}
+
+/** 立てふだ（木の 板に 大きな 文字）。文字は 端末の フォントで 描く（外部フォントなし） */
+export function signTexture(big: string, small: string) {
+  return make(`sign:${big}:${small}`, 256, (g, s) => {
+    g.fillStyle = '#d9b98a';
+    g.fillRect(0, 0, s, s);
+    g.strokeStyle = 'rgba(120,80,40,0.25)';
+    for (let i = 0; i < 14; i++) {
+      g.lineWidth = 1 + (i % 3);
+      g.beginPath();
+      g.moveTo(0, (i / 14) * s + 6);
+      g.bezierCurveTo(s * 0.3, (i / 14) * s, s * 0.7, (i / 14) * s + 12, s, (i / 14) * s + 4);
+      g.stroke();
+    }
+    g.fillStyle = '#e4572e';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = `bold ${s * 0.55}px "Hiragino Maru Gothic ProN", system-ui, sans-serif`;
+    g.fillText(big, s / 2, s * 0.42);
+    g.fillStyle = '#4a3b2a';
+    g.font = `bold ${s * 0.17}px "Hiragino Maru Gothic ProN", system-ui, sans-serif`;
+    g.fillText(small, s / 2, s * 0.84);
+  });
+}

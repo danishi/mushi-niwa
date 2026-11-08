@@ -10,6 +10,37 @@ import { SettingsGateButton } from '../../ui/ParentalGate';
 import { SpeciesIcon } from '../../ui/SpeciesIcon';
 import { Ruby } from '../../text/ruby';
 import { MemoryCardModal } from '../zukan/MemoryCard';
+import { VISITORS, type VisitorId } from '../../data/visitors';
+import { VisitorIcon } from '../../ui/VisitorIcon';
+
+/** おきゃくさんを 見つけた ときの カード（すこしで 消える。タップで もう いちど 読む） */
+function DiscoveryCard() {
+  const d = useUi((s) => s.discovery);
+  const setD = useUi((s) => s.setDiscovery);
+  useEffect(() => {
+    if (!d) return;
+    const t = window.setTimeout(() => setD(null), 6500);
+    return () => window.clearTimeout(t);
+  }, [d, setD]);
+  if (!d) return null;
+  const v = VISITORS[d.id as VisitorId];
+  if (!v) return null;
+  const fact = v.notInsect ?? v.facts[0]!;
+  return (
+    <button className="discovery" data-testid="discovery" onClick={() => speak(`${v.kana}。${fact}`, true)}>
+      <span className="discovery-icon">
+        <VisitorIcon id={v.id} />
+      </span>
+      <span className="discovery-text">
+        <small>{d.first ? 'はじめて みつけた！' : 'みつけた！'}</small>
+        <strong>{v.name}</strong>
+        <span>
+          <Ruby text={fact} />
+        </span>
+      </span>
+    </button>
+  );
+}
 
 function SpeciesPicker({ slot, onClose }: { slot: number; onClose: () => void }) {
   const adopt = useGame((s) => s.adopt);
@@ -143,6 +174,7 @@ export function GardenHud() {
           あたらしい むし
         </button>
       ) : null}
+      <DiscoveryCard />
       {swapping ? <SwapPicker onClose={() => setSwapping(false)} /> : null}
       {count === 0 ? (
         <button className="hint center-bottom" onClick={() => speak('ケースを タップして むしを えらんでね', true)}>

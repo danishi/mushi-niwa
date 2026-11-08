@@ -7,7 +7,7 @@ import { CASE } from '../../habitat/case';
 import { CaseView } from '../../habitat/CaseView';
 import { soilTop } from '../../habitat/Terrarium';
 import type { GrowthEvent, SpeciesDef } from '../../sim/types';
-import { simEvents } from '../../state/events';
+import { playEvents, simEvents } from '../../state/events';
 import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
 import { speak } from '../../text/speech';
@@ -153,4 +153,5 @@ export function maybeThreat(id: string, threat: NonNullable<SpeciesDef['threat']
   }, 100);
   window.setTimeout(() => window.clearInterval(hold), 1800);
   speak(threat.text, true);
+  playEvents.emit('threat');
 }

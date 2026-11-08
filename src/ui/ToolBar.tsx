@@ -8,7 +8,7 @@ import { useUi } from '../state/ui';
 import { speak } from '../text/speech';
 import { Icon, type IconName } from './Icon';
 
-const FOOD_ICON: Record<FoodId, IconName> = {
+export const FOOD_ICON: Record<FoodId, IconName> = {
   mat: 'bag',
   jelly: 'food',
   citrusLeaf: 'leaf',
@@ -22,7 +22,7 @@ const FOOD_ICON: Record<FoodId, IconName> = {
   none: 'food',
 };
 
-const FOOD_LABEL: Record<FoodId, string> = {
+export const FOOD_LABEL: Record<FoodId, string> = {
   mat: 'マット',
   jelly: 'ゼリー',
   citrusLeaf: 'ミカンの は',

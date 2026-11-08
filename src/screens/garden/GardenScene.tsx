@@ -13,8 +13,9 @@ import type { CameraShot } from '../../three/CameraRig';
 import { Meadow } from '../../three/Diorama';
 import { emitParticles } from '../../three/Particles';
 import { GEO, mat } from '../../three/materials';
-import { barkTexture, woodTexture } from '../../three/textures';
+import { barkTexture, signTexture, woodTexture } from '../../three/textures';
 import { SPECIES } from '../../data/species';
+import { GardenVisitors } from './Visitors';
 
 const SCALE = 0.34;
 const COLS = 3;
@@ -84,7 +85,7 @@ function Portal({ position, onTap, label, children }: { position: [number, numbe
       }}
     >
       {children}
-      <mesh visible={false} position={[0, 0.6, 0]} scale={[1.4, 1.4, 1.4]}>
+      <mesh visible={false} position={[0, 0.6, 0]} scale={[1.3, 1.3, 1]}>
         <boxGeometry />
       </mesh>
     </group>
@@ -121,6 +122,22 @@ function StumpModel() {
   );
 }
 
+/** むしクイズの 立てふだ */
+export function SignModel() {
+  const post = useMemo(() => mat('#ffffff', { map: barkTexture(), roughness: 0.95 }), []);
+  const board = useMemo(() => mat('#ffffff', { map: signTexture('？', 'クイズ'), roughness: 0.85 }), []);
+  const edge = useMemo(() => mat('#a47148', { roughness: 0.9 }), []);
+  return (
+    <group>
+      <mesh geometry={GEO.cylinder()} material={post} position={[0, 0.3, -0.07]} scale={[0.045, 0.6, 0.045]} castShadow />
+      <mesh geometry={GEO.box()} material={edge} position={[0, 0.66, -0.01]} scale={[0.6, 0.6, 0.04]} castShadow />
+      <mesh position={[0, 0.66, 0.012]} material={board}>
+        <planeGeometry args={[0.54, 0.54]} />
+      </mesh>
+    </group>
+  );
+}
+
 /** むしにわ：3D の棚に 6 つの虫ケース */
 export function GardenScene() {
   const creatures = useGame((s) => s.creatures);
@@ -141,12 +158,18 @@ export function GardenScene() {
         <mesh key={x} geometry={GEO.box()} material={woodDark} position={[x, 1.75, 0]} scale={[0.2, 3.5, CASE.d * SCALE + 0.5]} castShadow />
       ))}
       <mesh geometry={GEO.box()} material={woodDark} position={[0, 1.75, -(CASE.d * SCALE) / 2 - 0.3]} scale={[width, 3.5, 0.1]} />
-      <Portal position={[-width / 4, 0, 2.2]} onTap={() => go('zukan')} label="ずかん">
+      <GardenVisitors shelfWidth={width} shelfFront={(CASE.d * SCALE) / 2 + 0.25} />
+      <Portal position={[-width / 3, 0, 2.2]} onTap={() => go('zukan')} label="ずかん">
         <group scale={1.7}>
           <BookModel />
         </group>
       </Portal>
-      <Portal position={[width / 4, 0, 2.2]} onTap={() => go('battle')} label="むしずもう">
+      <Portal position={[0, 0, 2.5]} onTap={() => go('quiz')} label="むしクイズ">
+        <group scale={1.5}>
+          <SignModel />
+        </group>
+      </Portal>
+      <Portal position={[width / 3, 0, 2.2]} onTap={() => go('battle')} label="むしずもう">
         <group scale={1.7}>
           <StumpModel />
         </group>
