@@ -37,7 +37,7 @@ test('a beetle larva asks for moisture and the mist tool works with one tap', as
     )
     .toBeGreaterThan(0.4);
   // 使い終わると 吹き出しが よろこびに かわる
-  await expect(page.getByTestId('reaction-bubble')).toContainText('しっとり');
+  await expect(page.getByTestId('reaction-bubble')).toContainText('しっとり', { timeout: 15000 });
 });
 
 test('first visit shows a guided tutorial that ends after using a tool', async ({ page }) => {

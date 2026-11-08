@@ -23,6 +23,14 @@ export function QualityManager() {
   const last = useRef(performance.now());
 
   useEffect(() => {
+    // ソフトウェア描画（GPU が使えない環境）なら 最初から 低画質にする
+    const ctx = gl.getContext();
+    const info = ctx.getExtension('WEBGL_debug_renderer_info');
+    const renderer = info ? String(ctx.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+    if (/swiftshader|llvmpipe|softpipe|software/i.test(renderer)) setAutoTier('low');
+  }, [gl, setAutoTier]);
+
+  useEffect(() => {
     // 後処理で複数パス描いても 1 フレーム分を合計できるよう、手動でリセットする
     gl.info.autoReset = false;
     return () => {
@@ -62,14 +70,14 @@ export function QualityManager() {
       iterations={6}
       bounds={(refresh) => (refresh > 90 ? [50, 90] : [45, 58])}
       flipflops={4}
-      onDecline={(api) => {
-        // 背景タブ等でフレームが間引かれている（極端に低い）ときは端末性能と見なさない
-        if (api.fps < 8 || document.hidden) return;
+      onDecline={() => {
+        // 非表示のタブは そもそも 描画を止めているので、ここでは 見えている間だけ 判定する
+        if (document.hidden) return;
         setAutoTier(stepTier(useQuality.getState().autoTier, -1));
       }}
       onIncline={() => setAutoTier(stepTier(useQuality.getState().autoTier, 1))}
-      onFallback={(api) => {
-        if (api.fps >= 8 && !document.hidden) setAutoTier('low');
+      onFallback={() => {
+        if (!document.hidden) setAutoTier('low');
       }}
     />
   );
