@@ -6,6 +6,7 @@ import { useUi } from '../state/ui';
 import { CameraRig } from '../three/CameraRig';
 import { Effects } from '../three/Effects';
 import { Lights } from '../three/Lights';
+import { Particles } from '../three/Particles';
 import { QualityManager, useTier } from '../three/QualityManager';
 import { effectiveDpr, QUALITY, useQuality } from '../three/quality';
 import { sceneFor } from './scenes';
@@ -30,10 +31,12 @@ function EnvDriver() {
 function ScreenContent() {
   const screen = useUi((s) => s.screen);
   const dragging = useUi((s) => s.dragging);
+  // シネマティック（成長の瞬間など）ではカメラの目標が変わる
+  useUi((s) => s.cinematic);
   const { Scene, shot } = sceneFor(screen);
   return (
     <>
-      <CameraRig shot={shot()} locked={dragging} />
+      <CameraRig shot={shot()} locked={dragging || useUi.getState().cinematic !== null} />
       <Suspense fallback={null}>
         <Scene />
       </Suspense>
@@ -64,6 +67,7 @@ export function World() {
       <EnvDriver />
       <Lights night={{ get current() { return env.night; } }} />
       <ScreenContent />
+      <Particles />
       <Effects />
     </Canvas>
   );

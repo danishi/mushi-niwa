@@ -1,0 +1,67 @@
+import type { SpeciesDef } from '../../sim/types';
+
+/** 出典: docs/species-research.md §3 */
+export const suzumushi: SpeciesDef = {
+  id: 'suzumushi',
+  name: 'スズムシ',
+  kana: 'すずむし',
+  scientific: 'Meloimorpha japonica',
+  order: 'バッタ{目|もく}',
+  family: 'スズムシ{科|か}',
+  color: '#5b4636',
+  season: '{成虫|せいちゅう}は 8〜10がつ。たまごで ふゆを こす',
+  farewell: 'mori',
+  farewellText: 'すてきな こえを ありがとう',
+  habitat: { substrate: 'soil', decor: ['bark', 'stone'], soilDepth: 0.22 },
+  dimorphism: 'なくのは オスだけ。メスには おしりに さんらんかんが ある',
+  stages: [
+    {
+      id: 'nymph',
+      label: 'ようちゅう',
+      playMinutes: 20,
+      realDuration: 'やく 2かげつ',
+      model: 'suzu-nymph',
+      food: 'eggplant',
+      decay: { hunger: 0.05, moisture: 0.035, clean: 0.03, mood: 0.02 },
+      tools: ['food', 'mist', 'scoop', 'house'],
+      moves: true,
+      activity: 'night',
+      molts: 5,
+      parts: [
+        { id: 'antenna', label: 'しょっかく', text: 'からだの 2ばいいじょうも ある ながい ひげ。くらい ところで まわりを さぐるよ' },
+        { id: 'hindleg', label: 'うしろあし', text: 'ながい うしろあしで ぴょんと はねるよ' },
+      ],
+    },
+    {
+      id: 'adult',
+      label: 'せいちゅう',
+      playMinutes: 20,
+      realDuration: 'やく 1〜2かげつ',
+      model: 'suzu-adult',
+      food: 'eggplant',
+      decay: { hunger: 0.05, moisture: 0.03, clean: 0.03, mood: 0.03 },
+      tools: ['food', 'scoop', 'house'],
+      moves: true,
+      activity: 'night',
+      enter: 'adult',
+      parts: [
+        { id: 'wings', label: 'まえばね', text: 'オスは はねを たてて こすりあわせて「リーン」と なるよ' },
+        { id: 'ear', label: 'みみ', text: 'まえあしの すねに しろい まるい「こまく」が あって、ここで おとを きくよ' },
+        { id: 'antenna', label: 'しょっかく', text: 'からだの 2ばいいじょうも ある ながい ひげ' },
+        { id: 'ovipositor', label: 'さんらんかん', text: 'メスの おしりの やりのような くだ。つちの なかに たまごを うむよ' },
+      ],
+    },
+  ],
+  facts: [
+    'ゆうがたから よるに なくよ。なくのは オスだけ',
+    'ナスや キュウリの ほかに、かつおぶしなども たべる ざっしょくだよ',
+    'さなぎの じきが ない「ふかんぜんへんたい」の むしだよ',
+    'だっぴした ぬけがらは じぶんで たべちゃうよ',
+  ],
+  caution: '餌は土に直接置かず、串や小皿に。実際の飼育では市販個体を野外に放さないでください。',
+  sources: [
+    'https://kotobank.jp/word/%E3%81%99%E3%81%9A%E3%82%80%E3%81%97-3156185',
+    'https://dom.ocm.osaka/database/omnh/1851',
+    'https://orthoptera.speciesfile.org/otus/845140',
+  ],
+};

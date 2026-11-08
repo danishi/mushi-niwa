@@ -427,3 +427,253 @@ ruby rt {
     animation: none;
   }
 }
+
+/* お世話パラメータ */
+.needs {
+  display: flex;
+  gap: 8px;
+}
+
+.need {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(255, 250, 240, 0.85);
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--c-shadow);
+}
+
+.need-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(#c5e1a5, #9ccc65);
+  transition: height 0.6s ease;
+}
+
+.need.low .need-fill {
+  background: linear-gradient(#ffd0d0, #ef8a8a);
+}
+
+.need svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+}
+
+.need.low {
+  animation: wiggle 1.2s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-10deg) scale(1.08);
+  }
+  40% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(0);
+  }
+}
+
+/* 道具の棚 */
+.toolbar {
+  align-self: center;
+  display: flex;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.8);
+  box-shadow: 0 6px 0 var(--c-shadow);
+}
+
+.toolbar.empty {
+  visibility: hidden;
+}
+
+.tool-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--c-shadow);
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  transition: transform 0.12s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.tool-btn:active {
+  transform: scale(1.12);
+}
+
+.tool-btn svg {
+  width: 70%;
+  height: 70%;
+}
+
+.stage-chip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.9);
+  font-size: 20px;
+  font-weight: bold;
+  box-shadow: 0 3px 0 var(--c-shadow);
+}
+
+.banner {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  padding: 14px 26px;
+  border-radius: 999px;
+  background: var(--c-sun);
+  font-size: clamp(22px, 6vw, 34px);
+  font-weight: 900;
+  box-shadow: 0 6px 0 #e0a800;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: pop-in 0.5s cubic-bezier(0.3, 1.6, 0.5, 1);
+  z-index: 5;
+}
+
+.cond-face {
+  font-size: 30px;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .need.low,
+  .banner {
+    animation: none;
+  }
+}
+
+.modal.center {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.memory-card {
+  --card: #8bc34a;
+  width: 230px;
+  border-radius: 20px;
+  padding: 14px;
+  background: linear-gradient(160deg, #fffaf0 40%, color-mix(in srgb, var(--card) 30%, #fffaf0));
+  border: 4px solid var(--card);
+  box-shadow: 0 6px 0 var(--c-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.memory-icon {
+  width: 110px;
+  height: 110px;
+}
+
+.memory-name {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.memory-sex {
+  margin-left: 6px;
+  color: var(--c-ink-soft);
+}
+
+.memory-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+}
+
+.memory-row svg {
+  width: 26px;
+  height: 26px;
+}
+
+.memory-row.small {
+  font-size: 14px;
+  color: var(--c-ink-soft);
+}
+
+.memory-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+.memory-stage {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.9);
+  font-size: 18px;
+  box-shadow: 0 4px 0 var(--c-shadow);
+}
+
+.hint svg {
+  width: 28px;
+  height: 28px;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.picker-item {
+  --card: #8bc34a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  min-height: 140px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--card) 18%, #fff);
+  border: 3px solid var(--card);
+  box-shadow: 0 4px 0 var(--c-shadow);
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.picker-item svg {
+  width: 90px;
+  height: 90px;
+}
+
+.picker-item:active {
+  transform: scale(0.95);
+}

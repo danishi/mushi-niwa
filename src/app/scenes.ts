@@ -1,7 +1,9 @@
 import type { ComponentType } from 'react';
+import { CareScene, careShot } from '../screens/care/CareScene';
+import { GardenScene, gardenShot } from '../screens/garden/GardenScene';
+import { TitleScene, titleShot } from '../screens/title/TitleScene';
 import type { Screen } from '../state/ui';
 import type { CameraShot } from '../three/CameraRig';
-import { TitleScene, titleShot } from '../screens/title/TitleScene';
 
 export interface SceneEntry {
   Scene: ComponentType;
@@ -11,7 +13,13 @@ export interface SceneEntry {
 const REGISTRY: Partial<Record<Screen, SceneEntry>> = {
   boot: { Scene: TitleScene, shot: titleShot },
   title: { Scene: TitleScene, shot: titleShot },
+  garden: { Scene: GardenScene, shot: gardenShot },
+  care: { Scene: CareScene, shot: careShot },
 };
+
+export function registerScene(screen: Screen, entry: SceneEntry) {
+  REGISTRY[screen] = entry;
+}
 
 export function sceneFor(screen: Screen): SceneEntry {
   return REGISTRY[screen] ?? REGISTRY.title!;

@@ -1,15 +1,20 @@
 import { useMemo, type ComponentType } from 'react';
 import { SettingsPanel } from '../screens/settings/SettingsPanel';
+import { CareHud } from '../screens/care/CareHud';
+import { GardenHud } from '../screens/garden/GardenHud';
 import { TitleHud } from '../screens/title/TitleHud';
 import { useSettings } from '../state/settings';
 import { useUi, type Screen } from '../state/ui';
 import { FpsMeter } from '../ui/FpsMeter';
 import { Boot } from './Boot';
+import { SimDriver } from './SimDriver';
 import { hasWebGL } from './webgl';
 import { World } from './World';
 
 const HUDS: Partial<Record<Screen, ComponentType>> = {
   title: TitleHud,
+  garden: GardenHud,
+  care: CareHud,
 };
 
 export function App() {
@@ -22,6 +27,7 @@ export function App() {
 
   return (
     <div className="app">
+      <SimDriver />
       <div className="canvas-wrap">
         {webgl ? (
           <World />

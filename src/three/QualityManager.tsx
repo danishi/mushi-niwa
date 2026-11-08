@@ -62,9 +62,15 @@ export function QualityManager() {
       iterations={6}
       bounds={(refresh) => (refresh > 90 ? [50, 90] : [45, 58])}
       flipflops={4}
-      onDecline={() => setAutoTier(stepTier(useQuality.getState().autoTier, -1))}
+      onDecline={(api) => {
+        // 背景タブ等でフレームが間引かれている（極端に低い）ときは端末性能と見なさない
+        if (api.fps < 8 || document.hidden) return;
+        setAutoTier(stepTier(useQuality.getState().autoTier, -1));
+      }}
       onIncline={() => setAutoTier(stepTier(useQuality.getState().autoTier, 1))}
-      onFallback={() => setAutoTier('low')}
+      onFallback={(api) => {
+        if (api.fps >= 8 && !document.hidden) setAutoTier('low');
+      }}
     />
   );
 }
