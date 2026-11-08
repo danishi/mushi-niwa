@@ -48,6 +48,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
   - かんさつ しゃしん: `src/three/snapshot.ts`（`addAfterEffect` で描画直後に読む。preserveDrawingBuffer は使わない）→ `src/state/photos.ts`（端末内、30 枚まで）。ずかんの「しゃしん」タブで見る。大人は設定で消せる。
   - むしクイズ: `src/sim/quiz.ts` が種データから 3 択を作る（手書きの問題を増やさない）。入口は にわの「？」立てふだ。画面は `quiz`。
   - ずかんは タブ（むし／おきゃくさん／シール／しゃしん）。
+- **リロードで最新版になる**（ユーザー要望）: Service Worker は index.html を 先に取りおかず、ページは NetworkFirst（`cache: 'no-cache'`、4 秒で オフライン用の 保存版に 切りかえ）。js/css は ハッシュ付きなので precache。新しい SW は skipWaiting / clientsClaim で すぐ入れかわるが、遊んでいる最中の 自動再読みこみは しない（タイトル画面のときだけ。`src/app/pwa.ts`）。アプリに もどったときにも 更新を確かめる。設定画面に 版（`__APP_VERSION__`、CI では コミットの 先頭 7 文字）を出す。
 - **3D アセットは外部に頼らない**: 虫・ジオラマはプリミティブとプロシージャル生成のみ。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。
 
 ## 規約

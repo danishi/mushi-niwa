@@ -5,8 +5,14 @@ import { VitePWA } from 'vite-plugin-pwa';
 // GitHub Pages のプロジェクトサイトは /<repo>/ 配下で配信される
 const base = process.env.BASE_PATH ?? '/mushi-niwa/';
 
+// 設定画面に出す 版の しるし（CI では コミットの 先頭 7 文字）
+const appVersion = `${(process.env.APP_VERSION ?? process.env.GITHUB_SHA ?? 'local').slice(0, 7)} (${new Date().toISOString().slice(0, 10)})`;
+
 export default defineConfig({
   base,
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -31,9 +37,27 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
-        navigateFallback: `${base}index.html`,
+        // index.html は 先に 取りおきしない。ページを 開く・リロードする たびに まず ネットから 最新を 取り、
+        // つながらない ときだけ 前に 開いた ページを 使う（オフラインでも 遊べる）。
+        // js / css は ファイル名に ハッシュが 入るので 取りおきして よい。
+        globPatterns: ['**/*.{js,css,svg,png,webmanifest}'],
+        navigateFallback: null,
         cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'mushi-niwa-pages',
+              networkTimeoutSeconds: 4,
+              // GitHub Pages の HTTP キャッシュ（10 分）も 使わず、毎回 サーバーに 確かめる
+              fetchOptions: { cache: 'no-cache' },
+              expiration: { maxEntries: 4 },
+            },
+          },
+        ],
       },
     }),
   ],

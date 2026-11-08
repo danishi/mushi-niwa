@@ -118,6 +118,9 @@ export function SettingsPanel({ extra }: { extra?: ReactNode }) {
         <p className="note">
           広告・課金・外部への送信はありません。データはこの端末の中だけに保存されます。
         </p>
+        <p className="note" data-testid="app-version">
+          バージョン {__APP_VERSION__}（ページを再読み込みすると最新版になります。ホーム画面のアプリは一度閉じて開き直してください）
+        </p>
         <button className="icon-btn modal-close" aria-label="とじる" data-testid="settings-close" onClick={() => close(false)}>
           <Icon name="close" />
         </button>
