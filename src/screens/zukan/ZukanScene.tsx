@@ -1,9 +1,11 @@
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { newAnim } from '../../creatures/anim';
 import { modelFor } from '../../creatures/registry';
+import { VISITOR_MODELS } from '../../creatures/visitors';
 import { SPECIES } from '../../data/species';
+import { VISITORS, type VisitorId } from '../../data/visitors';
 import type { SpeciesId } from '../../sim/types';
 import { useUi } from '../../state/ui';
 import type { CameraShot } from '../../three/CameraRig';
@@ -58,6 +60,61 @@ export function SpecimenView({ species, stage }: { species: SpeciesId; stage: nu
   );
 }
 
+/**
+ * にわの おきゃくさんを 台座の 上で 見せる。モデルの 大きさは 種ごとに ちがうので、
+ * 外接箱から 横幅を そろえて 台の 上面に のせる。タップすると いつもの 反応（まるまる・あしを けるなど）。
+ */
+function GuestSpecimen({ id }: { id: VisitorId }) {
+  const Model = VISITOR_MODELS[id];
+  const flier = VISITORS[id].where === 'air';
+  const spin = useRef<THREE.Group>(null);
+  const fit = useRef<THREE.Group>(null);
+  const inner = useRef<THREE.Group>(null);
+  const anim = useRef(newAnim());
+  useLayoutEffect(() => {
+    const f = fit.current;
+    const g = inner.current;
+    if (!f || !g) return;
+    f.scale.setScalar(1);
+    g.position.set(0, 0, 0);
+    f.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(g);
+    const size = box.getSize(new THREE.Vector3());
+    const k = 1.25 / Math.max(0.05, size.x, size.z);
+    const c = box.getCenter(new THREE.Vector3());
+    g.position.set(-c.x, -box.min.y + (flier ? 0.08 / k : 0), -c.z);
+    f.scale.setScalar(k);
+  }, [id, flier]);
+  useFrame((_, dt) => {
+    const a = anim.current;
+    a.t += dt;
+    a.energy = 1;
+    // チョウ・トンボは ときどき はねを うごかす。ほかは その場で あしぶみ
+    a.flap = flier ? (Math.sin(a.t * 0.8) > 0.6 ? 1 : 0) : 0;
+    a.walk = flier ? 0 : 0.4;
+    a.gait += dt * 4;
+    a.spray = THREE.MathUtils.damp(a.spray, 0, 1.5, dt);
+    a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
+    if (spin.current) spin.current.rotation.y += dt * 0.5;
+  });
+  return (
+    <group
+      ref={spin}
+      position={[0, 0.62, 0]}
+      onPointerDown={() => {
+        anim.current.spray = 1;
+        anim.current.bounce = 1;
+      }}
+    >
+      <group ref={fit}>
+        <group ref={inner}>
+          <Model key={id} anim={anim} />
+        </group>
+      </group>
+    </group>
+  );
+}
+
 /** 木の 台座（上面は 白く とばないよう 落ちついた 生成り色） */
 export function Pedestal() {
   const wood = useMemo(() => mat('#e3c9a6', { map: woodTexture(), roughness: 0.8 }), []);
@@ -73,11 +130,13 @@ export function Pedestal() {
 export function ZukanScene() {
   // 一覧の ときは 台座を 出さない（からっぽの 台だけが 大きく 見えて しまうため）
   const open = useUi((s) => s.zukan !== null);
+  const guest = useUi((s) => (s.zukan === null && s.zukanTab === 'guest' ? s.zukanGuest : null));
   return (
     <group>
       <Meadow radius={8} />
-      {open ? <Pedestal /> : null}
+      {open || guest ? <Pedestal /> : null}
       <Specimen />
+      {guest ? <GuestSpecimen key={guest} id={guest} /> : null}
     </group>
   );
 }

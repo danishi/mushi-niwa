@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { VISITORS, VISITOR_ORDER, type VisitorId } from '../../data/visitors';
 import { usePhotos, type Photo } from '../../state/photos';
 import { useProgress } from '../../state/progress';
@@ -22,6 +22,47 @@ function SpeakBtn({ text }: { text: string }) {
     <button className="speak-btn" aria-label="よみあげ" onClick={() => speak(text, true)}>
       <Icon name="speaker" />
     </button>
+  );
+}
+
+/**
+ * 説明の パネル。続きが あるときは 下を ぼかして「↓」を 出す（見切れて 終わりに 見えないように）。
+ * いちばん 下まで 送ると 消える。
+ */
+function DetailSheet({ children }: { children: ReactNode }) {
+  const [more, setMore] = useState(false);
+  const el = useRef<HTMLDivElement | null>(null);
+  const update = useCallback(() => {
+    const d = el.current;
+    if (d) setMore(d.scrollHeight - d.scrollTop - d.clientHeight > 8);
+  }, []);
+  const ref = useCallback(
+    (d: HTMLDivElement | null) => {
+      el.current = d;
+      if (!d) return;
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(d);
+      for (const c of Array.from(d.children)) ro.observe(c);
+      // details の 開け閉めなど 中身の 変化
+      const mo = new MutationObserver(update);
+      mo.observe(d, { subtree: true, childList: true, attributes: true });
+      return () => {
+        ro.disconnect();
+        mo.disconnect();
+      };
+    },
+    [update],
+  );
+  return (
+    <div className="sheet detail" ref={ref} onScroll={update} data-testid="detail-sheet">
+      {children}
+      {more ? (
+        <div className="more-hint" aria-hidden data-testid="more-hint">
+          <Icon name="down" />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -61,8 +102,7 @@ function Tabs() {
 /** おきゃくさんの 一覧。見つけた 子だけ 名前と 豆知識が 見られる */
 function GuestList() {
   const found = useProgress((s) => s.visitors);
-  const [open, setOpen] = useState<VisitorId | null>(null);
-  const v = open ? VISITORS[open] : null;
+  const setGuest = useUi((s) => s.setZukanGuest);
   return (
     <>
       <p className="sci">
@@ -87,7 +127,7 @@ function GuestList() {
                 }
                 audio.play('pop');
                 speak(d.kana);
-                setOpen(id);
+                setGuest(id);
               }}
             >
               <VisitorIcon id={id} silhouette={!seen} />
@@ -96,48 +136,52 @@ function GuestList() {
           );
         })}
       </div>
-      {v ? (
-        <div className="modal-backdrop" data-testid="guest-detail" onPointerDown={(e) => e.target === e.currentTarget && setOpen(null)}>
-          <div className="modal">
-            <div className="guest-head">
-              <span className="discovery-icon">
-                <VisitorIcon id={v.id} />
-              </span>
-              <h2>{v.name}</h2>
-            </div>
-            <p className="sci">
-              <i>{v.scientific}</i>
-            </p>
-            {v.notInsect ? (
-              <p className="not-insect">
-                <Ruby text={v.notInsect} />
-              </p>
-            ) : null}
-            <ul className="facts">
-              {v.facts.map((f) => (
-                <li key={f}>
-                  <SpeakBtn text={f} />
-                  <span>
-                    <Ruby text={f} />
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <details className="adult-note">
-              <summary>おとなの かたへ（出典）</summary>
-              <ul>
-                {v.sources.map((u) => (
-                  <li key={u}>{decodeURI(u)}</li>
-                ))}
-              </ul>
-            </details>
-            <button className="icon-btn modal-close" aria-label="とじる" onClick={() => setOpen(null)}>
-              <Icon name="close" />
-            </button>
-          </div>
-        </div>
-      ) : null}
     </>
+  );
+}
+
+/** おきゃくさんの くわしい ページ：3D は 台の 上（ZukanScene）、説明は むしと 同じ パネル */
+function GuestDetail({ id }: { id: VisitorId }) {
+  const setGuest = useUi((s) => s.setZukanGuest);
+  const v = VISITORS[id];
+  return (
+    <div className="hud" data-testid="guest-detail">
+      <div className="hud-row top">
+        <IconButton icon="back" label="もどる" onPress={() => setGuest(null)} testId="guest-detail-back" />
+        <div className="stage-chip">{v.name}</div>
+        <span className="hud-spacer" />
+      </div>
+      <div className="hud-spacer" />
+      <DetailSheet key={`guest-${id}`}>
+        <p className="sci">
+          <i>{v.scientific}</i>
+        </p>
+        {v.notInsect ? (
+          <p className="not-insect">
+            <Ruby text={v.notInsect} />
+          </p>
+        ) : null}
+        <h3>まめちしき</h3>
+        <ul className="facts">
+          {v.facts.map((f) => (
+            <li key={f}>
+              <SpeakBtn text={f} />
+              <span>
+                <Ruby text={f} />
+              </span>
+            </li>
+          ))}
+        </ul>
+        <details className="adult-note">
+          <summary>おとなの かたへ（出典）</summary>
+          <ul>
+            {v.sources.map((u) => (
+              <li key={u}>{decodeURI(u)}</li>
+            ))}
+          </ul>
+        </details>
+      </DetailSheet>
+    </div>
   );
 }
 
@@ -193,7 +237,16 @@ export function ZukanHud() {
   const met = useGame((s) => s.met);
   const memories = useGame((s) => s.memories);
   const tab = useUi((s) => s.zukanTab);
-  useEffect(() => () => setZukan(null), [setZukan]);
+  const guest = useUi((s) => s.zukanGuest);
+  useEffect(
+    () => () => {
+      setZukan(null);
+      useUi.getState().setZukanGuest(null);
+    },
+    [setZukan],
+  );
+
+  if (!z && guest && tab === 'guest') return <GuestDetail id={guest} />;
 
   if (!z && tab !== 'mushi') {
     return (
@@ -270,7 +323,7 @@ export function ZukanHud() {
       </div>
       <div className="hud-spacer" />
       {/* 一覧の シートと 同じ DOM が 使い回されると スクロール位置が 残るので、虫ごとに 作りなおす */}
-      <div className="sheet detail" key={`detail-${z.species}`} data-testid="zukan-sheet">
+      <DetailSheet key={`detail-${z.species}`}>
         <div className="stage-tabs">
           {sp.stages.map((s, i) => (
             <button
@@ -333,7 +386,7 @@ export function ZukanHud() {
           </ul>
           <p className="sci">{toPlain(sp.scientific)}</p>
         </details>
-      </div>
+      </DetailSheet>
     </div>
   );
 }

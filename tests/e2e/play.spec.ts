@@ -79,6 +79,11 @@ test('a garden visitor can be found and appears in the zukan', async ({ page }) 
   await page.getByTestId('tab-guest').tap();
   await expect(page.getByTestId('guest-dangomushi')).toContainText('オカダンゴムシ');
   await expect(page.getByTestId('guest-monshiro')).toContainText('？？？');
+  // 見つけた おきゃくさんは 台の 上の 3D と 説明の パネルで 見られる
+  await page.getByTestId('guest-dangomushi').tap();
+  await expect(page.getByTestId('guest-detail')).toContainText('エビや カニ');
+  await page.getByTestId('guest-detail-back').tap();
+  await expect(page.getByTestId('guest-list')).toBeVisible();
 });
 
 test('a photo can be taken in observe mode and seen in the album', async ({ page }) => {

@@ -743,6 +743,38 @@ ruby rt {
   line-height: 1.8;
 }
 
+/* 説明の 続きが あるときの しるし（パネルの 下に はりつく） */
+.more-hint {
+  position: sticky;
+  bottom: -14px;
+  margin: -24px -14px -14px;
+  height: 52px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+  background: linear-gradient(to bottom, rgba(255, 250, 240, 0), rgba(255, 250, 240, 0.97) 60%);
+  pointer-events: none;
+}
+
+.more-hint svg {
+  width: 30px;
+  height: 30px;
+  animation: more-bob 1.2s ease-in-out infinite;
+}
+
+@keyframes more-bob {
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more-hint svg {
+    animation: none;
+  }
+}
+
 /* 横長画面の ずかん詳細: 説明は 右側に 縦長で 出し、標本は 左半分に 見せる（カメラの shiftX と 対） */
 @media (min-aspect-ratio: 6/5) {
   .sheet.detail {

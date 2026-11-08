@@ -35,7 +35,8 @@ export type IconName =
   | 'camera'
   | 'star'
   | 'question'
-  | 'next';
+  | 'next'
+  | 'down';
 
 const S = { stroke: '#4a3b2a', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
@@ -57,6 +58,7 @@ const PATHS: Record<IconName, ReactElement> = {
     </g>
   ),
   next: <path d="M30 50 H70 M52 30 L72 50 L52 70" fill="none" {...S} strokeWidth={10} />,
+  down: <path d="M28 40 L50 62 L72 40" fill="none" {...S} strokeWidth={10} />,
   play: <path d="M36 26 L76 50 L36 74 Z" fill="#fff" {...S} stroke="#fff" />,
   gear: (
     <g {...S} fill="#c9b79c">

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { VisitorId } from '../data/visitors';
 import type { SpeciesId } from '../sim/types';
 
 export type Screen = 'boot' | 'title' | 'garden' | 'care' | 'observe' | 'zukan' | 'battle' | 'quiz';
@@ -36,6 +37,9 @@ export interface UiState {
   /** ずかんで見ている種と段階 */
   zukan: { species: SpeciesId; stage: number } | null;
   setZukan: (z: { species: SpeciesId; stage: number } | null) => void;
+  /** ずかんで見ている おきゃくさん */
+  zukanGuest: VisitorId | null;
+  setZukanGuest: (id: VisitorId | null) => void;
   /** ずかんの タブ */
   zukanTab: ZukanTab;
   setZukanTab: (t: ZukanTab) => void;
@@ -59,6 +63,8 @@ export const useUi = create<UiState>()((set) => ({
   observedPart: null,
   pickingSlot: null,
   zukan: null,
+  zukanGuest: null,
+  setZukanGuest: (zukanGuest) => set({ zukanGuest }),
   zukanTab: 'mushi',
   setZukanTab: (zukanTab) => set({ zukanTab }),
   discovery: null,
