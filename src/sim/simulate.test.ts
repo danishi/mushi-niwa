@@ -122,3 +122,15 @@ describe('time', () => {
     expect(nightFromPhase(dayPhase(0, true, at(7)))).toBe(false);
   });
 });
+
+describe('observation parts', () => {
+  it('shows sex-specific parts only for that sex', async () => {
+    const { partsFor } = await import('./simulate');
+    let s = adopt(newGame(NOW), 'suzumushi', 0, NOW, () => 0.1); // male
+    const male = { ...s.creatures[0]!, stage: 1 };
+    expect(partsFor(male).map((p) => p.id)).not.toContain('ovipositor');
+    s = adopt(newGame(NOW), 'suzumushi', 0, NOW, () => 0.9); // female
+    const female = { ...s.creatures[0]!, stage: 1 };
+    expect(partsFor(female).map((p) => p.id)).toContain('ovipositor');
+  });
+});

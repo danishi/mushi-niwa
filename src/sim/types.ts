@@ -40,6 +40,8 @@ export interface ObservePart {
   id: string;
   label: string;
   text: string;
+  /** 片方の性別にしかない部位 */
+  sex?: 'male' | 'female';
 }
 
 export interface StageDef {

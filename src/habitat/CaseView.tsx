@@ -15,12 +15,14 @@ export function CaseView({
   outlines,
   onTapCreature,
   freeze,
+  sound,
 }: {
   creature: Creature;
   detail: boolean;
   outlines: boolean;
   onTapCreature?: (e: ThreeEvent<PointerEvent>) => void;
   freeze?: boolean;
+  sound?: boolean;
 }) {
   const sp = SPECIES[creature.species];
   const top = soilTop(sp);
@@ -29,10 +31,10 @@ export function CaseView({
   const foodPos: [number, number, number] = [fp[0], top, fp[2]];
   return (
     <group>
-      <Terrarium sp={sp} creature={creature} detail={detail} />
+      <Terrarium sp={sp} creature={creature} detail={detail} droplets={!freeze} />
       {stage.food !== 'none' && stage.food !== 'mat' ? <PlacedFood food={stage.food} amount={creature.food} position={foodPos} /> : null}
       {stage.food === 'mat' ? <PlacedFood food="mat" amount={creature.food} position={foodPos} /> : null}
-      <Actor creature={creature} sp={sp} top={top} foodPos={foodPos} outlines={outlines} onTap={onTapCreature} freeze={freeze} />
+      <Actor creature={creature} sp={sp} top={top} foodPos={foodPos} outlines={outlines} onTap={onTapCreature} freeze={freeze} sound={sound} />
     </group>
   );
 }

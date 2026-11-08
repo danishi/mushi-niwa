@@ -49,7 +49,7 @@ export const kabutomushi: SpeciesDef = {
       underground: true,
       parts: [
         { id: 'chamber', label: 'ようしつ', text: 'つちで つくった おへや。こわさないように そっと みまもろう' },
-        { id: 'horn', label: 'つの', text: 'オスは さなぎの ときから つのが あるよ' },
+        { id: 'horn', label: 'つの', text: 'オスは さなぎの ときから つのが あるよ', sex: 'male' },
       ],
     },
     {
@@ -65,8 +65,8 @@ export const kabutomushi: SpeciesDef = {
       activity: 'night',
       enter: 'eclose',
       parts: [
-        { id: 'horn', label: 'あたまの つの', text: 'オスだけの つの。さきが ふたまたに わかれているよ' },
-        { id: 'chestHorn', label: 'むねの つの', text: 'むねにも みじかい ふたまたの つのが あるよ（オスだけ）' },
+        { id: 'horn', label: 'あたまの つの', text: 'オスだけの つの。さきが ふたまたに わかれているよ', sex: 'male' },
+        { id: 'chestHorn', label: 'むねの つの', text: 'むねにも みじかい ふたまたの つのが あるよ（オスだけ）', sex: 'male' },
         { id: 'legs', label: 'あし', text: 'すねに ギザギザ、さきに するどい つめ。きに しっかり つかまれるよ' },
         { id: 'elytra', label: 'かたい はね', text: 'かたい まえばねの したに うすい うしろばねが あって、それで とぶよ' },
       ],

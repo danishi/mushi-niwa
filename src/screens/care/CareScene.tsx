@@ -93,6 +93,7 @@ export function CareScene({ freeze = false }: { freeze?: boolean }) {
       <CaseView
         creature={creature}
         detail
+        sound
         outlines={QUALITY[tier].outlines}
         freeze={freeze}
         onTapCreature={

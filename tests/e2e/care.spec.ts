@@ -53,3 +53,19 @@ test('saves progress on the device and restores it after reload', async ({ page 
   );
   expect(species).toEqual(['miidera']);
 });
+
+test('observe mode explains body parts', async ({ page }) => {
+  await start(page);
+  test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
+  await page.evaluate(() => {
+    const m = (window as unknown as { __mushi: Hooks }).__mushi;
+    m.game.getState().adopt('kabutomushi', 1);
+    const c = m.game.getState().creatures[0]!;
+    m.game.setState({ creatures: [{ ...c, stage: 2, sex: 'male' }] });
+    m.ui.getState().go('care', c.id);
+  });
+  await page.getByTestId('observe').tap();
+  await expect(page.getByTestId('observe-hud')).toBeVisible();
+  await page.getByTestId('part-horn').tap();
+  await expect(page.getByTestId('part-bubble')).toContainText('ふたまた');
+});

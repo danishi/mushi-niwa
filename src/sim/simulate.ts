@@ -281,3 +281,8 @@ function replace(state: GameState, c: Creature): GameState {
 export function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
+
+/** その個体で観察できる部位（性別で絞る） */
+export function partsFor(c: Creature) {
+  return stageOf(c).parts.filter((p) => !p.sex || p.sex === c.sex);
+}

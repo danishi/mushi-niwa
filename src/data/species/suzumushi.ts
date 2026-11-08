@@ -48,7 +48,7 @@ export const suzumushi: SpeciesDef = {
         { id: 'wings', label: 'まえばね', text: 'オスは はねを たてて こすりあわせて「リーン」と なるよ' },
         { id: 'ear', label: 'みみ', text: 'まえあしの すねに しろい まるい「こまく」が あって、ここで おとを きくよ' },
         { id: 'antenna', label: 'しょっかく', text: 'からだの 2ばいいじょうも ある ながい ひげ' },
-        { id: 'ovipositor', label: 'さんらんかん', text: 'メスの おしりの やりのような くだ。つちの なかに たまごを うむよ' },
+        { id: 'ovipositor', label: 'さんらんかん', text: 'メスの おしりの やりのような くだ。つちの なかに たまごを うむよ', sex: 'female' },
       ],
     },
   ],

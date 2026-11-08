@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { audio } from '../audio/audio';
 import { dayPhase, nightFromPhase, playSecondsFor } from '../sim/simulate';
 import { env } from '../state/env';
 import { useGame } from '../state/game';
@@ -47,6 +48,9 @@ export function SimDriver() {
       const g = useGame.getState();
       const phase = dayPhase(g.playSeconds + play, rt, now);
       const night = nightOverride.value ?? nightFromPhase(phase);
+      if ((env.targetNight > 0.5) !== night && screen !== 'title' && screen !== 'battle') {
+        audio.startBgm(night ? 'night' : 'day');
+      }
       env.targetNight = night ? 1 : 0;
       g.advance(play, night, now);
     };

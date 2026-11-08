@@ -85,10 +85,12 @@ interface Props {
   sp: SpeciesDef;
   creature: Creature;
   detail: boolean;
+  /** ガラスの水滴（寄りのカメラでは消す） */
+  droplets?: boolean;
 }
 
 /** ジオラマ風の飼育ケース（ガラス・ふた・土・飾り・水滴・ふん） */
-export function Terrarium({ sp, creature, detail }: Props) {
+export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
   const top = soilTop(sp);
   const sub = SUBSTRATE[sp.habitat.substrate];
   // 土の色はしめりけで変わる（ケースごとに 1 つだけの専用マテリアル）
@@ -143,7 +145,7 @@ export function Terrarium({ sp, creature, detail }: Props) {
             stretchY={0.5}
             y={top + 0.005}
           />
-          <Droplets moisture={usesMoisture ? moisture : 0} />
+          {droplets ? <Droplets moisture={usesMoisture ? moisture : 0} /> : null}
         </>
       ) : null}
       <Droppings clean={creature.needs.clean} top={top} seed={creature.slot + 3} />
