@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { CreatureAnim } from './anim';
 import { AgehaAdult, AgehaEgg, AgehaLarva, AgehaPupa } from './ageha';
 import { KabutoAdult, KabutoLarva, KabutoPupa } from './kabuto';
+import { KaikoAdult, KaikoCocoon, KaikoEgg, KaikoLarva, MiideraAdult, TentouAdult, TentouEgg, TentouLarva, TentouPupa } from './others';
 import { SuzuAdult, SuzuNymph } from './suzumushi';
 
 export interface ModelProps {
@@ -36,6 +37,15 @@ export const MODELS: Record<string, ModelEntry> = {
   'ageha-adult': { C: AgehaAdult, locomotion: 'flutter', length: 1.2, speed: 0.45 },
   'suzu-nymph': { C: SuzuNymph, locomotion: 'hop', length: 0.6, speed: 0.4 },
   'suzu-adult': { C: SuzuAdult, locomotion: 'hop', length: 0.9, speed: 0.4 },
+  'tentou-egg': { C: TentouEgg, locomotion: 'still', length: 0.6, speed: 0 },
+  'tentou-larva': { C: TentouLarva, locomotion: 'crawl', length: 0.6, speed: 0.3 },
+  'tentou-pupa': { C: TentouPupa, locomotion: 'still', length: 0.5, speed: 0 },
+  'tentou-adult': { C: TentouAdult, locomotion: 'crawl', length: 0.8, speed: 0.3 },
+  'kaiko-egg': { C: KaikoEgg, locomotion: 'still', length: 0.6, speed: 0 },
+  'kaiko-larva': { C: KaikoLarva, locomotion: 'crawl', length: 1.0, speed: 0.08 },
+  'kaiko-cocoon': { C: KaikoCocoon, locomotion: 'still', length: 0.8, speed: 0 },
+  'kaiko-adult': { C: KaikoAdult, locomotion: 'crawl', length: 0.8, speed: 0.12 },
+  'miidera-adult': { C: MiideraAdult, locomotion: 'crawl', length: 0.9, speed: 0.55 },
 };
 
 export function modelFor(key: string): ModelEntry {

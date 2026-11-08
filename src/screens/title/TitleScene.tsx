@@ -1,57 +1,46 @@
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
+import { newAnim } from '../../creatures/anim';
+import { modelFor } from '../../creatures/registry';
+import { SPECIES, SPECIES_ORDER } from '../../data/species';
 import type { CameraShot } from '../../three/CameraRig';
 import { Meadow } from '../../three/Diorama';
-import { GEO, toon } from '../../three/toon';
+import { useTier } from '../../three/QualityManager';
+import { QUALITY } from '../../three/quality';
 
 export const titleShot = (): CameraShot => ({ position: [0, 3.2, 9], target: [0, 0.6, 0], fov: 40 });
 
-/** Phase 0 の仮キャラクター：くねくね動く いもむし */
-function Wiggler({ radius, speed, phase, color }: { radius: number; speed: number; phase: number; color: string }) {
-  const group = useRef<THREE.Group>(null);
-  const segs = useRef<THREE.Mesh[]>([]);
-  const body = useMemo(() => toon(color), [color]);
-  const eyeW = useMemo(() => toon('#ffffff'), []);
-  const eyeB = useMemo(() => toon('#2b2118'), []);
-  const N = 6;
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime * speed + phase;
-    for (let i = 0; i < N; i++) {
-      const a = t - i * 0.12;
-      const m = segs.current[i];
-      if (!m) continue;
-      m.position.set(Math.cos(a) * radius, 0.22 + Math.abs(Math.sin(a * 6 - i)) * 0.08, Math.sin(a) * radius);
-    }
-    const head = segs.current[0];
-    if (head && group.current) {
-      const a = t + 0.05;
-      group.current.position.copy(head.position);
-      group.current.lookAt(Math.cos(a) * radius, head.position.y, Math.sin(a) * radius);
-    }
+/** 原っぱを ぐるぐる歩く（飛ぶ）虫 */
+function Walker({ model, radius, speed, phase, sex }: { model: string; radius: number; speed: number; phase: number; sex: 'male' | 'female' }) {
+  const ref = useRef<THREE.Group>(null);
+  const anim = useRef(newAnim());
+  const tier = useTier();
+  const entry = modelFor(model);
+  const flyer = entry.locomotion === 'flutter';
+  const hopper = entry.locomotion === 'hop';
+  useFrame((_, rawDt) => {
+    const dt = Math.min(rawDt, 0.05);
+    const a = anim.current;
+    a.t += dt;
+    a.energy = 1;
+    a.walk = flyer ? 0 : 1;
+    a.flap = flyer ? 1 : 0;
+    a.gait += dt * speed * 40;
+    a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
+    const ang = phase + a.t * speed * Math.sign(radius);
+    const r = Math.abs(radius);
+    const g = ref.current;
+    if (!g) return;
+    g.position.set(Math.cos(ang) * r, flyer ? 1.4 + Math.sin(a.t * 1.3) * 0.4 : hopper ? Math.abs(Math.sin(a.t * 3)) * 0.25 : 0, Math.sin(ang) * r);
+    // 進む向きに顔を向ける
+    const dir = Math.sign(radius);
+    g.rotation.y = -ang + (dir > 0 ? 0 : Math.PI);
   });
+  const Model = entry.C;
   return (
-    <group>
-      {Array.from({ length: N }, (_, i) => (
-        <mesh
-          key={i}
-          ref={(m) => {
-            if (m) segs.current[i] = m;
-          }}
-          geometry={GEO.sphere()}
-          material={body}
-          scale={0.26 - i * 0.02}
-          castShadow
-        />
-      ))}
-      <group ref={group}>
-        {[-1, 1].map((s) => (
-          <group key={s} position={[s * 0.1, 0.08, 0.17]}>
-            <mesh geometry={GEO.sphereLo()} material={eyeW} scale={0.08} />
-            <mesh geometry={GEO.sphereLo()} material={eyeB} scale={0.05} position={[0, 0, 0.04]} />
-          </group>
-        ))}
-      </group>
+    <group ref={ref} onPointerDown={() => (anim.current.bounce = 1)}>
+      <Model anim={anim} sex={sex} molts={0} outlines={QUALITY[tier].outlines} />
     </group>
   );
 }
@@ -60,9 +49,20 @@ export function TitleScene() {
   return (
     <group>
       <Meadow radius={7} />
-      <Wiggler radius={2.4} speed={0.35} phase={0} color="#aed581" />
-      <Wiggler radius={3.4} speed={-0.25} phase={2} color="#ffcc80" />
-      <Wiggler radius={1.6} speed={0.45} phase={4} color="#f8bbd0" />
+      {SPECIES_ORDER.map((id, i) => {
+        const sp = SPECIES[id];
+        const adult = sp.stages[sp.stages.length - 1]!;
+        return (
+          <Walker
+            key={id}
+            model={adult.model}
+            radius={(i % 2 ? -1 : 1) * (1.8 + (i % 3) * 0.9)}
+            speed={0.18 + (i % 3) * 0.05}
+            phase={i * 1.05}
+            sex={i % 2 ? 'female' : 'male'}
+          />
+        );
+      })}
     </group>
   );
 }

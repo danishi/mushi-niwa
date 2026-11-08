@@ -1,9 +1,11 @@
 import { useMemo, type ComponentType } from 'react';
 import { SettingsPanel } from '../screens/settings/SettingsPanel';
+import { BattleHud } from '../screens/battle/BattleHud';
 import { CareHud } from '../screens/care/CareHud';
 import { GardenHud } from '../screens/garden/GardenHud';
 import { ObserveHud } from '../screens/observe/ObserveHud';
 import { TitleHud } from '../screens/title/TitleHud';
+import { ZukanHud } from '../screens/zukan/ZukanHud';
 import { useSettings } from '../state/settings';
 import { useUi, type Screen } from '../state/ui';
 import { FpsMeter } from '../ui/FpsMeter';
@@ -17,6 +19,8 @@ const HUDS: Partial<Record<Screen, ComponentType>> = {
   garden: GardenHud,
   care: CareHud,
   observe: ObserveHud,
+  zukan: ZukanHud,
+  battle: BattleHud,
 };
 
 export function App() {

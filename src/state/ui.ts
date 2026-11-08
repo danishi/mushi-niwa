@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { SpeciesId } from '../sim/types';
 
 export type Screen = 'boot' | 'title' | 'garden' | 'care' | 'observe' | 'zukan' | 'battle';
 
@@ -21,6 +22,9 @@ export interface UiState {
   observedPart: string | null;
   /** 空き棚をタップしたときの種えらび */
   pickingSlot: number | null;
+  /** ずかんで見ている種と段階 */
+  zukan: { species: SpeciesId; stage: number } | null;
+  setZukan: (z: { species: SpeciesId; stage: number } | null) => void;
   go: (screen: Screen, selectedId?: string | null) => void;
   openSettings: (open: boolean) => void;
   setDragging: (v: boolean) => void;
@@ -37,6 +41,8 @@ export const useUi = create<UiState>()((set) => ({
   cinematic: null,
   observedPart: null,
   pickingSlot: null,
+  zukan: null,
+  setZukan: (zukan) => set({ zukan }),
   go: (screen, selectedId) =>
     set((s) => ({
       screen,
