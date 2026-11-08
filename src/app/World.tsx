@@ -51,13 +51,15 @@ function ScreenContent() {
 export function World() {
   const tier = useTier();
   const visible = usePageVisible();
+  // 大人向けの パネルで 画面が おおわれている間は 描画を 止める（入力の 反応と 電池のため）
+  const covered = useUi((s) => s.overlays > 0 || s.settingsOpen);
   const [initialTier] = useState(() => useQuality.getState().autoTier);
   const dpr = effectiveDpr(tier, typeof window === 'undefined' ? 1 : window.devicePixelRatio);
   return (
     <Canvas
       dpr={dpr}
       shadows={{ type: THREE.PCFSoftShadowMap }}
-      frameloop={visible ? 'always' : 'never'}
+      frameloop={visible && !covered ? 'always' : 'never'}
       gl={{ antialias: QUALITY[initialTier].antialias, powerPreference: 'high-performance', alpha: false, toneMapping: THREE.AgXToneMapping }}
       camera={{ fov: 40, near: 0.05, far: 80, position: [0, 4, 12] }}
       data-testid="world-canvas"

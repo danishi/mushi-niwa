@@ -25,6 +25,9 @@ export interface UiState {
   /** お世話の あとの 虫の よろこび（吹き出しに 出す） */
   reaction: { text: string; until: number } | null;
   setReaction: (r: { text: string; until: number } | null) => void;
+  /** 画面全体を おおう 大人向けの パネル（ゲート・設定）を 開いている数。開いている間は 3D の 描画を 止める */
+  overlays: number;
+  pushOverlay: (d: 1 | -1) => void;
   /** はじめての お手本の 段階（0: なし、1: 吹き出しを見て、2: 道具を押して） */
   tutorialStep: 0 | 1 | 2;
   setTutorialStep: (s: 0 | 1 | 2) => void;
@@ -49,6 +52,8 @@ export const useUi = create<UiState>()((set) => ({
   pickingSlot: null,
   zukan: null,
   reaction: null,
+  overlays: 0,
+  pushOverlay: (d) => set((s) => ({ overlays: Math.max(0, s.overlays + d) })),
   tutorialStep: 0,
   setTutorialStep: (tutorialStep) => set({ tutorialStep }),
   setReaction: (reaction) => set({ reaction }),

@@ -73,6 +73,10 @@ export function SettingsGateButton() {
 
 function GateQuiz({ onClose }: { onClose: () => void }) {
   const openSettings = useUi((s) => s.openSettings);
+  useEffect(() => {
+    useUi.getState().pushOverlay(1);
+    return () => useUi.getState().pushOverlay(-1);
+  }, []);
   const answer = useMemo(() => {
     const a: number[] = [];
     while (a.length < 3) {
