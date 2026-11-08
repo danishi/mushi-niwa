@@ -4,6 +4,7 @@ import { actors } from '../../creatures/Actor';
 import { SPECIES } from '../../data/species';
 import { stageOf, wantOf } from '../../sim/simulate';
 import { useGame } from '../../state/game';
+import { useSettings } from '../../state/settings';
 import { useUi } from '../../state/ui';
 import { Ruby } from '../../text/ruby';
 import { speak } from '../../text/speech';
@@ -13,7 +14,10 @@ import { Icon } from '../../ui/Icon';
 import { SettingsGateButton } from '../../ui/ParentalGate';
 import { ToolBar } from '../../ui/ToolBar';
 import { MemoryCardModal } from '../zukan/MemoryCard';
+import { WantBubble } from './WantBubble';
 
+
+const TUTORIAL_TEXT = { 1: 'むしの ふきだしを みてね', 2: 'ひかっている どうぐを おしてね' } as const;
 
 export function CareHud() {
   const id = useUi((s) => s.selectedId);
@@ -27,6 +31,34 @@ export function CareHud() {
     if (!creature) return;
     audio.startBgm('day');
   }, [creature?.id]);
+
+  // はじめての お手本：① 吹き出しを見てね → ② 光っている道具を押してね
+  const tutorial = useUi((s) => s.tutorialStep);
+  const setTutorial = useUi((s) => s.setTutorialStep);
+  const hasTools = !!creature && stageOf(creature).tools.length > 0;
+  const hasWant = !!creature && wantOf(creature) !== null;
+  useEffect(() => {
+    if (useSettings.getState().tutorialDone || !hasTools) return;
+    let t2: number | undefined;
+    const t1 = window.setTimeout(() => {
+      if (hasWant) {
+        setTutorial(1);
+        speak(TUTORIAL_TEXT[1], true);
+        t2 = window.setTimeout(() => {
+          setTutorial(2);
+          speak(TUTORIAL_TEXT[2], true);
+        }, 3800);
+      } else {
+        setTutorial(2);
+        speak(TUTORIAL_TEXT[2], true);
+      }
+    }, 900);
+    return () => {
+      window.clearTimeout(t1);
+      if (t2) window.clearTimeout(t2);
+      setTutorial(0);
+    };
+  }, [creature?.id, hasTools]); // hasWant は 開始時だけ 見る
 
   if (memoryId) {
     return (
@@ -81,6 +113,7 @@ export function CareHud() {
 
   return (
     <div className="hud" data-testid="care-hud">
+      {!creature.finished ? <WantBubble creature={creature} /> : null}
       <div className="hud-row top">
         <IconButton icon="home" label="むしにわに もどる" onPress={() => go('garden', null)} testId="back" />
         <span className="hud-spacer" />
@@ -92,6 +125,11 @@ export function CareHud() {
         </div>
       </div>
       {cine ? <div className="banner">{cine.label}</div> : null}
+      {!cine && tutorial ? (
+        <div className="banner tip" data-testid="tutorial">
+          {TUTORIAL_TEXT[tutorial]}
+        </div>
+      ) : null}
       <div className="hud-spacer" />
       {creature.finished ? (
         <button className="pill-btn center-bottom" onClick={sendOff} data-testid="farewell" aria-label="もりに かえす">

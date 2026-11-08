@@ -17,7 +17,7 @@ import { useTier } from '../../three/QualityManager';
 import { QUALITY } from '../../three/quality';
 import { Meadow } from '../../three/Diorama';
 import { AutoTool } from './AutoTool';
-import { WantBubble } from './WantBubble';
+import { BubbleAnchor } from './WantBubble';
 import { SkyToggle } from '../../three/SkyToggle';
 import { toolAction } from '../../state/drag';
 
@@ -116,7 +116,7 @@ export function CareScene({ freeze = false }: { freeze?: boolean }) {
               }
         }
       />
-      {!freeze ? <WantBubble creature={creature} /> : null}
+      {!freeze ? <BubbleAnchor creature={creature} /> : null}
       {!freeze ? <SkyToggle position={[CASE.w / 2 - 0.4, CASE.h + 1.4, -0.6]} /> : null}
       <AutoTool creature={creature} sp={sp} top={top} />
     </group>

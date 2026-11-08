@@ -1024,3 +1024,106 @@ ruby rt {
     animation: none;
   }
 }
+
+.tool-btn {
+  position: relative;
+  flex-direction: column;
+}
+
+.tool-name {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.95);
+  pointer-events: none;
+}
+
+.toolbar {
+  padding-bottom: 26px;
+}
+
+.want-bubble.happy {
+  width: auto;
+  min-width: 76px;
+  padding: 0 14px;
+  gap: 6px;
+  display: flex;
+  align-items: center;
+  border-radius: 38px;
+  background: #ffe3ea;
+  box-shadow: 0 5px 0 var(--c-shadow), 0 0 0 4px rgba(255, 143, 171, 0.7);
+  animation: pop-in 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.want-bubble.happy svg {
+  width: 44px;
+  height: 44px;
+}
+
+.bubble-text {
+  font-size: 18px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.banner.tip {
+  background: #fffaf0;
+  box-shadow: 0 6px 0 var(--c-shadow);
+  top: auto;
+  bottom: 170px;
+}
+
+.tutorial-hand {
+  position: absolute;
+  font-size: 44px;
+  pointer-events: none;
+  animation: hand-tap 1s ease-in-out infinite;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.bubble-hand {
+  top: 80px;
+}
+
+@keyframes hand-tap {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-hand {
+    animation: none;
+  }
+}
+
+.bubble-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 4;
+  will-change: transform;
+}
+
+.bubble-anchor > * {
+  pointer-events: auto;
+}
+
+.bubble-anchor .tutorial-hand {
+  pointer-events: none;
+}

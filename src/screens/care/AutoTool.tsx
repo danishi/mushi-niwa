@@ -45,6 +45,22 @@ const DONE = 2.3;
 /** 霧吹き・スコップを効かせるタイミング（秒） */
 const PULSES = [0.75, 1.15, 1.55];
 
+/** 道具を つかう あいだ 画面に出す ことば */
+const ACTION_TEXT: Record<ToolId, string> = {
+  mist: 'きりふきで シュッ シュッ',
+  scoop: 'ふんを おそうじ',
+  food: 'ごはんを おくよ',
+  house: 'おうちを おくよ',
+};
+
+/** つかった あとの 虫の よろこび */
+export const REACTION_TEXT: Record<ToolId, string> = {
+  mist: 'しっとり！ きもちいい',
+  scoop: 'ぴかぴか！ きれいに なった',
+  food: 'わーい ごはんだ！',
+  house: 'おうち うれしいな',
+};
+
 const ease = (x: number) => 1 - Math.pow(1 - THREE.MathUtils.clamp(x, 0, 1), 3);
 
 /**
@@ -91,6 +107,10 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
       if (tool === 'mist') goal.set(cx + 0.35, top + 1.1, cz);
       else if (tool === 'scoop') goal.set(-CASE.w / 2 + 0.7, top + 0.15, 0.3);
       else goal.set(spot.x, top + 0.6, spot.z);
+      // カメラを 使う場所に 寄せて、何が起きるか よく見せる
+      const focus: [number, number, number] = tool === 'scoop' ? [0, top, 0.3] : tool === 'mist' ? [cx, top, cz] : [spot.x, top, spot.z];
+      useUi.getState().setCinematic({ kind: 'tool', target: focus, label: ACTION_TEXT[tool], until: performance.now() + 3000 });
+      speak(ACTION_TEXT[tool]);
     }
     toolAction.t += Math.min(rawDt, 0.25);
     const t = toolAction.t;
@@ -116,10 +136,11 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
           st.ok++;
           if (tool === 'mist') {
             audio.play('mist');
-            emitParticles('mist', [g.position.x + 0.25, g.position.y + 0.1, g.position.z], 14, new THREE.Vector3(0.3, -1.4, 0));
+            emitParticles('mist', [g.position.x + 0.25, g.position.y + 0.1, g.position.z], 24, new THREE.Vector3(0.3, -1.6, 0));
           } else {
             audio.play('scoop');
-            emitParticles('dust', [g.position.x, top + 0.05, g.position.z], 10);
+            emitParticles('dust', [g.position.x, top + 0.05, g.position.z], 14);
+            emitParticles('sparkle', [g.position.x, top + 0.2, g.position.z], 6);
           }
         }
       }
@@ -139,9 +160,16 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
     } else {
       if (st.ok > 0) {
         audio.play('sparkle');
-        emitParticles('heart', [spot.x, top + 0.9, spot.z], 5);
-        speak('ありがとう');
+        const h = actors.get(creature.id);
+        if (h) {
+          h.anim.bounce = 1;
+          if (h.group) emitParticles('heart', [h.group.position.x, h.group.position.y + 0.8, h.group.position.z], 8);
+        }
+        useUi.getState().setReaction({ text: REACTION_TEXT[tool], until: performance.now() + 3000 });
+        speak(REACTION_TEXT[tool], true);
       }
+      const cine = useUi.getState().cinematic;
+      if (cine?.kind === 'tool') useUi.getState().setCinematic(null);
       toolAction.tool = null;
       toolAction.t = 0;
       st.tool = null;

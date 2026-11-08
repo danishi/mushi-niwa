@@ -8,6 +8,7 @@ import type { Creature, SpeciesDef } from '../sim/types';
 import { env } from '../state/env';
 import { simEvents } from '../state/events';
 import { useUi } from '../state/ui';
+import { emitParticles } from '../three/Particles';
 import { blobShadowTexture } from '../three/softShadow';
 import { newAnim, type CreatureAnim } from './anim';
 import { modelFor } from './registry';
@@ -58,6 +59,7 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
     wait: 1,
     mode: 'idle' as 'idle' | 'walk' | 'eat',
     chirpTimer: 0,
+    munch: 0,
     leave: 0,
     initialized: '',
   });
@@ -185,6 +187,15 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
       a.walk = THREE.MathUtils.damp(a.walk, moving && !flyer ? 1 : 0, 6, dt);
       a.flap = THREE.MathUtils.damp(a.flap, flyer && (moving || s.pos.y > top + 0.05) ? 1 : 0, 6, dt);
       a.eat = THREE.MathUtils.damp(a.eat, s.mode === 'eat' ? 1 : 0, 4, dt);
+      // 食べているあいだは もぐもぐ（音と かけら）
+      if (s.mode === 'eat' && sound) {
+        s.munch -= dt;
+        if (s.munch <= 0) {
+          s.munch = 0.9;
+          audio.play('munch');
+          emitParticles('dust', [s.pos.x + Math.sin(s.heading) * 0.3, s.pos.y + 0.15, s.pos.z + Math.cos(s.heading) * 0.3], 4);
+        }
+      }
       if (s.mode === 'eat' && s.wait <= 0) s.mode = 'idle';
       if (s.mode === 'eat') s.wait -= dt;
     }

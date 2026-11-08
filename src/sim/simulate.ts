@@ -72,7 +72,8 @@ export function adopt(state: GameState, species: SpeciesId, slot: number, now: n
     slot,
     stage: 0,
     progress: 0,
-    needs: fullNeeds(),
+    // 迎えたばかりの虫は 少し おなかが すいている（最初の お世話で 遊びかたが わかるように）
+    needs: { ...fullNeeds(), hunger: (SPECIES[species].stages[0]!.decay.hunger ?? 0) > 0 ? 0.4 : 1 },
     sex: rand() < 0.5 ? 'male' : 'female',
     food: 0,
     house: false,

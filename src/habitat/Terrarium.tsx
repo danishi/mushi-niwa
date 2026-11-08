@@ -43,7 +43,7 @@ export function soilTop(sp: SpeciesDef): number {
 /** 壁に付く水滴の数で しめりけを見せる */
 function Droplets({ moisture }: { moisture: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
-  const material = useMemo(() => mat('#ffffff', { roughness: 0.02, clearcoat: 1, opacity: 0.45, envMapIntensity: 2.5 }), []);
+  const material = useMemo(() => mat('#dceef6', { roughness: 0.0, clearcoat: 1, opacity: 0.18, envMapIntensity: 3 }), []);
   const N = 60;
   useLayoutEffect(() => {
     const m = ref.current;
@@ -53,7 +53,7 @@ function Droplets({ moisture }: { moisture: number }) {
     for (let i = 0; i < N; i++) {
       const x = (r() - 0.5) * (CASE.w - 0.3);
       const y = 0.3 + r() * (CASE.h - 0.5);
-      const s = 0.012 + r() * r() * 0.04;
+      const s = 0.008 + r() * r() * 0.028;
       mtx.compose(new THREE.Vector3(x, y, CASE.d / 2 + 0.006), new THREE.Quaternion(), new THREE.Vector3(s, s * 1.25, s * 0.35));
       m.setMatrixAt(i, mtx);
     }
@@ -114,7 +114,7 @@ export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
   const moisture = creature.needs.moisture;
   const usesMoisture = sp.stages[creature.stage]?.decay.moisture !== undefined;
   const underground = !!sp.stages[creature.stage]?.underground;
-  const wet = useMemo(() => new THREE.Color('#8f8f8f'), []);
+  const wet = useMemo(() => new THREE.Color('#6a6a6a'), []);
   const dry = useMemo(() => new THREE.Color('#ffffff'), []);
   useFrame(() => {
     soilMat.color.copy(wet).lerp(dry, usesMoisture ? 1 - moisture : 0.35);

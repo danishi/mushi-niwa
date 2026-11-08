@@ -36,6 +36,24 @@ test('a beetle larva asks for moisture and the mist tool works with one tap', as
       { timeout: 10000 },
     )
     .toBeGreaterThan(0.4);
+  // 使い終わると 吹き出しが よろこびに かわる
+  await expect(page.getByTestId('reaction-bubble')).toContainText('しっとり');
+});
+
+test('first visit shows a guided tutorial that ends after using a tool', async ({ page }) => {
+  await start(page);
+  test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
+  await page.evaluate(() => {
+    const m = (window as unknown as { __mushi: Hooks & { settings: { getState: () => { set: (p: unknown) => void } } } }).__mushi;
+    m.settings.getState().set({ tutorialDone: false });
+    m.game.getState().adopt('kabutomushi', 2);
+    const c = m.game.getState().creatures[0]!;
+    m.ui.getState().go('care', c.id);
+  });
+  await expect(page.getByTestId('tutorial')).toContainText('ふきだし');
+  await expect(page.getByTestId('tutorial')).toContainText('どうぐ', { timeout: 8000 });
+  await page.getByTestId('tool-food').tap({ force: true });
+  await expect(page.getByTestId('tutorial')).toHaveCount(0);
 });
 
 test('saves progress on the device and restores it after reload', async ({ page }) => {

@@ -3,6 +3,7 @@ import { SPECIES } from '../data/species';
 import { canUseTool, stageOf } from '../sim/simulate';
 import type { Creature, FoodId, ToolId } from '../sim/types';
 import { toolAction } from '../state/drag';
+import { useSettings } from '../state/settings';
 import { useUi } from '../state/ui';
 import { speak } from '../text/speech';
 import { Icon, type IconName } from './Icon';
@@ -20,10 +21,10 @@ const FOOD_ICON: Record<FoodId, IconName> = {
 };
 
 const FOOD_LABEL: Record<FoodId, string> = {
-  mat: 'あたらしい マット',
-  jelly: 'こんちゅうゼリー',
+  mat: 'マット',
+  jelly: 'ゼリー',
   citrusLeaf: 'ミカンの は',
-  nectar: 'はなの みつ',
+  nectar: 'はな',
   eggplant: 'ナス',
   aphid: 'アブラムシ',
   mulberry: 'クワの は',
@@ -39,7 +40,7 @@ export function toolInfo(c: Creature, tool: ToolId): { icon: IconName; label: st
     case 'scoop':
       return { icon: 'scoop', label: 'おそうじ' };
     case 'house':
-      return { icon: 'house', label: SPECIES[c.species].id === 'kabutomushi' ? 'とまりぎ' : 'かくれが' };
+      return { icon: 'house', label: SPECIES[c.species].id === 'kabutomushi' ? 'とまりぎ' : 'おうち' };
     case 'food':
       return { icon: FOOD_ICON[st.food], label: FOOD_LABEL[st.food] };
   }
@@ -49,6 +50,7 @@ export function toolInfo(c: Creature, tool: ToolId): { icon: IconName; label: st
 export function ToolBar({ creature, want }: { creature: Creature; want?: string | null }) {
   const tools = (['food', 'mist', 'scoop', 'house'] as ToolId[]).filter((t) => canUseTool(creature, t));
   const setDragging = useUi((s) => s.setDragging);
+  const tutorial = useUi((s) => s.tutorialStep);
   if (tools.length === 0) return <div className="toolbar empty" />;
   return (
     <div className="toolbar" data-testid="toolbar">
@@ -65,11 +67,18 @@ export function ToolBar({ creature, want }: { creature: Creature; want?: string 
               toolAction.tool = t;
               toolAction.t = 0;
               setDragging(true);
+              // お手本は 1 回 道具を 使えたら おしまい
+              if (useUi.getState().tutorialStep) {
+                useUi.getState().setTutorialStep(0);
+                useSettings.getState().set({ tutorialDone: true });
+              }
               audio.play('pickup');
               speak(info.label);
             }}
           >
             <Icon name={info.icon} />
+            <span className="tool-name">{info.label}</span>
+            {tutorial === 2 && (want ? want === t : t === tools[0]) ? <span className="tutorial-hand" aria-hidden>👆</span> : null}
           </button>
         );
       })}

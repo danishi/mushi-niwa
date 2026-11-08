@@ -11,6 +11,8 @@ export interface SettingsState {
   realtime: boolean; // リアルタイムモード
   quality: QualitySetting;
   showFps: boolean;
+  /** はじめての お手本を 見おわった */
+  tutorialDone: boolean;
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void;
 }
 
@@ -23,6 +25,7 @@ export const useSettings = create<SettingsState>()(
       realtime: false,
       quality: 'auto',
       showFps: false,
+      tutorialDone: false,
       set: (patch) => set(patch),
     }),
     {

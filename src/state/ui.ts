@@ -4,7 +4,7 @@ import type { SpeciesId } from '../sim/types';
 export type Screen = 'boot' | 'title' | 'garden' | 'care' | 'observe' | 'zukan' | 'battle';
 
 export interface Cinematic {
-  kind: 'grow' | 'farewell';
+  kind: 'grow' | 'farewell' | 'tool';
   target: [number, number, number];
   label: string;
   until: number;
@@ -22,6 +22,12 @@ export interface UiState {
   observedPart: string | null;
   /** 空き棚をタップしたときの種えらび */
   pickingSlot: number | null;
+  /** お世話の あとの 虫の よろこび（吹き出しに 出す） */
+  reaction: { text: string; until: number } | null;
+  setReaction: (r: { text: string; until: number } | null) => void;
+  /** はじめての お手本の 段階（0: なし、1: 吹き出しを見て、2: 道具を押して） */
+  tutorialStep: 0 | 1 | 2;
+  setTutorialStep: (s: 0 | 1 | 2) => void;
   /** ずかんで見ている種と段階 */
   zukan: { species: SpeciesId; stage: number } | null;
   setZukan: (z: { species: SpeciesId; stage: number } | null) => void;
@@ -42,6 +48,10 @@ export const useUi = create<UiState>()((set) => ({
   observedPart: null,
   pickingSlot: null,
   zukan: null,
+  reaction: null,
+  tutorialStep: 0,
+  setTutorialStep: (tutorialStep) => set({ tutorialStep }),
+  setReaction: (reaction) => set({ reaction }),
   setZukan: (zukan) => set({ zukan }),
   go: (screen, selectedId) =>
     set((s) => ({
