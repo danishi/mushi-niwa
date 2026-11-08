@@ -1,0 +1,65 @@
+# むしにわ（mushi-niwa）
+
+子ども（4〜10歳）向けの、いろいろな昆虫をお世話する 3D ブラウザゲーム。スマホ・iPad での体験を最優先にする。
+公開先: https://danishi.github.io/mushi-niwa/
+
+## コマンド
+
+| コマンド | 内容 |
+|---|---|
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` を付けると FPS メーター表示、`?debug` で時間早送りのデバッグパネル） |
+| `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
+| `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
+| `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要 |
+| `npm run icons` | PWA アイコン PNG を `scripts/gen-icons.mjs` から再生成 |
+
+完了の条件（各フェーズ共通）: `npm run build`・`npm test`・`npm run e2e` がすべて通ること。
+
+## 技術スタック
+
+Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 / @react-three/postprocessing 3 / zustand 5 / idb-keyval / vite-plugin-pwa 2 / Vitest 5 / Playwright 1.65。
+デプロイは GitHub Actions（`.github/workflows/ci.yml`）→ GitHub Pages。main への push でテスト後に自動デプロイ。
+
+## 設計方針
+
+- **Canvas は 1 つだけ常駐**させ、画面遷移では中身（シーン）と DOM の HUD だけを入れ替える（iOS で WebGL コンテキストを作り直さない）。画面→シーン/カメラの対応は `src/app/scenes.ts`、HUD は `src/app/App.tsx`。
+- **ゲームロジックは `src/sim/` の純 TS**。React / three を import しない。固定ステップ（1 秒）で進め、描画 FPS とは独立。Vitest で検証する。
+- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md` の出典付き調査に基づく。
+- **罰を与えない**: 虫は死なない。お世話不足は「げんきがない」（成長が一時停止）になるだけ。寿命を終えた成虫は送り出し演出 → ずかんに思い出カード。
+- **時間**: 通常は遊んでいる間だけ進む。設定の「リアルタイムモード」でのみ離席中も進む（追いつき計算は上限つき）。
+- **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
+- **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。`PerformanceMonitor` で FPS が落ちたら下げる。DPR 上限 2。影・後処理・輪郭線は high/mid のみ。
+- **ドローコール削減**: マテリアルは `toon()`、ジオメトリは `GEO.*` / `sharedGeo()` でキャッシュ共有。同じ小物が多いものは `InstancedMesh`（`Scatter`）。
+- **3D アセットは外部に頼らない**: 虫・ジオラマはプリミティブとプロシージャル生成のみ。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。
+
+## 規約
+
+- 子ども向けの文言はひらがな中心。漢字は `{漢字|かんじ}` 記法で書き、`<Ruby text>` で表示、`speak()` で読み上げ（`src/text/`）。大人向けの設定画面だけは通常表記。
+- 操作はアイコン（`src/ui/Icon.tsx`）・音・動きで伝える。ボタンは `IconButton`（64px、最低 56px）。ホバー前提の UI は作らない。
+- E2E 用に主要要素へ `data-testid` を付ける。
+- 設定画面はペアレンタルゲート（歯車 2.5 秒長押し → 漢数字の順番タップ）の先に置く。
+- 広告・課金・外部トラッキング・個人情報の取得はしない。保存は端末内（IndexedDB → localStorage → メモリの順に退避）。
+- コミットメッセージは英語・命令形・1 行目 72 文字以内。フェーズごとに動く状態でコミットする。
+
+## ディレクトリ
+
+```
+src/app/          App・World(Canvas)・画面レジストリ・PWA 登録
+src/screens/      title / garden / care / observe / zukan / settings（各画面のシーンと HUD）
+src/three/        共有 3D（toon マテリアル、カメラリグ、ライト、画質、ジオラマ、パーティクル）
+src/creatures/    虫のプロシージャルモデルとアニメーション
+src/sim/          純 TS のゲームロジック
+src/data/species/ 種ごとの生態データ
+src/state/        zustand ストア（game / settings / ui）と env
+src/save/         端末内ストレージ
+src/audio/        効果音・BGM の合成
+src/ui/           HUD 部品（Icon、IconButton、ParentalGate、FpsMeter）
+src/text/         ルビ・読み上げ
+tests/e2e/        Playwright スモークテスト
+docs/             調査資料
+```
+
+## ローカル環境メモ（Claude Code のサンドボックス）
+
+- npm キャッシュに書けないときは `npm_config_cache=$TMPDIR/npm-cache` を付ける。
+- Playwright のブラウザは `PLAYWRIGHT_BROWSERS_PATH=/tmp/claude-501/ms-playwright`。`vite preview` のポート待ち受けはサンドボックス外で実行する必要がある。
