@@ -33,10 +33,14 @@ test('adopts a beetle larva and cares for it with the mist tool', async ({ page 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(vp.width / 2, vp.height * 0.55, { steps: 10 });
-  await page.waitForTimeout(2000);
+  // ケースの上で きりふきを 持ったまま、しめりけが 上がるのを待つ（CI のソフトウェア描画でも通るよう余裕をもたせる）
+  await expect
+    .poll(
+      () => page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.game.getState().creatures[0]!.needs.moisture),
+      { timeout: 8000 },
+    )
+    .toBeGreaterThan(0.4);
   await page.mouse.up();
-  const moisture = await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.game.getState().creatures[0]!.needs.moisture);
-  expect(moisture).toBeGreaterThan(0.4);
 });
 
 test('saves progress on the device and restores it after reload', async ({ page }) => {

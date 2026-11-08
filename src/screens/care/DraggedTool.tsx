@@ -103,7 +103,8 @@ export function DraggedTool({ creature, sp, top }: { creature: Creature; sp: Spe
     const game = useGame.getState();
 
     if (drag.active && over && (tool === 'mist' || tool === 'scoop')) {
-      u.timer -= dt;
+      // 噴射の間隔は実時間で数える（低 FPS の端末でも同じペースで効く）
+      u.timer -= Math.min(rawDt, 0.25);
       if (u.timer <= 0) {
         u.timer = 0.3;
         if (game.useTool(creature.id, tool, 0.35)) {
