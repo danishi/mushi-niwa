@@ -61,6 +61,8 @@ button {
 ruby rt {
   font-size: 0.5em;
   letter-spacing: 0;
+  /* よみが 漢字より 長いとき、漢字の あいだが 間延びしないよう 左右に はみ出させる */
+  margin: 0 -0.75em;
 }
 
 .app {
@@ -739,6 +741,18 @@ ruby rt {
 .sheet.detail {
   font-size: 17px;
   line-height: 1.8;
+}
+
+/* 横長画面の ずかん詳細: 説明は 右側に 縦長で 出し、標本は 左半分に 見せる（カメラの shiftX と 対） */
+@media (min-aspect-ratio: 6/5) {
+  .sheet.detail {
+    position: absolute;
+    top: calc(var(--safe-t) + 12px);
+    right: calc(var(--safe-r) + 12px);
+    bottom: calc(var(--safe-b) + 12px);
+    width: min(46%, 560px);
+    max-height: none;
+  }
 }
 
 .sheet h3 {
@@ -1497,6 +1511,95 @@ ruby rt {
 
 .quiz-sheet {
   max-height: 60%;
+}
+
+/* 縦長では 問題文と 選択肢を ふつうに 上下へ。横長では 右の 列に まとめ、虫は 左半分に（カメラの shiftX と 対） */
+.quiz-panel {
+  display: contents;
+}
+
+@media (min-aspect-ratio: 6/5) {
+  .quiz-panel {
+    position: absolute;
+    top: calc(var(--safe-t) + 84px);
+    right: calc(var(--safe-r) + 12px);
+    bottom: calc(var(--safe-b) + 12px);
+    width: min(48%, 600px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .quiz-panel > * {
+    pointer-events: auto;
+  }
+
+  .quiz-panel .quiz-prompt {
+    margin-top: 0;
+  }
+
+  .quiz-panel .quiz-sheet {
+    max-height: none;
+    min-height: 0;
+  }
+}
+
+/* スマホ 横向き: 高さが ないので 問題文・選択肢・説明を ひとまわり 小さく */
+@media (min-aspect-ratio: 6/5) and (max-height: 520px) {
+  .quiz-panel {
+    gap: 6px;
+  }
+
+  .quiz-panel .quiz-prompt {
+    padding: 6px 14px;
+    line-height: 1.6;
+  }
+
+  .quiz-panel .quiz-prompt strong {
+    font-size: 17px;
+  }
+
+  .quiz-panel .quiz-sheet {
+    padding: 8px;
+  }
+
+  .quiz-panel .quiz-choices {
+    gap: 6px;
+  }
+
+  .quiz-panel .quiz-choice {
+    min-height: 0;
+    padding: 4px;
+    font-size: 12px;
+  }
+
+  .quiz-panel .quiz-choice svg {
+    width: 44px;
+    height: 44px;
+  }
+
+  .quiz-panel .quiz-number {
+    font-size: 36px;
+    line-height: 44px;
+  }
+
+  .quiz-panel .quiz-explain {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    flex-wrap: nowrap;
+  }
+
+  .quiz-panel .quiz-explain p {
+    flex: 1 1 0;
+  }
+
+  .quiz-panel .quiz-explain .pill-btn {
+    flex: none;
+    font-size: 18px;
+    padding: 0 16px;
+  }
 }
 
 .quiz-choices {

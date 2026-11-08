@@ -221,7 +221,7 @@ export function ZukanHud() {
           <span className="hud-spacer" />
         </div>
         <div className="hud-spacer" />
-        <div className="sheet">
+        <div className="sheet tall">
           <Tabs />
           <div className="zukan-grid">
             {SPECIES_ORDER.map((id) => {
@@ -269,7 +269,8 @@ export function ZukanHud() {
         <span className="hud-spacer" />
       </div>
       <div className="hud-spacer" />
-      <div className="sheet detail">
+      {/* 一覧の シートと 同じ DOM が 使い回されると スクロール位置が 残るので、虫ごとに 作りなおす */}
+      <div className="sheet detail" key={`detail-${z.species}`} data-testid="zukan-sheet">
         <div className="stage-tabs">
           {sp.stages.map((s, i) => (
             <button

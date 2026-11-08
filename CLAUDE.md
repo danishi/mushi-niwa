@@ -38,6 +38,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
 - **見た目は図鑑のような写実**（ユーザー判断で トゥーン調から変更）: 物理ベース材質 `mat()`／`SURF`（`src/three/materials.ts`）、環境マップ（RoomEnvironment を PMREM で生成）、AgX トーンマッピング、やわらかい影。テクスチャは `src/three/textures.ts` で Canvas から生成（外部画像なし）。虫の目はデフォルメせず複眼（`CompoundEye`）。脚は腿節・脛節・ふ節・つめ（`Leg` + `LegSpec`）、触角は種類別（`AntennaKind`）。
 - **3〜5 歳でも遊べる操作**: 道具はタップだけ（`toolAction` → `AutoTool` が 3D で飛んでいって自動で使う。ドラッグなし）。お世話パラメータの数値・ゲージは出さず、虫の頭上の吹き出し（`WantBubble`、`wantOf()`）と、対応する道具ボタンの点滅で「してほしいこと」を伝える。画面のボタンは最小限：昼夜は空の太陽／月（`SkyToggle`）、かんさつは虫をタップ、ずかん・むしずもうは棚の前の 3D の本・切り株から入る。棚の前の入口（本・クイズの立てふだ・切り株）は 下の段のケースや「あたらしい むし」ボタンと重ならないよう、画面の縦横比で置き場所を変える（`portalLayout`）。当たり判定も見た目の大きさに合わせる。
+- **横長画面の ずかん・クイズ**: 説明・選択肢は 右の 列に 出し、標本は 左半分に 見せる。カメラは `CameraShot.wide`（アスペクト比 1.2 超で 上書き）と `shiftX`（`setViewOffset` で 見た目だけ ずらすので 回転の 中心は 標本のまま）。CSS の `@media (min-aspect-ratio: 6/5)` と 対に なっている。
 - **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。`PerformanceMonitor` で FPS が落ちたら下げる。DPR 上限 2。影・後処理は high のみ、草の本数も画質で変える。
 - **遠目の表示は軽量版**: 棚のミニケースは `LiteContext` で脚の先を省略。脚・触角・ケースの角はそれぞれ 1 ジオメトリに結合。影は主要パーツ（`castShadow` 指定）だけが落とす。
 - **ドローコール削減**: マテリアルは `mat()`、ジオメトリは `GEO.*` / `sharedGeo()` でキャッシュ共有。同じ小物が多いものは `InstancedMesh`（`Scatter`）。

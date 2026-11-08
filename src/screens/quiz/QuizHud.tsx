@@ -92,7 +92,7 @@ export function QuizHud() {
           </div>
         </>
       ) : q ? (
-        <>
+        <div className="quiz-panel">
           <button className="bubble quiz-prompt" data-testid="quiz-prompt" onClick={() => speak(q.prompt, true)}>
             <strong>
               <Ruby text={q.prompt} />
@@ -153,7 +153,7 @@ export function QuizHud() {
               </div>
             ) : null}
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );

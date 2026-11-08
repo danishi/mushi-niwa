@@ -12,6 +12,10 @@ export interface CameraShot {
   fitWidth?: number;
   /** この高さ（ワールド単位）が 縦に 収まるよう 下がる（横長画面で 手前の 小物が 切れないように） */
   fitHeight?: number;
+  /** 被写体を 画面の 横に ずらす 割合（+ で 左へ）。横に 説明パネルを 出す 画面で使う。回転の 中心は 変わらない */
+  shiftX?: number;
+  /** 横長画面（アスペクト比 1.2 より 横長）での 上書き */
+  wide?: Partial<Omit<CameraShot, 'wide'>>;
   /** ユーザーの回転・ピンチを許すか（虫ケースの中を覗く程度に制限） */
   orbit?: {
     minDistance: number;
@@ -26,9 +30,12 @@ export interface CameraShot {
  * 画面ごとのカメラ位置へなめらかに移動する。
  * 移動中は操作を止め、到着したら（許可されていれば）OrbitControls に任せる。
  */
-export function CameraRig({ shot, locked = false }: { shot: CameraShot; locked?: boolean }) {
+export function CameraRig({ shot: base, locked = false }: { shot: CameraShot; locked?: boolean }) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
-  const aspect = useThree((s) => s.size.width / Math.max(1, s.size.height));
+  const size = useThree((s) => s.size);
+  const aspect = size.width / Math.max(1, size.height);
+  const shot = resolveShot(base, aspect);
+  const shift = useRef(0);
   const controls = useRef<OrbitControlsImpl>(null);
   const goalPos = useRef(new THREE.Vector3(...shot.position));
   const goalTarget = useRef(new THREE.Vector3(...shot.target));
@@ -46,6 +53,17 @@ export function CameraRig({ shot, locked = false }: { shot: CameraShot; locked?:
 
   useFrame((_, dt) => {
     const d = Math.min(dt, 0.1);
+    // 被写体の 横ずらし（setViewOffset）。回転の 中心は そのままで 見た目だけ ずらす
+    const goalShift = shot.shiftX ?? 0;
+    const view = camera.view;
+    const sizeChanged = !!view && (view.fullWidth !== size.width || view.fullHeight !== size.height);
+    if (Math.abs(shift.current - goalShift) > 0.0005 || sizeChanged || (!view?.enabled && goalShift !== 0)) {
+      shift.current = THREE.MathUtils.damp(shift.current, goalShift, 3.5, d);
+      if (Math.abs(shift.current - goalShift) <= 0.0005) shift.current = goalShift;
+      if (shift.current === 0) camera.clearViewOffset();
+      else camera.setViewOffset(size.width, size.height, shift.current * size.width, 0, size.width, size.height);
+      camera.updateProjectionMatrix();
+    }
     const fov = shot.fov ?? 40;
     if (Math.abs(camera.fov - fov) > 0.01) {
       camera.fov = THREE.MathUtils.damp(camera.fov, fov, 4, d);
@@ -87,6 +105,11 @@ export function CameraRig({ shot, locked = false }: { shot: CameraShot; locked?:
       onStart={() => (moving.current = false)}
     />
   );
+}
+
+/** 横長画面用の 上書き（wide）を 当てた ショット */
+export function resolveShot(shot: CameraShot, aspect: number): CameraShot {
+  return aspect > 1.2 && shot.wide ? { ...shot, ...shot.wide } : shot;
 }
 
 /** 基準のアスペクト比（横長 4:3）より縦長なら距離を伸ばす */
