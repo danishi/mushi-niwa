@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { audio } from '../../audio/audio';
 import { useSettings, type QualitySetting } from '../../state/settings';
+import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
 import { speak } from '../../text/speech';
 import { Icon } from '../../ui/Icon';
@@ -73,6 +74,25 @@ export function SettingsPanel({ extra }: { extra?: ReactNode }) {
           <span>FPS を表示</span>
           <input type="checkbox" checked={s.showFps} onChange={(e) => s.set({ showFps: e.target.checked })} />
         </label>
+        <div className="row">
+          <span>
+            データをすべて消す
+            <small>育てている虫・ずかん・おもいでカードが消えます（元に戻せません）</small>
+          </span>
+          <button
+            className="danger-btn"
+            data-testid="reset-data"
+            onClick={() => {
+              if (window.confirm('この端末の むしにわ のデータをすべて消します。元に戻せません。よろしいですか？')) {
+                useGame.getState().resetAll();
+                close(false);
+                useUi.getState().go('title', null);
+              }
+            }}
+          >
+            消す
+          </button>
+        </div>
         {extra}
         <p className="note">
           広告・課金・外部への送信はありません。データはこの端末の中だけに保存されます。

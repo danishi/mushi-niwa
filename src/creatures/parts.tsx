@@ -1,6 +1,6 @@
 import { Outlines } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { GEO, OUTLINE_COLOR, toon } from '../three/toon';
 import type { CreatureAnim } from './anim';
@@ -8,6 +8,9 @@ import { cachedTube } from './geom';
 
 type V3 = [number, number, number];
 type AnimRef = { current: CreatureAnim };
+
+/** 棚に並べた小さな虫など、遠目の表示では 脚や目を簡略化してドローコールを減らす */
+export const LiteContext = createContext(false);
 
 /** 輪郭線つきのメッシュ。part を付けるとかんさつモードでタップできる */
 export function Part({
@@ -21,7 +24,7 @@ export function Part({
   part,
   emissive,
   children,
-  castShadow = true,
+  castShadow = false,
   meshRef,
 }: {
   geometry: THREE.BufferGeometry;
@@ -46,7 +49,7 @@ export function Part({
       position={position}
       rotation={rotation}
       scale={scale}
-      castShadow={castShadow}
+      castShadow={castShadow || (outline && outlines)}
       userData={part ? { part } : undefined}
     >
       {outline && outlines ? <Outlines thickness={0.045} color={OUTLINE_COLOR} /> : null}
@@ -62,6 +65,7 @@ export function Eye({ position, size = 0.1, anim, pupil = '#2b2118' }: { positio
   const black = useMemo(() => toon(pupil), [pupil]);
   const shine = useMemo(() => toon('#ffffff', { emissive: '#ffffff', emissiveIntensity: 1.5 }), []);
   const blinkSeed = useMemo(() => Math.random() * 5, []);
+  const lite = useContext(LiteContext);
   useFrame(() => {
     const a = anim.current;
     const blink = ((a.t + blinkSeed) % 4.2) < 0.12 ? 0.15 : 1;
@@ -73,7 +77,7 @@ export function Eye({ position, size = 0.1, anim, pupil = '#2b2118' }: { positio
       <group ref={lid}>
         <mesh geometry={GEO.sphere()} material={white} scale={size} />
         <mesh geometry={GEO.sphere()} material={black} scale={size * 0.62} position={[0, 0, size * 0.48]} />
-        <mesh geometry={GEO.sphereLo()} material={shine} scale={size * 0.22} position={[size * 0.25, size * 0.3, size * 0.95]} />
+        {lite ? null : <mesh geometry={GEO.sphereLo()} material={shine} scale={size * 0.22} position={[size * 0.25, size * 0.3, size * 0.95]} />}
       </group>
     </group>
   );
@@ -112,6 +116,7 @@ export function Leg({
   // 3 脚歩行：左前・右中・左後 が同じ位相
   const phase = ((pair % 2 === 0 ? 0 : Math.PI) + (side > 0 ? Math.PI : 0)) % (Math.PI * 2);
   const baseYaw = (pair - 1) * -0.55 * side;
+  const lite = useContext(LiteContext);
   useFrame(() => {
     const a = anim.current;
     const g = a.gait + phase;
@@ -127,14 +132,16 @@ export function Leg({
   const half = length / 2;
   return (
     <group ref={hip} position={position}>
-      <mesh geometry={GEO.cylinder()} material={mat} position={[side * half * 0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[thick, half, thick]} userData={part ? { part } : undefined} castShadow>
+      <mesh geometry={GEO.cylinder()} material={mat} position={[side * half * 0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[thick, half, thick]} userData={part ? { part } : undefined}>
         {outlines ? <Outlines thickness={0.6} color={OUTLINE_COLOR} /> : null}
       </mesh>
+      {lite ? null : (
       <group ref={knee} position={[side * half, 0, 0]}>
-        <mesh geometry={GEO.cylinder()} material={mat} position={[side * half * 0.55, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[thick * 0.8, half * 1.1, thick * 0.8]} userData={part ? { part } : undefined} castShadow>
+        <mesh geometry={GEO.cylinder()} material={mat} position={[side * half * 0.55, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[thick * 0.8, half * 1.1, thick * 0.8]} userData={part ? { part } : undefined}>
           {outlines ? <Outlines thickness={0.6} color={OUTLINE_COLOR} /> : null}
         </mesh>
       </group>
+      )}
     </group>
   );
 }

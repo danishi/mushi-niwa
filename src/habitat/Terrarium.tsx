@@ -3,7 +3,8 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Creature, SpeciesDef, SubstrateId } from '../sim/types';
 import { leafGeometry, rng, Scatter } from '../three/Diorama';
-import { GEO, toon } from '../three/toon';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GEO, sharedGeo, toon } from '../three/toon';
 import { Decor } from './Decor';
 
 import { CASE } from './case';
@@ -111,13 +112,6 @@ export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
   });
 
   const { w, d, h } = CASE;
-  const edges: Array<{ p: [number, number, number]; s: [number, number, number] }> = [];
-  for (const x of [-w / 2, w / 2])
-    for (const z of [-d / 2, d / 2]) edges.push({ p: [x, h / 2, z], s: [0.06, h, 0.06] });
-  for (const y of [0, h])
-    for (const z of [-d / 2, d / 2]) edges.push({ p: [0, y, z], s: [w + 0.06, 0.06, 0.06] });
-  for (const y of [0, h])
-    for (const x of [-w / 2, w / 2]) edges.push({ p: [x, y, 0], s: [0.06, 0.06, d + 0.06] });
 
   return (
     <group>
@@ -156,10 +150,8 @@ export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
       {/* ガラス（背面・左右・前面） */}
       <mesh material={glass} geometry={GEO.box()} position={[0, h / 2, 0]} scale={[w, h, d]} renderOrder={5} />
       {/* フレームとふた */}
-      {edges.map((e, i) => (
-        <mesh key={i} material={frame} geometry={GEO.box()} position={e.p} scale={e.s} />
-      ))}
-      <mesh material={frame} geometry={GEO.box()} position={[0, h + 0.05, 0]} scale={[w + 0.14, 0.08, d + 0.14]} />
+      {/* 枠 12 本とふたは 1 つのジオメトリにまとめて 1 ドローコールにする */}
+      <mesh material={frame} geometry={frameGeometry()} />
       <mesh material={toon('#5d9b2f')} geometry={GEO.cylinder()} position={[0, h + 0.14, 0]} scale={[0.35, 0.1, 0.18]} />
     </group>
   );
@@ -167,4 +159,22 @@ export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
 
 export function houseFor(id: SpeciesDef['id']) {
   return ({ kabutomushi: 'log', namiageha: 'branch', suzumushi: 'bark', nanahoshi: 'leaf', kaiko: 'mulberryTwig', miidera: 'stone' } as const)[id];
+}
+
+function frameGeometry(): THREE.BufferGeometry {
+  return sharedGeo('caseFrame', () => {
+    const { w, d, h } = CASE;
+    const parts: THREE.BufferGeometry[] = [];
+    const add = (p: [number, number, number], sc: [number, number, number]) => {
+      const g = new THREE.BoxGeometry(1, 1, 1);
+      g.scale(...sc);
+      g.translate(...p);
+      parts.push(g);
+    };
+    for (const x of [-w / 2, w / 2]) for (const z of [-d / 2, d / 2]) add([x, h / 2, z], [0.06, h, 0.06]);
+    for (const y of [0, h]) for (const z of [-d / 2, d / 2]) add([0, y, z], [w + 0.06, 0.06, 0.06]);
+    for (const y of [0, h]) for (const x of [-w / 2, w / 2]) add([x, y, 0], [0.06, 0.06, d + 0.06]);
+    add([0, h + 0.05, 0], [w + 0.14, 0.08, d + 0.14]);
+    return mergeGeometries(parts)!;
+  });
 }

@@ -8,14 +8,14 @@ import { speak } from '../text/speech';
 import { Icon, type IconName } from './Icon';
 
 const FOOD_ICON: Record<FoodId, IconName> = {
-  mat: 'scoop',
+  mat: 'bag',
   jelly: 'food',
   citrusLeaf: 'leaf',
-  nectar: 'sun',
-  eggplant: 'food',
-  aphid: 'leaf',
+  nectar: 'flower',
+  eggplant: 'eggplant',
+  aphid: 'aphid',
   mulberry: 'leaf',
-  smallInsect: 'food',
+  smallInsect: 'bug',
   none: 'food',
 };
 

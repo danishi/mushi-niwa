@@ -32,6 +32,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **時間**: 通常は遊んでいる間だけ進む。設定の「リアルタイムモード」でのみ離席中も進む（追いつき計算は上限つき）。
 - **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
 - **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。`PerformanceMonitor` で FPS が落ちたら下げる。DPR 上限 2。影・後処理・輪郭線は high/mid のみ。
+- **遠目の表示は軽量版**: 棚のミニケースは `LiteContext` で脚・目を簡略化。ケース枠は 1 ジオメトリに結合。影は主要パーツ（輪郭線つき）だけが落とす。
 - **ドローコール削減**: マテリアルは `toon()`、ジオメトリは `GEO.*` / `sharedGeo()` でキャッシュ共有。同じ小物が多いものは `InstancedMesh`（`Scatter`）。
 - **3D アセットは外部に頼らない**: 虫・ジオラマはプリミティブとプロシージャル生成のみ。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。
 

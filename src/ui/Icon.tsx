@@ -25,7 +25,12 @@ export type IconName =
   | 'close'
   | 'paw'
   | 'release'
-  | 'egg';
+  | 'egg'
+  | 'flower'
+  | 'bug'
+  | 'bag'
+  | 'eggplant'
+  | 'aphid';
 
 const S = { stroke: '#4a3b2a', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
@@ -147,6 +152,49 @@ const PATHS: Record<IconName, ReactElement> = {
     </g>
   ),
   egg: <ellipse cx="50" cy="54" rx="22" ry="28" fill="#fffaf0" {...S} />,
+  flower: (
+    <g {...S}>
+      <path d="M50 54 V86" />
+      {[0, 72, 144, 216, 288].map((a) => (
+        <ellipse key={a} cx="50" cy="28" rx="10" ry="14" fill="#ff8fab" transform={`rotate(${a} 50 42)`} />
+      ))}
+      <circle cx="50" cy="42" r="9" fill="#ffd166" />
+    </g>
+  ),
+  bug: (
+    <g {...S}>
+      <path d="M34 76 C30 56 40 34 50 30 C60 34 70 56 66 76 Z" fill="#b5835a" />
+      <path d="M38 50 H62 M36 62 H64" fill="none" strokeWidth={3} />
+      <circle cx="50" cy="26" r="9" fill="#8d5a3b" />
+    </g>
+  ),
+  bag: (
+    <g {...S}>
+      <path d="M28 34 H72 L76 82 H24 Z" fill="#8d6e63" />
+      <path d="M28 34 Q50 22 72 34" fill="#6d4c41" />
+      <path d="M40 54 Q50 46 60 54 Q50 64 40 54 Z" fill="#9ccc65" />
+    </g>
+  ),
+  eggplant: (
+    <g {...S}>
+      <path d="M50 30 C30 34 24 62 36 76 C46 86 64 82 70 68 C78 50 66 32 50 30 Z" fill="#6a3d8f" />
+      <path d="M44 30 Q50 18 58 30 Q52 36 44 30 Z" fill="#7cb342" />
+    </g>
+  ),
+  aphid: (
+    <g {...S}>
+      <path d="M22 78 C22 40 46 22 80 22 C80 56 62 78 22 78 Z" fill="#8bc34a" />
+      {[
+        [40, 56],
+        [52, 46],
+        [60, 36],
+        [46, 64],
+        [62, 54],
+      ].map(([x, y]) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r="5" fill="#d4ee9f" strokeWidth={2} />
+      ))}
+    </g>
+  ),
 };
 
 export function Icon({ name, title }: { name: IconName; title?: string }) {

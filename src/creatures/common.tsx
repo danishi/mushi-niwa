@@ -61,7 +61,6 @@ export function M({
       position={position}
       rotation={rotation}
       scale={scale}
-      castShadow
       userData={part ? { part } : undefined}
     />
   );

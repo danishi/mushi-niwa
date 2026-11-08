@@ -7,6 +7,7 @@ import { conditionOf, stageOf } from '../sim/simulate';
 import type { Creature, SpeciesDef } from '../sim/types';
 import { env } from '../state/env';
 import { simEvents } from '../state/events';
+import { useUi } from '../state/ui';
 import { blobShadowTexture } from '../three/softShadow';
 import { newAnim, type CreatureAnim } from './anim';
 import { modelFor } from './registry';
@@ -57,6 +58,7 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
     wait: 1,
     mode: 'idle' as 'idle' | 'walk' | 'eat',
     chirpTimer: 0,
+    leave: 0,
     initialized: '',
   });
   const shadowMat = useMemo(
@@ -203,6 +205,19 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
     hop.copy(s.pos);
     if (loco === 'hop') hop.y += Math.abs(Math.sin(a.gait * 0.35)) * 0.22 * a.walk;
     if (flyer) hop.y += Math.sin(a.t * 3) * 0.04 * a.flap;
+
+    // 送り出し：ふわっと浮かんで 小さくなり、もりへ かえっていく
+    const ui = useUi.getState();
+    const leaving = ui.cinematic?.kind === 'farewell' && ui.selectedId === c.id;
+    s.leave = THREE.MathUtils.damp(s.leave, leaving ? 1 : 0, leaving ? 0.9 : 6, dt);
+    if (s.leave > 0.001) {
+      hop.y += s.leave * 2.2;
+      hop.z -= s.leave * 0.8;
+      a.flap = Math.max(a.flap, s.leave);
+      a.walk = Math.max(a.walk, s.leave);
+      a.gait += dt * 6 * s.leave;
+    }
+    g.scale.setScalar(1 - s.leave * 0.7);
     g.position.copy(hop);
     g.rotation.y = s.heading;
     if (shadowRef.current) shadowRef.current.position.y = top - hop.y + 0.012;

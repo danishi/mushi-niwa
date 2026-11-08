@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { audio } from '../../audio/audio';
 import { speak } from '../../text/speech';
 import { Icon } from '../../ui/Icon';
@@ -6,6 +7,9 @@ import { SettingsGateButton } from '../../ui/ParentalGate';
 
 export function TitleHud() {
   const go = useUi((s) => s.go);
+  useEffect(() => {
+    audio.startBgm('title');
+  }, []);
   return (
     <div className="hud" data-testid="title-hud">
       <div className="hud-row top">
