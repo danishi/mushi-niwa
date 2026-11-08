@@ -1289,6 +1289,15 @@ ruby rt {
   font-size: 21px;
 }
 
+/* スマホ 横向きなど 背の ひくい 画面では 上の はしに 小さく（下の 段の ケースを かくさない） */
+@media (max-height: 520px) {
+  .sticker-toast {
+    top: calc(var(--safe-t) + 8px);
+    transform: translateX(-50%) scale(0.72);
+    transform-origin: top center;
+  }
+}
+
 .sticker-toast .sticker {
   animation: sticker-spin 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
 }

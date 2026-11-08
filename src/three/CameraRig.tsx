@@ -10,6 +10,8 @@ export interface CameraShot {
   fov?: number;
   /** この幅（ワールド単位）が 横に ちょうど収まる距離まで寄る／下がる */
   fitWidth?: number;
+  /** この高さ（ワールド単位）が 縦に 収まるよう 下がる（横長画面で 手前の 小物が 切れないように） */
+  fitHeight?: number;
   /** ユーザーの回転・ピンチを許すか（虫ケースの中を覗く程度に制限） */
   orbit?: {
     minDistance: number;
@@ -99,6 +101,7 @@ export function shotFit(shot: CameraShot, aspect: number): number {
   const base = Math.hypot(shot.position[0] - shot.target[0], shot.position[1] - shot.target[1], shot.position[2] - shot.target[2]);
   const vfov = THREE.MathUtils.degToRad(shot.fov ?? 40);
   const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
-  const need = shot.fitWidth / 2 / Math.tan(hfov / 2);
-  return Math.max(need / base, 0.6);
+  const needW = shot.fitWidth / 2 / Math.tan(hfov / 2);
+  const needH = shot.fitHeight ? shot.fitHeight / 2 / Math.tan(vfov / 2) : 0;
+  return Math.max(Math.max(needW, needH) / base, 0.6);
 }
