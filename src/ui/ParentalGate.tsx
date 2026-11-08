@@ -49,7 +49,15 @@ export function SettingsGateButton() {
           start.current = performance.now();
           raf.current = requestAnimationFrame(tick);
         }}
-        onPointerUp={stop}
+        onPointerUp={() => {
+          // 画面の更新が遅い端末でも、離した時点で 長押しの長さを判定する
+          const held = start.current !== null && performance.now() - start.current >= HOLD_MS;
+          stop();
+          if (held) {
+            audio.play('pop');
+            setQuiz(true);
+          }
+        }}
         onPointerCancel={stop}
         onContextMenu={(e) => e.preventDefault()}
       >
