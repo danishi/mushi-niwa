@@ -2,7 +2,7 @@ import { audio } from '../audio/audio';
 import { SPECIES } from '../data/species';
 import { canUseTool, stageOf } from '../sim/simulate';
 import type { Creature, FoodId, ToolId } from '../sim/types';
-import { drag } from '../state/drag';
+import { toolAction } from '../state/drag';
 import { useUi } from '../state/ui';
 import { speak } from '../text/speech';
 import { Icon, type IconName } from './Icon';
@@ -45,13 +45,8 @@ export function toolInfo(c: Creature, tool: ToolId): { icon: IconName; label: st
   }
 }
 
-function toNdc(x: number, y: number) {
-  drag.ndc.x = (x / window.innerWidth) * 2 - 1;
-  drag.ndc.y = -(y / window.innerHeight) * 2 + 1;
-}
-
-/** 道具の棚。ボタンを押したまま ケースへ ひっぱると、3D の道具が指についてくる */
-export function ToolBar({ creature }: { creature: Creature }) {
+/** 道具の棚。タップすると 3D の道具が ケースへ飛んでいって 自動で使われる */
+export function ToolBar({ creature, want }: { creature: Creature; want?: string | null }) {
   const tools = (['food', 'mist', 'scoop', 'house'] as ToolId[]).filter((t) => canUseTool(creature, t));
   const setDragging = useUi((s) => s.setDragging);
   if (tools.length === 0) return <div className="toolbar empty" />;
@@ -62,34 +57,16 @@ export function ToolBar({ creature }: { creature: Creature }) {
         return (
           <button
             key={t}
-            className="tool-btn"
+            className={`tool-btn${want === t ? ' want' : ''}`}
             aria-label={info.label}
             data-testid={`tool-${t}`}
-            onPointerDown={(e) => {
-              try {
-                e.currentTarget.setPointerCapture(e.pointerId);
-              } catch {
-                /* 合成イベントなど */
-              }
-              drag.active = true;
-              drag.released = false;
-              drag.tool = t;
-              toNdc(e.clientX, e.clientY - 60);
+            onClick={() => {
+              if (toolAction.tool) return;
+              toolAction.tool = t;
+              toolAction.t = 0;
               setDragging(true);
               audio.play('pickup');
               speak(info.label);
-            }}
-            onPointerMove={(e) => {
-              if (drag.active) toNdc(e.clientX, e.clientY - 60);
-            }}
-            onPointerUp={() => {
-              if (drag.active) drag.released = true;
-            }}
-            onPointerCancel={() => {
-              if (drag.active) {
-                drag.ndc.x = 99;
-                drag.released = true;
-              }
             }}
           >
             <Icon name={info.icon} />

@@ -2,62 +2,79 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { leafGeometry } from '../three/Diorama';
-import { GEO, toon } from '../three/toon';
-import { M, Shine, useBodyMotion } from './common';
-import { halfSphere } from './geom';
-import { Antenna, Eye, Leg, Part } from './parts';
+import { GEO, mat, SURF } from '../three/materials';
+import { fuzzTexture, grainBump, leafTexture, wrinkleBump } from '../three/textures';
+import { M, useBodyMotion } from './common';
+import { domeGeo } from './geom';
+import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
-/* ───────────── ナナホシテントウ ───────────── */
+/* ───────────── ナナホシテントウ（docs/species-research.md §4） ───────────── */
 
-/** たまご：葉の上に黄色いたまごが まとまって */
-export function TentouEgg({ anim, outlines }: ModelProps) {
+function useLeafSurface(color = '#4f8a2b') {
+  return useMemo(() => ({ ...SURF.plant(), map: leafTexture(color), side: THREE.DoubleSide }), [color]);
+}
+
+/** たまご：葉に 立てて まとめて産む、黄色い 細長い たまご */
+export function TentouEgg({ anim }: ModelProps) {
   const ref = useRef<THREE.Group>(null);
+  const leaf = useLeafSurface();
   useFrame(() => {
     if (ref.current) ref.current.rotation.y = Math.sin(anim.current.t * 30) * 0.05 * anim.current.shiver;
   });
   return (
     <group>
-      <M geo={leafGeometry()} color="#7cb342" scale={0.9} part="egg" />
-      <group ref={ref} position={[0, 0.03, 0.45]}>
-        {Array.from({ length: 12 }, (_, i) => (
-          <Part key={i} geometry={GEO.capsule()} color="#f6c445" position={[Math.cos(i * 2.4) * 0.06 * Math.sqrt(i), 0.05, Math.sin(i * 2.4) * 0.06 * Math.sqrt(i)]} scale={[0.03, 0.04, 0.03]} outlines={outlines} outline={false} part="egg" />
+      <M geo={leafGeometry()} color="#ffffff" surface={leaf} scale={0.9} part="egg" />
+      <group ref={ref} position={[0, 0.02, 0.45]}>
+        {Array.from({ length: 18 }, (_, i) => (
+          <Part
+            key={i}
+            geometry={GEO.capsule()}
+            color="#f0b93a"
+            surface={{ roughness: 0.3, clearcoat: 0.7 }}
+            position={[Math.cos(i * 2.4) * 0.03 * Math.sqrt(i), 0.035, Math.sin(i * 2.4) * 0.03 * Math.sqrt(i)]}
+            scale={[0.018, 0.035, 0.018]}
+            part="egg"
+          />
         ))}
       </group>
     </group>
   );
 }
 
-/** ようちゅう：黒っぽく とげとげで、オレンジの もよう（親と ぜんぜん ちがう形） */
-export function TentouLarva({ anim, outlines, molts }: ModelProps) {
+const T_LARVA_LEG: LegSpec = { femur: 0.1, tibia: 0.1, tarsus: 0.04, thick: 0.012, tarsi: 1 };
+
+/** ようちゅう：親とは まったく ちがう 細長い形。黒っぽい灰色に とげとげ、だいだい色の もよう */
+export function TentouLarva({ anim, molts }: ModelProps) {
   const body = useBodyMotion(anim, 0.4);
-  const size = 0.6 + molts * 0.14;
-  const N = 6;
+  const size = 0.55 + molts * 0.15;
+  const skin = useMemo(() => ({ roughness: 0.7, bumpMap: grainBump(41, 64), bumpScale: 1.2 }), []);
+  const N = 8;
   return (
     <group scale={size}>
       <group ref={body}>
         {Array.from({ length: N }, (_, i) => {
-          const z = 0.3 - i * 0.12;
-          const r = 0.12 - Math.abs(i - 1.5) * 0.015;
+          const z = 0.32 - i * 0.09;
+          const r = 0.09 + (i >= 1 && i <= 3 ? 0.02 : 0) - (i > 4 ? (i - 4) * 0.015 : 0);
+          // 腹の 1 節目と 4 節目に だいだい色の もよう
+          const orange = i === 3 || i === 6;
           return (
-            <group key={i} position={[0, 0.13, z]}>
-              <Part geometry={GEO.sphere()} color="#33302c" scale={[r * 1.2, r * 0.8, r * 0.7]} outlines={outlines} outline={i % 2 === 0} part="body" />
-              {i === 1 || i === 3
-                ? [1, -1].map((s) => <M key={s} color="#f08a24" position={[s * r * 0.8, r * 0.5, 0]} scale={0.035} part="body" />)
-                : null}
+            <group key={i} position={[0, 0.1, z]}>
+              <Part geometry={GEO.sphere()} color="#33373c" surface={skin} scale={[r * 1.25, r * 0.75, r * 0.6]} castShadow={i % 2 === 0} part="body" />
               {[1, -1].map((s) => (
-                <M key={`sp${s}`} geo={GEO.cone()} color="#1f1d1a" position={[s * r * 0.9, r * 0.6, 0]} rotation={[0, 0, -s * 0.6]} scale={[0.015, 0.05, 0.015]} />
+                <M key={s} geo={GEO.cone()} color={orange ? '#e8842a' : '#1f2124'} position={[s * r * 0.9, r * 0.5, 0]} rotation={[0, 0, -s * 0.7]} scale={[0.02, 0.05, 0.02]} part="body" />
               ))}
+              {orange ? [1, -1].map((s) => <M key={`o${s}`} color="#e8842a" position={[s * r * 0.6, r * 0.55, 0]} scale={0.03} part="body" />) : null}
             </group>
           );
         })}
-        <Part geometry={GEO.sphere()} color="#1f1d1a" position={[0, 0.13, 0.42]} scale={0.07} outlines={outlines} part="body" />
-        <Eye position={[0.04, 0.16, 0.47]} size={0.025} anim={anim} />
-        <Eye position={[-0.04, 0.16, 0.47]} size={0.025} anim={anim} />
+        <Part geometry={GEO.sphere()} color="#1b1c1e" surface={SURF.chitin(0.6)} position={[0, 0.1, 0.42]} scale={[0.06, 0.045, 0.05]} part="body" />
+        <CompoundEye position={[0.04, 0.12, 0.45]} size={0.012} />
+        <CompoundEye position={[-0.04, 0.12, 0.45]} size={0.012} />
         {[0, 1, 2].map((p) => (
-          <group key={p} position={[0, 0.1, 0.32 - p * 0.08]}>
-            <Leg position={[0.08, 0, 0]} side={1} pair={p} length={0.22} thick={0.015} color="#1f1d1a" anim={anim} outlines={false} part="legs" />
-            <Leg position={[-0.08, 0, 0]} side={-1} pair={p} length={0.22} thick={0.015} color="#1f1d1a" anim={anim} outlines={false} part="legs" />
+          <group key={p} position={[0, 0.07, 0.32 - p * 0.08]}>
+            <Leg position={[0.08, 0, 0]} side={1} pair={p} spec={T_LARVA_LEG} color="#1b1c1e" anim={anim} spread={0.2} part="legs" />
+            <Leg position={[-0.08, 0, 0]} side={-1} pair={p} spec={T_LARVA_LEG} color="#1b1c1e" anim={anim} spread={0.2} part="legs" />
           </group>
         ))}
       </group>
@@ -65,113 +82,143 @@ export function TentouLarva({ anim, outlines, molts }: ModelProps) {
   );
 }
 
-/** さなぎ：おしりを葉に はりつけた、オレンジ色の さなぎ */
-export function TentouPupa({ anim, outlines }: ModelProps) {
+/** さなぎ：おしりを 葉に はりつけた、だいだい色に 黒い点の さなぎ */
+export function TentouPupa({ anim }: ModelProps) {
   const ref = useRef<THREE.Group>(null);
+  const leaf = useLeafSurface();
   useFrame(() => {
     const a = anim.current;
-    // さなぎも さわると ぴくっと 動く
-    if (ref.current) ref.current.rotation.x = -0.6 + Math.sin(a.t * 25) * 0.1 * Math.max(a.shiver, a.bounce);
+    // さわると ぴくっと 起き上がる
+    if (ref.current) ref.current.rotation.x = -0.5 + Math.sin(a.t * 25) * 0.12 * Math.max(a.shiver, a.bounce);
   });
+  const surf = useMemo(() => ({ roughness: 0.4, clearcoat: 0.6 }), []);
   return (
     <group>
-      <M geo={leafGeometry()} color="#7cb342" scale={0.9} part="tail" />
-      <group ref={ref} position={[0, 0.03, 0.3]}>
-        <Part geometry={GEO.sphere()} color="#f0a040" position={[0, 0.15, 0.08]} scale={[0.12, 0.14, 0.11]} outlines={outlines} part="tail" />
-        {[0.1, 0.18].map((y) => (
-          <M key={y} color="#2b2118" position={[0, y + 0.06, 0.18]} scale={[0.04, 0.025, 0.02]} />
+      <M geo={leafGeometry()} color="#ffffff" surface={leaf} scale={0.9} part="tail" />
+      <group ref={ref} position={[0, 0.02, 0.32]}>
+        <Part geometry={GEO.sphere()} color="#e89a3a" surface={surf} position={[0, 0.12, 0.06]} scale={[0.1, 0.12, 0.09]} castShadow part="tail" />
+        {(
+          [
+            [0.04, 0.2, 0.12],
+            [-0.04, 0.2, 0.12],
+            [0, 0.14, 0.15],
+            [0.06, 0.08, 0.12],
+            [-0.06, 0.08, 0.12],
+          ] as Array<[number, number, number]>
+        ).map((p, i) => (
+          <M key={i} color="#2b2118" position={p} scale={[0.02, 0.014, 0.01]} />
         ))}
-        <M color="#2b2118" position={[0, 0.02, 0]} scale={[0.05, 0.04, 0.05]} part="tail" />
-        <Eye position={[0.04, 0.27, 0.12]} size={0.022} anim={anim} />
-        <Eye position={[-0.04, 0.27, 0.12]} size={0.022} anim={anim} />
+        <M color="#3a2a1a" position={[0, 0.0, 0]} scale={[0.04, 0.03, 0.04]} part="tail" />
       </group>
     </group>
   );
 }
 
-const SPOTS: Array<[number, number]> = [
-  [0, 0.85],
-  [0.45, 0.5],
-  [-0.45, 0.5],
-  [0.55, -0.1],
-  [-0.55, -0.1],
-  [0.3, -0.55],
-  [-0.3, -0.55],
+/** 背中の 7 つの星（左右 3 つずつ と、まんなか前の 1 つ）。[横, 前後, 大きさ] */
+const SPOTS: Array<[number, number, number]> = [
+  [0, 0.86, 0.045],
+  [0.45, 0.38, 0.04],
+  [-0.45, 0.38, 0.04],
+  [0.62, -0.12, 0.055],
+  [-0.62, -0.12, 0.055],
+  [0.3, -0.6, 0.04],
+  [-0.3, -0.6, 0.04],
 ];
+const T_LEG: LegSpec = { femur: 0.1, tibia: 0.1, tarsus: 0.07, thick: 0.014, tarsi: 3 };
 
-/** 成虫：赤い背中に 7 つの黒い星（まんなかの 1 つは左右にまたがる） */
-export function TentouAdult({ anim, outlines }: ModelProps) {
+let domeHalfGeo: THREE.SphereGeometry | null = null;
+/** ドームの右半分（左右の前ばね） */
+function domeHalf() {
+  return domeHalfGeo ?? (domeHalfGeo = new THREE.SphereGeometry(1, 28, 16, -Math.PI / 2, Math.PI, 0, Math.PI / 2));
+}
+
+/** 成虫：つやつやの 赤い 背中に 7 つの 黒い星。前胸は 黒で、前の かどが 白い */
+export function TentouAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0.4);
   const shell = useRef<THREE.Group>(null);
-  const black = useMemo(() => toon('#1f1d1a'), []);
+  const red = useMemo(() => ({ roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.05 }), []);
+  const spotMat = useMemo(() => mat('#141210', { roughness: 0.25, clearcoat: 1 }), []);
+  const spots = useMemo(
+    () =>
+      SPOTS.map(([u, v, r]) => {
+        // 楕円ドーム（横 0.22、高さ 0.18、前後 0.25）の表面に 置き、表面の向きに そろえる
+        const x = u * 0.22;
+        const z = v * 0.25;
+        const k = Math.max(0, 1 - u * u - v * v);
+        const y = 0.18 * Math.sqrt(k);
+        const n = new THREE.Vector3(x / 0.22 ** 2, y / 0.18 ** 2, z / 0.25 ** 2).normalize();
+        const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+        return { p: new THREE.Vector3(x, y + 0.003, z), q, r };
+      }),
+    [],
+  );
   useFrame(() => {
     const a = anim.current;
     if (shell.current) {
       // 飛ぶときは かたい前ばねを ひらく
-      const open = a.flap * 0.7;
+      const open = a.flap * 0.8;
       shell.current.children[0]!.rotation.z = open;
       shell.current.children[1]!.rotation.z = -open;
     }
   });
   return (
-    <group ref={body} scale={1.35}>
-      <group ref={shell} position={[0, 0.12, -0.03]}>
+    <group ref={body} scale={1.4}>
+      {/* 左右の前ばね。黒い星は それぞれの前ばねに くっついて いっしょに 動く */}
+      <group ref={shell} position={[0, 0.07, -0.03]}>
         {[1, -1].map((s) => (
           <group key={s}>
             <group scale={[s, 1, 1]}>
-              <Part geometry={halfSphere()} color="#e63946" scale={[0.24, 0.2, 0.28]} outlines={outlines} part="spots" />
+              <Part geometry={domeHalf()} color="#c8102e" surface={red} scale={[0.22, 0.18, 0.25]} castShadow part="spots" />
             </group>
+            {spots
+              .filter((sp) => (s > 0 ? sp.p.x >= 0 : sp.p.x < 0))
+              .map((sp, i) => (
+                <mesh key={i} geometry={GEO.sphere()} material={spotMat} position={sp.p} quaternion={sp.q} scale={[sp.r, 0.006, sp.r * 1.05]} userData={{ part: 'spots' }} />
+              ))}
           </group>
         ))}
-        {/* 7 つの星：背中のカーブにそって置く */}
-        {SPOTS.map(([u, v], i) => {
-          const x = u * 0.2;
-          const z = v * 0.24;
-          const y = 0.2 * Math.sqrt(Math.max(0, 1 - (x / 0.24) ** 2 - (z / 0.28) ** 2));
-          return <mesh key={i} geometry={GEO.sphere()} material={black} position={[x, y, z]} scale={[0.045, 0.012, 0.045]} userData={{ part: 'spots' }} />;
-        })}
-        <M geo={GEO.box()} color="#7a1c22" position={[0, 0.2, 0]} scale={[0.006, 0.02, 0.5]} />
       </group>
-      <Shine position={[0.08, 0.3, 0]} scale={[0.05, 0.02, 0.07]} anim={anim} />
       {/* 前胸：黒地に 白い もよう（目のように見える） */}
-      <Part geometry={GEO.sphere()} color="#1f1d1a" position={[0, 0.12, 0.25]} scale={[0.15, 0.08, 0.08]} outlines={outlines} part="pronotum" />
+      <Part geometry={GEO.sphere()} color="#141210" surface={SURF.chitin(1)} position={[0, 0.1, 0.22]} scale={[0.14, 0.07, 0.065]} part="pronotum" />
       {[1, -1].map((s) => (
-        <M key={s} color="#fafafa" position={[s * 0.1, 0.15, 0.29]} scale={[0.035, 0.03, 0.02]} part="pronotum" />
+        <M key={s} color="#f2efe8" surface={SURF.chitin(1)} position={[s * 0.1, 0.12, 0.25]} scale={[0.035, 0.025, 0.02]} part="pronotum" />
       ))}
-      <Part geometry={GEO.sphere()} color="#1f1d1a" position={[0, 0.09, 0.32]} scale={[0.08, 0.05, 0.05]} outlines={outlines} part="pronotum" />
-      <Eye position={[0.05, 0.1, 0.35]} size={0.025} anim={anim} />
-      <Eye position={[-0.05, 0.1, 0.35]} size={0.025} anim={anim} />
-      <Antenna position={[0.04, 0.09, 0.36]} side={1} length={0.12} kind="club" color="#1f1d1a" anim={anim} outlines={outlines} up={0.3} forward={0.8} part="antenna" />
-      <Antenna position={[-0.04, 0.09, 0.36]} side={-1} length={0.12} kind="club" color="#1f1d1a" anim={anim} outlines={outlines} up={0.3} forward={0.8} part="antenna" />
+      <Part geometry={GEO.sphere()} color="#141210" surface={SURF.chitin(1)} position={[0, 0.07, 0.28]} scale={[0.075, 0.045, 0.04]} part="pronotum" />
+      {[1, -1].map((s) => (
+        <M key={`w${s}`} color="#efe9df" position={[s * 0.035, 0.08, 0.31]} scale={[0.012, 0.01, 0.006]} />
+      ))}
+      <CompoundEye position={[0.055, 0.075, 0.29]} size={[0.015, 0.02, 0.018]} />
+      <CompoundEye position={[-0.055, 0.075, 0.29]} size={[0.015, 0.02, 0.018]} />
+      <Antenna position={[0.04, 0.07, 0.31]} side={1} length={0.08} thick={0.006} kind="clavate" color="#1a1714" anim={anim} rotation={[0, 0.6, 0]} part="antenna" />
+      <Antenna position={[-0.04, 0.07, 0.31]} side={-1} length={0.08} thick={0.006} kind="clavate" color="#1a1714" anim={anim} rotation={[0, 0.6, 0]} part="antenna" />
       {[0, 1, 2].map((p) => (
-        <group key={p} position={[0, 0.07, 0.15 - p * 0.1]}>
-          <Leg position={[0.1, 0, 0]} side={1} pair={p} length={0.2} thick={0.016} color="#1f1d1a" anim={anim} outlines={false} part="knee" />
-          <Leg position={[-0.1, 0, 0]} side={-1} pair={p} length={0.2} thick={0.016} color="#1f1d1a" anim={anim} outlines={false} part="knee" />
+        <group key={p} position={[0, 0.05, 0.16 - p * 0.1]}>
+          <Leg position={[0.09, 0, 0]} side={1} pair={p} spec={T_LEG} color="#141210" anim={anim} spread={0.3} part="knee" />
+          <Leg position={[-0.09, 0, 0]} side={-1} pair={p} spec={T_LEG} color="#141210" anim={anim} spread={0.3} part="knee" />
         </group>
       ))}
     </group>
   );
 }
 
-/* ───────────── カイコ ───────────── */
+/* ───────────── カイコ（docs/species-research.md §5） ───────────── */
 
-export function KaikoEgg({ anim, outlines }: ModelProps) {
+export function KaikoEgg({ anim }: ModelProps) {
   const ref = useRef<THREE.Group>(null);
   useFrame(() => {
     if (ref.current) ref.current.rotation.y = Math.sin(anim.current.t * 30) * 0.05 * anim.current.shiver;
   });
   return (
     <group ref={ref}>
-      <M geo={GEO.box()} color="#fbf8f1" position={[0, 0.01, 0]} scale={[0.8, 0.01, 0.6]} part="egg" />
-      {Array.from({ length: 16 }, (_, i) => (
+      <M geo={GEO.box()} color="#f4efe2" surface={{ roughness: 0.95 }} position={[0, 0.005, 0]} scale={[0.8, 0.01, 0.6]} part="egg" />
+      {Array.from({ length: 24 }, (_, i) => (
         <Part
           key={i}
           geometry={GEO.sphere()}
-          color={i % 5 === 0 ? '#e9e27a' : '#8a7a9a'}
-          position={[((i % 4) - 1.5) * 0.12, 0.03, (Math.floor(i / 4) - 1.5) * 0.1]}
-          scale={[0.04, 0.025, 0.035]}
-          outlines={outlines}
-          outline={false}
+          color={i % 7 === 0 ? '#d9cf6a' : '#6f6274'}
+          surface={{ roughness: 0.4, clearcoat: 0.5 }}
+          position={[((i % 6) - 2.5) * 0.08, 0.018, (Math.floor(i / 6) - 1.5) * 0.08]}
+          scale={[0.028, 0.016, 0.022]}
           part="egg"
         />
       ))}
@@ -179,28 +226,29 @@ export function KaikoEgg({ anim, outlines }: ModelProps) {
   );
 }
 
-/** ようちゅう：白くて やわらかい。頭のうしろに 目玉もよう、おなかに いぼのような あし */
-export function KaikoLarva({ anim, outlines, molts }: ModelProps) {
+/** ようちゅう：白っぽい 灰色の やわらかい体。胸の 三日月もよう（眼状紋）、おしりに 小さな 角 */
+export function KaikoLarva({ anim, molts }: ModelProps) {
   const segs = useRef<Array<THREE.Mesh | null>>([]);
   const head = useRef<THREE.Group>(null);
   const body = useBodyMotion(anim, 0.3);
-  const N = 10;
-  // 4 回の脱皮で どんどん大きく（5 齢で一気に）
-  const size = 0.45 + molts * 0.17;
+  const skin = useMemo(() => ({ ...SURF.softSkin(), bumpMap: wrinkleBump(), bumpScale: 0.8 }), []);
+  const N = 12;
+  // 4 回の脱皮で どんどん大きく（5 齢で いちばん大きい）
+  const size = 0.42 + molts * 0.17;
   useFrame(() => {
     const a = anim.current;
     for (let i = 0; i < N; i++) {
       const m = segs.current[i];
       if (!m) continue;
-      const lift = Math.max(0, Math.sin(a.gait * 1.5 - i * 0.7)) * 0.04 * a.walk;
-      m.position.set(0, 0.14 + lift, 0.45 - i * 0.1);
-      const r = 0.13 - (i > N - 3 ? (i - (N - 3)) * 0.02 : 0) + (i === 1 ? 0.015 : 0);
-      m.scale.set(r, r * 0.92, r * 0.72);
+      const lift = Math.max(0, Math.sin(a.gait * 1.5 - i * 0.7)) * 0.03 * a.walk;
+      m.position.set(0, 0.13 + lift, 0.5 - i * 0.09);
+      const r = 0.12 + (i === 2 ? 0.012 : 0) - (i > N - 3 ? (i - (N - 3)) * 0.02 : 0) - (i === 0 ? 0.02 : 0);
+      m.scale.set(r, r * 0.92, r * 0.7);
     }
     if (head.current) {
-      // 食べるときは頭を ふりふり
+      // 食べるときは 頭を 左右に ふる
       head.current.rotation.y = Math.sin(a.t * 6) * 0.35 * a.eat;
-      head.current.rotation.x = 0.2 * a.eat;
+      head.current.rotation.x = 0.25 * a.eat;
     }
   });
   return (
@@ -213,141 +261,181 @@ export function KaikoLarva({ anim, outlines, molts }: ModelProps) {
               segs.current[i] = m;
             }}
             geometry={GEO.sphere()}
-            color={i === 1 ? '#efe9dc' : '#f6f2e8'}
-            outlines={outlines}
-            outline={i % 2 === 0}
-            part={i === 1 ? 'eyespot' : i >= 5 && i <= 8 ? 'prolegs' : 'spiracle'}
+            color={i % 2 ? '#ece8de' : '#e6e1d4'}
+            surface={skin}
+            castShadow={i % 3 === 0}
+            part={i === 2 ? 'eyespot' : i >= 6 && i <= 9 ? 'prolegs' : 'spiracle'}
           >
-            {i >= 2 && i <= 8 ? (
+            {i >= 3 && i <= 10 ? (
               <>
-                <M color="#2b2118" position={[0.92, 0.1, 0]} scale={[0.04, 0.1, 0.08]} part="spiracle" />
-                <M color="#2b2118" position={[-0.92, 0.1, 0]} scale={[0.04, 0.1, 0.08]} part="spiracle" />
+                <M color="#2b2118" position={[0.92, 0.05, 0]} scale={[0.04, 0.1, 0.07]} part="spiracle" />
+                <M color="#2b2118" position={[-0.92, 0.05, 0]} scale={[0.04, 0.1, 0.07]} part="spiracle" />
               </>
             ) : null}
-            {i >= 5 && i <= 8 ? (
+            {i >= 6 && i <= 9 ? (
               <>
-                <M color="#e8dfcc" position={[0.6, -0.75, 0]} scale={[0.25, 0.25, 0.3]} part="prolegs" />
-                <M color="#e8dfcc" position={[-0.6, -0.75, 0]} scale={[0.25, 0.25, 0.3]} part="prolegs" />
+                <M color="#ddd6c6" surface={skin} position={[0.55, -0.78, 0]} scale={[0.24, 0.24, 0.28]} part="prolegs" />
+                <M color="#ddd6c6" surface={skin} position={[-0.55, -0.78, 0]} scale={[0.24, 0.24, 0.28]} part="prolegs" />
               </>
             ) : null}
           </Part>
         ))}
-        {/* 眼状紋（本当の目ではない もよう） */}
-        <M geo={GEO.sphere()} color="#a59a86" position={[0.06, 0.25, 0.36]} scale={[0.04, 0.025, 0.02]} part="eyespot" />
-        <M geo={GEO.sphere()} color="#a59a86" position={[-0.06, 0.25, 0.36]} scale={[0.04, 0.025, 0.02]} part="eyespot" />
-        <group ref={head} position={[0, 0.13, 0.55]}>
-          <Part geometry={GEO.sphere()} color="#d9cfbd" scale={[0.08, 0.075, 0.07]} outlines={outlines} part="ocelli" />
-          {/* 本当の目（単眼）は小さく、デフォルメした目を少しだけ */}
-          <Eye position={[0.05, 0.02, 0.04]} size={0.022} anim={anim} />
-          <Eye position={[-0.05, 0.02, 0.04]} size={0.022} anim={anim} />
+        {/* 眼状紋（三日月の もよう）と 腹の 半月もよう */}
+        {[1, -1].map((s) => (
+          <group key={s}>
+            <M color="#7c7468" position={[s * 0.05, 0.235, 0.33]} rotation={[0.3, 0, s * 0.5]} scale={[0.04, 0.012, 0.02]} part="eyespot" />
+            <M color="#9b9284" position={[s * 0.05, 0.225, -0.05]} rotation={[0.1, 0, s * 0.3]} scale={[0.03, 0.01, 0.018]} />
+          </group>
+        ))}
+        <group ref={head} position={[0, 0.12, 0.58]}>
+          <Part geometry={GEO.sphere()} color="#c9bda6" surface={SURF.chitin(0.4)} scale={[0.07, 0.065, 0.06]} part="ocelli" />
+          {[1, -1].map((s) =>
+            [0, 1, 2].map((k) => <M key={`${s}${k}`} color="#141210" surface={SURF.eye()} position={[s * 0.05, 0.01 + k * 0.012, 0.03 - k * 0.008]} scale={0.006} part="ocelli" />),
+          )}
         </group>
         {/* 尾角 */}
-        <M geo={GEO.cone()} color="#d9cfbd" position={[0, 0.25, -0.43]} rotation={[-0.5, 0, 0]} scale={[0.02, 0.06, 0.02]} />
-        <Shine position={[0.04, 0.27, 0.1]} scale={[0.04, 0.02, 0.14]} anim={anim} />
+        <M geo={GEO.cone()} color="#bfb39c" position={[0, 0.22, -0.48]} rotation={[-0.6, 0, 0]} scale={[0.018, 0.06, 0.018]} />
+        {/* 胸あし */}
+        {[0, 1, 2].map((p) =>
+          [1, -1].map((s) => <M key={`l${p}${s}`} geo={GEO.cone()} color="#b9ab92" position={[s * 0.07, 0.03, 0.5 - p * 0.08]} rotation={[Math.PI, 0, 0]} scale={[0.015, 0.04, 0.015]} />),
+        )}
       </group>
     </group>
   );
 }
 
-/** まゆ：1 本の長い糸で作った白い おうち */
-export function KaikoCocoon({ anim, outlines }: ModelProps) {
+/** まゆ：1 本の 長い糸で つくった 白い おうち（毛羽だった 表面） */
+export function KaikoCocoon({ anim }: ModelProps) {
   const ref = useRef<THREE.Group>(null);
+  const silk = useMemo(() => ({ roughness: 1, sheen: 1, sheenColor: '#ffffff', map: fuzzTexture(), bumpMap: grainBump(51, 128), bumpScale: 2 }), []);
   useFrame(() => {
     const a = anim.current;
-    if (ref.current) ref.current.rotation.z = Math.sin(a.t * 30) * 0.04 * a.shiver;
+    if (ref.current) ref.current.rotation.z = Math.sin(a.t * 30) * 0.03 * a.shiver;
   });
   return (
     <group ref={ref}>
       {/* まぶし（紙の しきり） */}
-      <M geo={GEO.box()} color="#e8dcc4" position={[0, 0.25, -0.25]} scale={[0.9, 0.5, 0.02]} />
-      <M geo={GEO.box()} color="#e8dcc4" position={[-0.45, 0.25, 0]} scale={[0.02, 0.5, 0.5]} />
-      <Part geometry={GEO.capsule()} color="#fbf8f1" position={[0, 0.18, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.26, 0.3, 0.26]} outlines={outlines} part="cocoon" />
-      {/* 糸のもや */}
-      <M geo={GEO.sphere()} color="#fffdf8" position={[0, 0.18, 0]} scale={[0.4, 0.22, 0.24]} part="cocoon" />
-      <Eye position={[0.15, 0.24, 0.2]} size={0.03} anim={anim} />
-      <Eye position={[0.05, 0.24, 0.22]} size={0.03} anim={anim} />
+      <M geo={GEO.box()} color="#d9cbb0" surface={{ roughness: 0.95 }} position={[0, 0.25, -0.25]} scale={[0.9, 0.5, 0.02]} />
+      <M geo={GEO.box()} color="#d9cbb0" surface={{ roughness: 0.95 }} position={[-0.45, 0.25, 0]} scale={[0.02, 0.5, 0.5]} />
+      <Part geometry={GEO.capsule()} color="#f7f3ea" surface={silk} position={[0, 0.18, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.26, 0.28, 0.26]} castShadow part="cocoon" />
+      {/* まわりの けば（糸の もや） */}
+      <mesh position={[0, 0.18, 0]} scale={[0.42, 0.24, 0.26]} userData={{ part: 'cocoon' }}>
+        <sphereGeometry args={[1, 16, 12]} />
+        <meshStandardMaterial color="#ffffff" transparent opacity={0.25} roughness={1} depthWrite={false} />
+      </mesh>
     </group>
   );
 }
 
-/** 成虫：白くて ふわふわ。はねは あるけど とべない。くしのような しょっかく */
-export function KaikoAdult({ anim, outlines }: ModelProps) {
+const K_LEG: LegSpec = { femur: 0.1, tibia: 0.1, tarsus: 0.08, thick: 0.016, tarsi: 5 };
+
+/** 成虫：白い 毛に おおわれた ずんぐりした ガ。くしのような 触角。はねは あるが 飛べない */
+export function KaikoAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0.4);
   const wings = useRef<THREE.Group>(null);
-  const wingMat = useMemo(() => toon('#f4f0e6', { side: THREE.DoubleSide }), []);
+  const fur = useMemo(() => ({ roughness: 1, sheen: 1, sheenColor: '#ffffff', map: fuzzTexture(), bumpMap: grainBump(61, 128), bumpScale: 2 }), []);
+  const wingMat = useMemo(() => mat('#ffffff', { roughness: 0.9, sheen: 0.8, map: fuzzTexture(), side: THREE.DoubleSide }), []);
   useFrame(() => {
     const a = anim.current;
     // 歩くときに はねを こまかく ふるわせる（飛べない）
     if (wings.current) {
       const buzz = Math.sin(a.t * 45) * 0.12 * (a.walk + a.bounce);
-      wings.current.children[0]!.rotation.z = 0.35 + buzz;
-      wings.current.children[1]!.rotation.z = -0.35 - buzz;
+      wings.current.children[0]!.rotation.z = 0.3 + buzz;
+      wings.current.children[1]!.rotation.z = -0.3 - buzz;
     }
   });
   return (
     <group ref={body} scale={1.3}>
-      <Part geometry={GEO.sphere()} color="#f6f2e8" position={[0, 0.16, -0.05]} scale={[0.12, 0.11, 0.24]} outlines={outlines} part="wings" />
-      <Part geometry={GEO.sphere()} color="#fbf8f1" position={[0, 0.2, 0.17]} scale={0.11} outlines={outlines} part="mouth" />
-      <Eye position={[0.06, 0.2, 0.26]} size={0.035} anim={anim} pupil="#3a3a3a" />
-      <Eye position={[-0.06, 0.2, 0.26]} size={0.035} anim={anim} pupil="#3a3a3a" />
-      <Antenna position={[0.04, 0.27, 0.24]} side={1} length={0.22} kind="comb" color="#6d6355" anim={anim} outlines={outlines} up={0.7} forward={0.6} part="antenna" />
-      <Antenna position={[-0.04, 0.27, 0.24]} side={-1} length={0.22} kind="comb" color="#6d6355" anim={anim} outlines={outlines} up={0.7} forward={0.6} part="antenna" />
-      <group ref={wings} position={[0, 0.24, 0.05]}>
+      <Part geometry={GEO.sphere()} color="#efe9dc" surface={fur} position={[0, 0.15, -0.06]} scale={[0.11, 0.1, 0.22]} castShadow part="wings" />
+      {[-0.02, -0.1, -0.18].map((z) => (
+        <M key={z} geo={GEO.cylinder()} color="#d9d0bd" surface={fur} position={[0, 0.15, z]} rotation={[Math.PI / 2, 0, 0]} scale={[0.105, 0.006, 0.09]} />
+      ))}
+      <Part geometry={GEO.sphere()} color="#f3eee3" surface={fur} position={[0, 0.18, 0.14]} scale={0.1} castShadow part="mouth" />
+      <Part geometry={GEO.sphere()} color="#e9e2d2" surface={fur} position={[0, 0.16, 0.24]} scale={[0.06, 0.055, 0.05]} part="mouth" />
+      <CompoundEye position={[0.045, 0.17, 0.26]} size={0.022} color="#1a1715" />
+      <CompoundEye position={[-0.045, 0.17, 0.26]} size={0.022} color="#1a1715" />
+      <Antenna position={[0.03, 0.21, 0.25]} side={1} length={0.2} thick={0.007} kind="bipectinate" color="#5a5146" anim={anim} rotation={[-0.3, 0.4, 0]} part="antenna" />
+      <Antenna position={[-0.03, 0.21, 0.25]} side={-1} length={0.2} thick={0.007} kind="bipectinate" color="#5a5146" anim={anim} rotation={[-0.3, 0.4, 0]} part="antenna" />
+      <group ref={wings} position={[0, 0.22, 0.06]}>
         {[1, -1].map((s) => (
           <group key={s}>
-            <mesh geometry={GEO.sphere()} material={wingMat} position={[s * 0.2, 0, -0.08]} rotation={[0, s * 0.4, 0]} scale={[0.22, 0.02, 0.17]} userData={{ part: 'wings' }} />
+            <mesh geometry={GEO.sphere()} material={wingMat} position={[s * 0.18, 0, -0.08]} rotation={[0, s * 0.35, 0]} scale={[0.2, 0.015, 0.16]} castShadow userData={{ part: 'wings' }} />
           </group>
         ))}
       </group>
       {[0, 1, 2].map((p) => (
-        <group key={p} position={[0, 0.1, 0.1 - p * 0.08]}>
-          <Leg position={[0.06, 0, 0]} side={1} pair={p} length={0.2} thick={0.016} color="#e0d8c8" anim={anim} outlines={false} />
-          <Leg position={[-0.06, 0, 0]} side={-1} pair={p} length={0.2} thick={0.016} color="#e0d8c8" anim={anim} outlines={false} />
+        <group key={p} position={[0, 0.09, 0.1 - p * 0.08]}>
+          <Leg position={[0.05, 0, 0]} side={1} pair={p} spec={K_LEG} color="#d6ccb8" anim={anim} />
+          <Leg position={[-0.05, 0, 0]} side={-1} pair={p} spec={K_LEG} color="#d6ccb8" anim={anim} />
         </group>
       ))}
     </group>
   );
 }
 
-/* ───────────── ミイデラゴミムシ ───────────── */
+/* ───────────── ミイデラゴミムシ（docs/species-research.md §6） ───────────── */
 
-/** 成虫：黄色い頭と細い首、黒地に黄色の もようの はね。おしりから「プッ」 */
-export function MiideraAdult({ anim, outlines }: ModelProps) {
+const M_LEG: LegSpec = { femur: 0.18, tibia: 0.18, tarsus: 0.14, thick: 0.014, tarsi: 5 };
+
+let striaeTex: THREE.CanvasTexture | null = null;
+/** 前ばねの たてすじ（条溝）のバンプ */
+function striae() {
+  if (striaeTex) return striaeTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  for (let x = 0; x < 64; x++) {
+    const v = Math.round(128 + 120 * Math.sin((x / 64) * Math.PI * 16));
+    g.fillStyle = `rgb(${v},${v},${v})`;
+    g.fillRect(x, 0, 1, 64);
+  }
+  striaeTex = new THREE.CanvasTexture(c);
+  return striaeTex;
+}
+
+/**
+ * 成虫：だいだい黄色の 頭と 細い 前胸（黒い もよう）、黒い 前ばねに だいだい黄色の 紋と 帯。
+ * 前ばねには たての すじ。長い あしで すばやく 歩く。おしりから「プッ」と ふきだす。
+ */
+export function MiideraAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0.6);
   const tail = useRef<THREE.Group>(null);
+  const elytra = useMemo(() => ({ ...SURF.chitin(0.9), bumpMap: striae(), bumpScale: 1.5 }), []);
+  const yellow = useMemo(() => SURF.chitin(0.8), []);
   useFrame(() => {
     const a = anim.current;
-    if (tail.current) {
-      // 噴射のとき おしりを くいっと向ける
-      tail.current.rotation.x = -a.spray * 0.5;
-    }
+    // 噴射のとき おしりを くいっと向ける
+    if (tail.current) tail.current.rotation.x = -a.spray * 0.45;
   });
   return (
     <group ref={body} scale={1.3}>
       <group ref={tail}>
-        <Part geometry={GEO.sphere()} color="#1f1a17" position={[0, 0.13, -0.12]} scale={[0.17, 0.09, 0.28]} outlines={outlines} part="elytra" />
-        {/* 黄色の もよう（肩と後ろの帯） */}
-        {[0.02, -0.22].map((z) => (
-          <M key={z} geo={GEO.sphere()} color="#f4b400" position={[0, 0.17, z]} scale={[0.16, 0.05, 0.05]} part="elytra" />
+        <Part geometry={domeGeo()} color="#121010" surface={elytra} position={[0, 0.09, -0.12]} scale={[0.15, 0.1, 0.27]} castShadow part="elytra" />
+        {/* 肩の 紋と 後ろの 帯 */}
+        {[1, -1].map((s) => (
+          <M key={s} color="#e59a17" surface={yellow} position={[s * 0.08, 0.16, 0.05]} scale={[0.045, 0.02, 0.05]} part="elytra" />
         ))}
-        <M geo={GEO.box()} color="#0f0d0b" position={[0, 0.22, -0.12]} scale={[0.008, 0.02, 0.5]} />
-        <M geo={GEO.sphere()} color="#e09a00" position={[0, 0.1, -0.4]} scale={[0.06, 0.04, 0.04]} part="tail" />
+        <M color="#e59a17" surface={yellow} position={[0, 0.165, -0.18]} rotation={[-0.25, 0, 0]} scale={[0.13, 0.02, 0.045]} part="elytra" />
+        <M color="#c9850f" position={[0, 0.07, -0.38]} scale={[0.05, 0.035, 0.035]} part="tail" />
       </group>
-      <Shine position={[0.06, 0.22, -0.1]} scale={[0.04, 0.015, 0.1]} anim={anim} />
-      {/* 細い首（前胸）と頭は黄色に黒い紋 */}
-      <Part geometry={GEO.sphere()} color="#f4b400" position={[0, 0.13, 0.19]} scale={[0.08, 0.06, 0.08]} outlines={outlines} part="neck" />
-      <M geo={GEO.sphere()} color="#1f1a17" position={[0, 0.18, 0.2]} scale={[0.03, 0.015, 0.04]} part="neck" />
-      <Part geometry={GEO.sphere()} color="#f4b400" position={[0, 0.13, 0.31]} scale={[0.085, 0.065, 0.08]} outlines={outlines} part="neck" />
-      <M geo={GEO.sphere()} color="#1f1a17" position={[0, 0.18, 0.31]} scale={[0.035, 0.015, 0.035]} part="neck" />
-      <Eye position={[0.06, 0.15, 0.36]} size={0.03} anim={anim} />
-      <Eye position={[-0.06, 0.15, 0.36]} size={0.03} anim={anim} />
-      <Antenna position={[0.04, 0.15, 0.37]} side={1} length={0.35} kind="thread" color="#e0a300" anim={anim} outlines={outlines} up={0.3} forward={0.85} />
-      <Antenna position={[-0.04, 0.15, 0.37]} side={-1} length={0.35} kind="thread" color="#e0a300" anim={anim} outlines={outlines} up={0.3} forward={0.85} />
-      {/* 長いあし（夜の地面をすばやく歩く） */}
+      {/* 細い 前胸（くび）と 頭：だいだい黄色に 黒い もよう */}
+      <Part geometry={GEO.sphere()} color="#e9a21b" surface={yellow} position={[0, 0.1, 0.19]} scale={[0.07, 0.055, 0.08]} castShadow part="neck" />
+      <M color="#1a1412" position={[0, 0.15, 0.19]} scale={[0.025, 0.012, 0.045]} part="neck" />
+      <Part geometry={GEO.sphere()} color="#eaa41f" surface={yellow} position={[0, 0.1, 0.3]} scale={[0.075, 0.055, 0.075]} part="neck" />
+      <M color="#1a1412" position={[0, 0.15, 0.3]} scale={[0.03, 0.012, 0.03]} part="neck" />
+      <CompoundEye position={[0.06, 0.12, 0.33]} size={[0.018, 0.022, 0.022]} />
+      <CompoundEye position={[-0.06, 0.12, 0.33]} size={[0.018, 0.022, 0.022]} />
+      {/* 大あご */}
+      {[1, -1].map((s) => (
+        <M key={s} geo={GEO.cone()} color="#8a5a10" surface={yellow} position={[s * 0.025, 0.08, 0.38]} rotation={[1.4, 0, s * 0.4]} scale={[0.01, 0.04, 0.01]} />
+      ))}
+      <Antenna position={[0.04, 0.12, 0.35]} side={1} length={0.36} thick={0.007} kind="filiform" color="#d99018" anim={anim} rotation={[-0.25, 0.3, 0]} />
+      <Antenna position={[-0.04, 0.12, 0.35]} side={-1} length={0.36} thick={0.007} kind="filiform" color="#d99018" anim={anim} rotation={[-0.25, 0.3, 0]} />
+      {/* 長い あし（夜の 地面を すばやく 歩く） */}
       {[0, 1, 2].map((p) => (
-        <group key={p} position={[0, 0.09, 0.2 - p * 0.14]}>
-          <Leg position={[0.06, 0, 0]} side={1} pair={p} length={0.36} thick={0.016} color="#e6a800" anim={anim} outlines={false} part="legs" />
-          <Leg position={[-0.06, 0, 0]} side={-1} pair={p} length={0.36} thick={0.016} color="#e6a800" anim={anim} outlines={false} part="legs" />
+        <group key={p} position={[0, 0.07, 0.19 - p * 0.13]}>
+          <Leg position={[0.05, 0, 0]} side={1} pair={p} spec={M_LEG} color="#dc961c" anim={anim} part="legs" />
+          <Leg position={[-0.05, 0, 0]} side={-1} pair={p} spec={M_LEG} color="#dc961c" anim={anim} part="legs" />
         </group>
       ))}
     </group>

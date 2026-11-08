@@ -13,7 +13,7 @@ async function start(page: Page) {
   await page.waitForFunction(() => '__mushi' in window);
 }
 
-test('adopts a beetle larva and cares for it with the mist tool', async ({ page }) => {
+test('a beetle larva asks for moisture and the mist tool works with one tap', async ({ page }) => {
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
   await page.evaluate(() => {
@@ -25,22 +25,17 @@ test('adopts a beetle larva and cares for it with the mist tool', async ({ page 
   });
   await expect(page.getByTestId('care-hud')).toBeVisible();
   await expect(page.getByTestId('stage-label')).toContainText('ようちゅう');
-  await expect(page.getByTestId('need-moisture')).toHaveClass(/low/);
-  const tool = page.getByTestId('tool-mist');
-  await expect(tool).toBeVisible();
-  const box = (await tool.boundingBox())!;
-  const vp = page.viewportSize()!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(vp.width / 2, vp.height * 0.55, { steps: 10 });
-  // ケースの上で きりふきを 持ったまま、しめりけが 上がるのを待つ（CI のソフトウェア描画でも通るよう余裕をもたせる）
+  // 虫の吹き出しが「しめりけ」を頼み、霧吹きの道具が光っている
+  await expect(page.getByTestId('want-mist')).toBeVisible();
+  await expect(page.getByTestId('tool-mist')).toHaveClass(/want/);
+  // タップだけで 霧吹きが ケースへ飛んでいって 使われる
+  await page.getByTestId('tool-mist').tap();
   await expect
     .poll(
       () => page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.game.getState().creatures[0]!.needs.moisture),
-      { timeout: 8000 },
+      { timeout: 10000 },
     )
     .toBeGreaterThan(0.4);
-  await page.mouse.up();
 });
 
 test('saves progress on the device and restores it after reload', async ({ page }) => {
@@ -68,7 +63,7 @@ test('observe mode explains body parts', async ({ page }) => {
     m.game.setState({ creatures: [{ ...c, stage: 2, sex: 'male' }] });
     m.ui.getState().go('care', c.id);
   });
-  await page.getByTestId('observe').tap();
+  await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('observe'));
   await expect(page.getByTestId('observe-hud')).toBeVisible();
   await page.getByTestId('part-horn').tap();
   await expect(page.getByTestId('part-bubble')).toContainText('ふたまた');

@@ -2,45 +2,53 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { leafGeometry } from '../three/Diorama';
-import { GEO, toon } from '../three/toon';
-import { M, Shine, useBodyMotion } from './common';
+import { GEO, mat, SURF } from '../three/materials';
+import { agehaWing, grainBump, leafTexture, wrinkleBump } from '../three/textures';
+import { M, useBodyMotion } from './common';
 import { cachedTube, shapeGeo } from './geom';
-import { Antenna, Eye, Leg, Part } from './parts';
+import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
-/** たまご：ミカンの葉の上の黄色い丸いたまご */
-export function AgehaEgg({ anim, outlines }: ModelProps) {
+/* 出典: docs/species-research.md §2 */
+
+/** たまご：ミカンの葉の上の、淡い黄色の まるい たまご */
+export function AgehaEgg({ anim }: ModelProps) {
   const ref = useRef<THREE.Group>(null);
+  const leafMat = useMemo(() => ({ ...SURF.plant(), map: leafTexture('#3f7a26'), side: THREE.DoubleSide }), []);
   useFrame(() => {
-    if (ref.current) ref.current.rotation.z = Math.sin(anim.current.t * 30) * 0.08 * anim.current.shiver;
+    if (ref.current) ref.current.rotation.z = Math.sin(anim.current.t * 30) * 0.06 * anim.current.shiver;
   });
   return (
     <group>
-      <M geo={leafGeometry()} color="#4f8a2b" scale={0.9} part="egg" />
-      <group ref={ref} position={[0, 0.08, 0.45]}>
-        <Part geometry={GEO.sphere()} color="#f2d65c" scale={0.08} outlines={outlines} part="egg" />
+      <M geo={leafGeometry()} color="#ffffff" surface={leafMat} scale={0.9} part="egg" />
+      <group ref={ref} position={[0, 0.06, 0.45]}>
+        <Part geometry={GEO.sphere()} color="#efd977" surface={{ roughness: 0.3, clearcoat: 0.8 }} scale={0.06} castShadow part="egg" />
       </group>
     </group>
   );
 }
 
 /**
- * ようちゅう：1〜4 齢は鳥のふんのような白黒、5 齢は黄緑で目玉もよう。
- * さわると頭の後ろから橙色の臭角（しゅうかく）がにゅっと出る。
+ * ようちゅう：1〜4 齢は 鳥のふん そっくり（こげ茶に 白い帯、とげ状の突起、ぬれたような つや）。
+ * 5 齢は 黄緑で、胸に 目玉もようと 帯。さわると 頭の うしろから 橙色の 臭角が出る。
  */
-export function AgehaLarva({ anim, outlines, molts }: ModelProps) {
+export function AgehaLarva({ anim, molts }: ModelProps) {
   const segs = useRef<Array<THREE.Mesh | null>>([]);
   const osm = useRef<THREE.Group>(null);
   const body = useBodyMotion(anim, 0.3);
   const fifth = molts >= 4;
-  const N = 8;
-  const size = 0.55 + molts * 0.16;
+  const N = 11;
+  const size = 0.5 + molts * 0.17;
+  const surf = useMemo(
+    () => (fifth ? { roughness: 0.45, clearcoat: 0.5, bumpMap: wrinkleBump(), bumpScale: 0.4 } : { roughness: 0.25, clearcoat: 1, bumpMap: grainBump(4, 40), bumpScale: 1.5 }),
+    [fifth],
+  );
   const colors = useMemo(
     () =>
       Array.from({ length: N }, (_, i) => {
-        if (fifth) return i === 1 || i === 2 ? '#a5cf4c' : '#8cc63f';
-        // 鳥のふん模様：黒褐色に白い帯（中ほどと後ろ）
-        return i === 3 || i === N - 1 ? '#f4f1e8' : i % 2 ? '#3d2f27' : '#4a3a30';
+        if (fifth) return i === 4 ? '#c9d9a0' : i <= 3 ? '#86b84a' : '#7fb045';
+        // 白い「くら」もよう（中ほど）と おしり
+        return i === 6 || i === 7 || i === N - 1 ? '#efece2' : i % 2 ? '#3e2f22' : '#4a3828';
       }),
     [fifth],
   );
@@ -49,16 +57,13 @@ export function AgehaLarva({ anim, outlines, molts }: ModelProps) {
     for (let i = 0; i < N; i++) {
       const m = segs.current[i];
       if (!m) continue;
-      const lift = Math.max(0, Math.sin(a.gait * 2 - i * 0.8)) * 0.05 * a.walk;
-      m.position.set(0, 0.16 + lift, 0.42 - i * 0.12);
-      const r = 0.13 + (i === 1 || i === 2 ? 0.03 : 0) - (i > N - 3 ? (i - (N - 3)) * 0.02 : 0);
-      m.scale.set(r, r * 0.95, r * 0.75);
+      const lift = Math.max(0, Math.sin(a.gait * 2 - i * 0.8)) * 0.04 * a.walk;
+      m.position.set(0, 0.15 + lift, 0.5 - i * 0.1);
+      // 胸（前から 2〜4 番目）が ふくらんでいる
+      const r = 0.12 + (i >= 1 && i <= 3 ? 0.035 : 0) - (i > N - 3 ? (i - (N - 3)) * 0.025 : 0);
+      m.scale.set(r, r * 0.95, r * 0.72);
     }
-    if (osm.current) {
-      // 臭角：タップした直後だけ出る
-      const out = Math.min(1, a.bounce * 1.6 + a.spray);
-      osm.current.scale.setScalar(Math.max(0.001, out));
-    }
+    if (osm.current) osm.current.scale.setScalar(Math.max(0.001, Math.min(1, a.bounce * 1.6 + a.spray)));
   });
   return (
     <group scale={size}>
@@ -71,68 +76,91 @@ export function AgehaLarva({ anim, outlines, molts }: ModelProps) {
             }}
             geometry={GEO.sphere()}
             color={c}
-            outlines={outlines}
-            outline={i % 2 === 0}
-            part={fifth && i === 1 ? 'eyespot' : 'pattern'}
-          />
+            surface={surf}
+            castShadow={i % 3 === 0}
+            part={fifth && i === 2 ? 'eyespot' : 'pattern'}
+          >
+            {!fifth && i > 0 && i < N - 1
+              ? [1, -1].map((s) => <M key={s} geo={GEO.cone()} color={c} surface={surf} position={[s * 0.6, 0.75, 0]} rotation={[0, 0, -s * 0.5]} scale={[0.12, 0.3, 0.12]} />)
+              : null}
+          </Part>
         ))}
         {fifth ? (
           <>
+            {/* 胸の 目玉もよう（本当の目ではない） */}
             {[1, -1].map((s) => (
-              <group key={s} position={[s * 0.1, 0.27, 0.33]}>
-                <M color="#2b2118" scale={[0.035, 0.03, 0.04]} part="eyespot" />
-                <M color="#f6e7a1" scale={[0.05, 0.04, 0.05]} position={[0, -0.005, -0.004]} part="eyespot" />
+              <group key={s} position={[s * 0.085, 0.27, 0.32]} rotation={[0, s * 0.4, 0]}>
+                <M color="#e9e2b0" scale={[0.045, 0.035, 0.012]} part="eyespot" />
+                <M color="#1b1712" position={[0, 0, 0.006]} scale={[0.032, 0.024, 0.01]} part="eyespot" />
+                <M color="#4d6fa3" position={[0.006, 0.004, 0.012]} scale={[0.012, 0.01, 0.005]} part="eyespot" />
               </group>
             ))}
-            <M geo={GEO.box()} color="#3d5a1f" position={[0, 0.26, 0.24]} scale={[0.22, 0.02, 0.02]} part="pattern" />
+            <M geo={GEO.box()} color="#4b3a26" position={[0, 0.27, 0.2]} rotation={[0.3, 0, 0]} scale={[0.25, 0.012, 0.03]} part="pattern" />
+            <M geo={GEO.box()} color="#e8ecd8" position={[0, 0.23, -0.05]} rotation={[0.1, 0, 0]} scale={[0.24, 0.012, 0.04]} part="pattern" />
           </>
         ) : null}
         {/* 頭 */}
-        <Part geometry={GEO.sphere()} color={fifth ? '#7fb236' : '#3d2f27'} position={[0, 0.12, 0.53]} scale={[0.09, 0.08, 0.07]} outlines={outlines} part="pattern" />
-        <Eye position={[0.05, 0.15, 0.58]} size={0.03} anim={anim} />
-        <Eye position={[-0.05, 0.15, 0.58]} size={0.03} anim={anim} />
-        {/* 臭角（二また・橙色） */}
-        <group ref={osm} position={[0, 0.22, 0.48]}>
+        <Part geometry={GEO.sphere()} color={fifth ? '#6f9f3c' : '#2f241a'} surface={SURF.chitin(0.6)} position={[0, 0.11, 0.6]} scale={[0.075, 0.07, 0.06]} part="pattern" />
+        <CompoundEye position={[0.045, 0.12, 0.63]} size={0.012} />
+        <CompoundEye position={[-0.045, 0.12, 0.63]} size={0.012} />
+        {/* 臭角（ふたまたの 橙色） */}
+        <group ref={osm} position={[0, 0.2, 0.55]}>
           {[1, -1].map((s) => (
             <Part
               key={s}
-              geometry={cachedTube(`osm${s}`, [[0, 0, 0], [s * 0.04, 0.08, 0.02], [s * 0.1, 0.15, 0.0]], 0.025, 0.015, 8, 6)}
-              color="#f39c34"
-              outlines={outlines}
+              geometry={cachedTube(`osmR${s}`, [[0, 0, 0], [s * 0.04, 0.09, 0.02], [s * 0.11, 0.16, 0.0]], 0.022, 0.014, 10, 8)}
+              color="#e8742a"
+              surface={{ roughness: 0.2, clearcoat: 1, translucent: true }}
               part="osmeterium"
             />
           ))}
         </group>
-        {/* 胸あし 3 対 */}
+        {/* 胸あし 3 対・腹あし */}
         {[0, 1, 2].map((p) => (
-          <group key={p} position={[0, 0.06, 0.42 - p * 0.08]}>
-            <Leg position={[0.08, 0, 0]} side={1} pair={p} length={0.08} thick={0.018} color="#2b2118" anim={anim} outlines={false} />
-            <Leg position={[-0.08, 0, 0]} side={-1} pair={p} length={0.08} thick={0.018} color="#2b2118" anim={anim} outlines={false} />
+          <group key={p} position={[0, 0.05, 0.5 - p * 0.08]}>
+            <Leg position={[0.07, 0, 0]} side={1} pair={p} spec={LARVA_LEG} color="#2b2118" anim={anim} spread={-0.5} />
+            <Leg position={[-0.07, 0, 0]} side={-1} pair={p} spec={LARVA_LEG} color="#2b2118" anim={anim} spread={-0.5} />
           </group>
         ))}
-        <Shine position={[0.04, 0.3, 0.2]} scale={[0.04, 0.02, 0.1]} anim={anim} />
+        {[0.06, -0.04, -0.14, -0.24, -0.44].map((z) =>
+          [1, -1].map((s) => <M key={`${z}${s}`} color={fifth ? '#6d9d3a' : '#3e2f22'} position={[s * 0.07, 0.04, z]} scale={[0.035, 0.045, 0.04]} />),
+        )}
       </group>
     </group>
   );
 }
 
-/** さなぎ：糸（帯糸）で枝にかかった緑の帯蛹 */
-export function AgehaPupa({ anim, outlines, sex }: ModelProps) {
+const LARVA_LEG: LegSpec = { femur: 0.04, tibia: 0.04, tarsus: 0.02, thick: 0.012, tarsi: 1 };
+
+/** さなぎ：胸を 糸（帯糸）で 枝に かけた「帯蛹」。頭に 2 本の 突起、胸に 背の とがり */
+export function AgehaPupa({ anim, sex }: ModelProps) {
   const ref = useRef<THREE.Group>(null);
-  // 緑と褐色がある（個体ごと。ここでは性別で見た目を分けて代用）
-  const color = sex === 'male' ? '#8ab64a' : '#b08d5a';
+  // 緑と褐色がある（まわりの環境で変わる。ここでは 個体ごとに分ける）
+  const color = sex === 'male' ? '#a3bd5a' : '#a58a5f';
+  const surf = useMemo(() => ({ roughness: 0.5, clearcoat: 0.4, bumpMap: grainBump(17, 64), bumpScale: 0.8 }), []);
   useFrame(() => {
-    if (ref.current) ref.current.rotation.z = Math.sin(anim.current.t * 30) * 0.05 * anim.current.shiver;
+    if (ref.current) ref.current.rotation.z = Math.sin(anim.current.t * 30) * 0.04 * Math.max(anim.current.shiver, anim.current.bounce);
   });
   return (
     <group>
-      <M geo={GEO.cylinder()} color="#8d6e63" position={[0, 0.75, -0.12]} rotation={[0.25, 0, 0]} scale={[0.05, 1.5, 0.05]} />
+      <M geo={GEO.cylinder()} color="#7a5a43" surface={{ roughness: 0.9 }} position={[0, 0.75, -0.12]} rotation={[0.25, 0, 0]} scale={[0.05, 1.5, 0.05]} castShadow />
       <group ref={ref} position={[0, 0.7, 0.02]} rotation={[0.3, 0, 0]}>
-        <Part geometry={GEO.sphere()} color={color} scale={[0.15, 0.42, 0.13]} outlines={outlines} part="color" />
-        <Part geometry={GEO.cone()} color={color} position={[0, 0.48, 0.02]} scale={[0.09, 0.16, 0.06]} outlines={outlines} part="color" />
-        <M geo={GEO.box()} color="#f2f0e6" position={[0, 0.08, -0.08]} rotation={[0.3, 0, 0]} scale={[0.34, 0.012, 0.012]} part="girdle" />
-        <Eye position={[0.05, 0.48, 0.08]} size={0.025} anim={anim} />
-        <Eye position={[-0.05, 0.48, 0.08]} size={0.025} anim={anim} />
+        <Part geometry={GEO.sphere()} color={color} surface={surf} scale={[0.14, 0.4, 0.12]} castShadow part="color" />
+        {/* 胸の背の とがり */}
+        <Part geometry={GEO.cone()} color={color} surface={surf} position={[0, 0.18, 0.1]} rotation={[0.9, 0, 0]} scale={[0.06, 0.12, 0.04]} part="color" />
+        {/* 頭の 2 本の 突起 */}
+        {[1, -1].map((s) => (
+          <Part key={s} geometry={GEO.cone()} color={color} surface={surf} position={[s * 0.05, 0.44, 0.03]} rotation={[0.2, 0, -s * 0.2]} scale={[0.03, 0.1, 0.03]} part="color" />
+        ))}
+        {/* はねの 形が 見える */}
+        {[1, -1].map((s) => (
+          <M key={`w${s}`} color={sex === 'male' ? '#b5cc6f' : '#b39a6e'} surface={surf} position={[s * 0.08, 0.12, 0.06]} rotation={[0, 0, s * 0.15]} scale={[0.06, 0.2, 0.06]} />
+        ))}
+        {/* 帯糸 */}
+        <mesh position={[0, 0.06, -0.06]} rotation={[0.3, 0, 0]} userData={{ part: 'girdle' }}>
+          <torusGeometry args={[0.15, 0.004, 4, 24, Math.PI]} />
+          <meshStandardMaterial color="#efece2" roughness={0.6} />
+        </mesh>
       </group>
     </group>
   );
@@ -140,77 +168,105 @@ export function AgehaPupa({ anim, outlines, sex }: ModelProps) {
 
 const foreWing = (s: THREE.Shape) => {
   s.moveTo(0, 0);
-  s.bezierCurveTo(0.25, 0.2, 0.7, 0.45, 0.95, 0.42);
-  s.bezierCurveTo(0.9, 0.2, 0.7, 0.02, 0.4, -0.1);
+  s.bezierCurveTo(0.25, 0.22, 0.7, 0.48, 0.98, 0.44);
+  s.bezierCurveTo(0.95, 0.2, 0.75, 0.0, 0.42, -0.12);
   s.lineTo(0, -0.05);
 };
 const hindWing = (s: THREE.Shape) => {
-  s.moveTo(0, -0.05);
-  s.bezierCurveTo(0.35, -0.05, 0.6, -0.25, 0.55, -0.5);
-  s.lineTo(0.5, -0.72); // 尾状突起
-  s.lineTo(0.42, -0.52);
-  s.bezierCurveTo(0.3, -0.6, 0.1, -0.45, 0, -0.2);
+  s.moveTo(0, -0.04);
+  s.bezierCurveTo(0.38, -0.02, 0.64, -0.24, 0.6, -0.5);
+  s.lineTo(0.56, -0.76); // 尾状突起
+  s.lineTo(0.47, -0.54);
+  s.bezierCurveTo(0.32, -0.62, 0.1, -0.46, 0, -0.2);
 };
 
 function Wing({ side, anim }: { side: 1 | -1; anim: ModelProps['anim'] }) {
   const ref = useRef<THREE.Group>(null);
-  const fore = shapeGeo('agehaFore', foreWing);
-  const hind = shapeGeo('agehaHind', hindWing);
-  const yellow = useMemo(() => toon('#f6d55c', { side: THREE.DoubleSide }), []);
-  const black = useMemo(() => toon('#2b2118', { side: THREE.DoubleSide }), []);
-  const blue = useMemo(() => toon('#5aa9e6', { side: THREE.DoubleSide }), []);
-  const orange = useMemo(() => toon('#f08a4b', { side: THREE.DoubleSide }), []);
+  const fore = shapeGeo('agehaFore2', foreWing);
+  const hind = shapeGeo('agehaHind2', hindWing);
+  const foreMat = useMemo(() => mat('#ffffff', { ...SURF.scales(), map: agehaWing('fore'), side: THREE.DoubleSide }), []);
+  const hindMat = useMemo(() => mat('#ffffff', { ...SURF.scales(), map: agehaWing('hind'), side: THREE.DoubleSide }), []);
   useFrame(() => {
     const a = anim.current;
-    const flap = Math.sin(a.t * 14) * 0.9 * a.flap + (1 - a.flap) * (0.5 + Math.sin(a.t * 1.5) * 0.25);
-    if (ref.current) ref.current.rotation.z = side * (0.15 + flap);
+    // 飛ぶときは すばやく、とまっている時は ゆっくり 開いたり閉じたり
+    // とまっている時は 翅を すこし ひらいて、ゆっくり 開いたり 閉じたり
+    const flap = Math.sin(a.t * 13) * 0.95 * a.flap + (1 - a.flap) * (0.18 + Math.sin(a.t * 1.2) * 0.15);
+    if (ref.current) ref.current.rotation.z = 0.1 + flap;
   });
   return (
-    <group ref={ref} position={[side * 0.03, 0.12, 0]} scale={[side, 1, 1]}>
-      <group rotation={[Math.PI / 2, 0, 0]}>
-        <mesh geometry={fore} material={yellow} scale={0.75} userData={{ part: 'wings' }} />
-        {/* 黒い帯もよう */}
-        {[0.25, 0.45, 0.65].map((x) => (
-          <mesh key={x} geometry={GEO.box()} material={black} position={[x * 0.75, 0.08 + x * 0.15, 0.002]} rotation={[0, 0, 0.9]} scale={[0.03, 0.28, 0.001]} />
-        ))}
-        <mesh geometry={GEO.box()} material={black} position={[0.62, 0.3, 0.002]} rotation={[0, 0, -0.35]} scale={[0.1, 0.36, 0.001]} />
-        <mesh geometry={hind} material={yellow} scale={0.75} userData={{ part: 'wings' }} />
-        <mesh geometry={GEO.box()} material={black} position={[0.3, -0.35, 0.002]} rotation={[0, 0, 0.4]} scale={[0.12, 0.08, 0.001]} />
-        <mesh geometry={GEO.sphereLo()} material={blue} position={[0.32, -0.4, 0.004]} scale={[0.03, 0.03, 0.001]} />
-        <mesh geometry={GEO.sphereLo()} material={orange} position={[0.12, -0.33, 0.004]} scale={[0.035, 0.035, 0.001]} />
+    <group position={[side * 0.02, 0.06, 0.06]} scale={[side, 1, 1]}>
+      <group ref={ref}>
+        <group rotation={[Math.PI / 2, 0, 0]} scale={0.9}>
+          <mesh geometry={fore} material={foreMat} castShadow userData={{ part: 'wings' }} />
+          <mesh geometry={hind} material={hindMat} castShadow position={[0, 0, 0.002]} userData={{ part: 'wings' }} />
+        </group>
       </group>
     </group>
   );
 }
 
-/** 成虫：黄色に黒い帯の大きな はね。花のみつを ストローで すう */
-export function AgehaAdult({ anim, outlines }: ModelProps) {
+const ADULT_LEG: LegSpec = { femur: 0.12, tibia: 0.13, tarsus: 0.12, thick: 0.01, tarsi: 5 };
+
+/** 成虫：淡い黄色に 黒い すじ と 帯の はね。ゼンマイのように 巻いた 口で 花のみつを すう */
+export function AgehaAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0);
   const tongue = useRef<THREE.Group>(null);
+  const coil = useMemo(
+    () =>
+      cachedTube(
+        'proboscisCoil',
+        Array.from({ length: 14 }, (_, i) => {
+          const a = i * 0.6;
+          const r = 0.035 * (1 - i / 16);
+          return [0, -Math.sin(a) * r, Math.cos(a) * r] as [number, number, number];
+        }),
+        0.006,
+        0.004,
+        30,
+        4,
+      ),
+    [],
+  );
+  const coilMat = useMemo(() => mat('#3b2e24', { roughness: 0.4 }), []);
   useFrame(() => {
     const a = anim.current;
-    if (tongue.current) tongue.current.scale.set(1, 1, 0.3 + a.eat * 1.2);
+    if (tongue.current) {
+      tongue.current.children[0]!.visible = a.eat < 0.3;
+      tongue.current.children[1]!.visible = a.eat >= 0.3;
+    }
   });
+  const fur = useMemo(() => ({ roughness: 0.75, sheen: 0.5, sheenColor: '#4a3e2c', bumpMap: grainBump(23, 96), bumpScale: 1 }), []);
   return (
-    <group ref={body} position={[0, 0.3, 0]} scale={1.5}>
-      <Part geometry={GEO.capsule()} color="#2b2118" rotation={[Math.PI / 2, 0, 0]} scale={[0.07, 0.35, 0.07]} outlines={outlines} part="wings" />
-      <M geo={GEO.box()} color="#f6d55c" position={[0, 0.03, -0.05]} scale={[0.02, 0.04, 0.3]} />
-      <Part geometry={GEO.sphere()} color="#2b2118" position={[0, 0.03, 0.25]} scale={0.065} outlines={outlines} part="proboscis" />
-      <Eye position={[0.045, 0.05, 0.28]} size={0.035} anim={anim} />
-      <Eye position={[-0.045, 0.05, 0.28]} size={0.035} anim={anim} />
-      <group ref={tongue} position={[0, -0.01, 0.3]}>
-        <M geo={GEO.cylinder()} color="#3b2e24" position={[0, -0.02, 0.06]} rotation={[Math.PI / 2.4, 0, 0]} scale={[0.008, 0.12, 0.008]} part="proboscis" />
+    <group position={[0, 0.3, 0]} scale={1.45}>
+    <group ref={body}>
+      {/* 胸（黒地に 黄色の すじ）と 腹 */}
+      <Part geometry={GEO.sphere()} color="#1f1915" surface={fur} position={[0, 0.02, 0.1]} scale={[0.065, 0.065, 0.11]} castShadow part="wings" />
+      {[1, -1].map((s) => (
+        <M key={s} geo={GEO.box()} color="#e8d27a" surface={fur} position={[s * 0.03, 0.065, 0.1]} scale={[0.008, 0.008, 0.14]} />
+      ))}
+      <Part geometry={GEO.capsule()} color="#2a221b" surface={fur} position={[0, 0.0, -0.13]} rotation={[Math.PI / 2, 0, 0]} scale={[0.055, 0.2, 0.055]} part="wings" />
+      {[1, -1].map((s) => (
+        <M key={`b${s}`} geo={GEO.box()} color="#e3cb72" position={[s * 0.035, -0.01, -0.14]} scale={[0.008, 0.012, 0.2]} />
+      ))}
+      {/* 頭 */}
+      <Part geometry={GEO.sphere()} color="#1f1915" surface={fur} position={[0, 0.02, 0.22]} scale={0.045} part="proboscis" />
+      <CompoundEye position={[0.032, 0.03, 0.235]} size={0.022} color="#3a2f22" />
+      <CompoundEye position={[-0.032, 0.03, 0.235]} size={0.022} color="#3a2f22" />
+      <group ref={tongue} position={[0, -0.01, 0.255]}>
+        <mesh geometry={coil} material={coilMat} userData={{ part: 'proboscis' }} />
+        <M geo={GEO.cylinder()} color="#3b2e24" position={[0, -0.05, 0.05]} rotation={[Math.PI / 2.6, 0, 0]} scale={[0.004, 0.14, 0.004]} part="proboscis" />
       </group>
-      <Antenna position={[0.02, 0.07, 0.28]} side={1} length={0.35} kind="club" color="#2b2118" anim={anim} outlines={outlines} up={0.6} forward={0.8} />
-      <Antenna position={[-0.02, 0.07, 0.28]} side={-1} length={0.35} kind="club" color="#2b2118" anim={anim} outlines={outlines} up={0.6} forward={0.8} />
+      <Antenna position={[0.015, 0.06, 0.24]} side={1} length={0.32} thick={0.006} kind="clubbed" color="#1f1915" anim={anim} rotation={[0.2, 0.25, 0]} />
+      <Antenna position={[-0.015, 0.06, 0.24]} side={-1} length={0.32} thick={0.006} kind="clubbed" color="#1f1915" anim={anim} rotation={[0.2, 0.25, 0]} />
       <Wing side={1} anim={anim} />
       <Wing side={-1} anim={anim} />
       {[0, 1, 2].map((p) => (
-        <group key={p} position={[0, -0.04, 0.12 - p * 0.06]}>
-          <Leg position={[0.04, 0, 0]} side={1} pair={p} length={0.2} thick={0.012} color="#2b2118" anim={anim} outlines={false} part={p === 0 ? 'foreleg' : undefined} />
-          <Leg position={[-0.04, 0, 0]} side={-1} pair={p} length={0.2} thick={0.012} color="#2b2118" anim={anim} outlines={false} part={p === 0 ? 'foreleg' : undefined} />
+        <group key={p} position={[0, -0.03, 0.15 - p * 0.05]}>
+          <Leg position={[0.03, 0, 0]} side={1} pair={p} spec={ADULT_LEG} color="#1f1915" anim={anim} part={p === 0 ? 'foreleg' : undefined} />
+          <Leg position={[-0.03, 0, 0]} side={-1} pair={p} spec={ADULT_LEG} color="#1f1915" anim={anim} part={p === 0 ? 'foreleg' : undefined} />
         </group>
       ))}
+    </group>
     </group>
   );
 }

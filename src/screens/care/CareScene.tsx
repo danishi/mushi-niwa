@@ -16,7 +16,10 @@ import { emitParticles } from '../../three/Particles';
 import { useTier } from '../../three/QualityManager';
 import { QUALITY } from '../../three/quality';
 import { Meadow } from '../../three/Diorama';
-import { DraggedTool } from './DraggedTool';
+import { AutoTool } from './AutoTool';
+import { WantBubble } from './WantBubble';
+import { SkyToggle } from '../../three/SkyToggle';
+import { toolAction } from '../../state/drag';
 
 export const careShot = (): CameraShot => {
   const cine = useUi.getState().cinematic;
@@ -25,9 +28,10 @@ export const careShot = (): CameraShot => {
     return { position: [x + 0.4, y + 0.9, z + 2.6], target: [x, y + 0.3, z], fov: 34 };
   }
   return {
-    position: [0, CASE.h * 0.95, CASE.d / 2 + 6.2],
+    position: [0, CASE.h * 1.1, CASE.d / 2 + 5.2],
     target: [0, CASE.h * 0.4, 0],
     fov: 40,
+    fitWidth: CASE.w + 0.5,
     orbit: { minDistance: 3.2, maxDistance: 8.5, minPolar: 0.6, maxPolar: 1.45, azimuth: 0.6 },
   };
 };
@@ -100,15 +104,21 @@ export function CareScene({ freeze = false }: { freeze?: boolean }) {
           freeze
             ? undefined
             : () => {
+                // なでると ごきげんに なり、そのまま 近くで かんさつ できる
                 useGame.getState().pet(creature.id);
                 audio.play('bounce');
                 const g = actors.get(creature.id)?.group;
                 if (g) emitParticles('heart', g.position.clone().add(new THREE.Vector3(0, 0.8, 0)), 3);
                 if (creature.species === 'miidera') maybeSpray(creature.id);
+                window.setTimeout(() => {
+                  if (!toolAction.tool && useUi.getState().screen === 'care') useUi.getState().go('observe');
+                }, 450);
               }
         }
       />
-      <DraggedTool creature={creature} sp={sp} top={top} />
+      {!freeze ? <WantBubble creature={creature} /> : null}
+      {!freeze ? <SkyToggle position={[CASE.w / 2 - 0.4, CASE.h + 1.4, -0.6]} /> : null}
+      <AutoTool creature={creature} sp={sp} top={top} />
     </group>
   );
 }

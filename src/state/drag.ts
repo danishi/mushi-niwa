@@ -1,16 +1,12 @@
 import type { ToolId } from '../sim/types';
 
 /**
- * 道具ドラッグの共有状態。HUD（DOM）のボタンで掴み、3D シーン側で道具を動かす。
- * DOM 側でポインターを捕まえるので、カメラ操作（OrbitControls）とぶつからない。
+ * 道具の自動アクション。ボタンをタップすると、3D の道具がケースへ飛んでいって使われる。
+ * （小さな子でも できるよう、ドラッグは使わない）
  */
-export const drag = {
-  active: false,
+export const toolAction = {
   tool: null as ToolId | null,
-  ndc: { x: 0, y: 0 },
-  released: false,
-  /** 3D 側が書く：ケースの上にあるか */
-  over: false,
+  t: 0,
 };
 
 /** 置いたごはんの場所（虫 ID ごと） */

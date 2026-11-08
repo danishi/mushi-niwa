@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { sharedGeo } from '../three/toon';
+import { sharedGeo } from '../three/materials';
 
 /** 根元から先へ細くなるチューブ（角・触角・脚など） */
 export function taperedTube(points: THREE.Vector3[], r0: number, r1: number, segs = 16, radial = 8): THREE.BufferGeometry {
@@ -34,7 +34,17 @@ export function shapeGeo(key: string, build: (s: THREE.Shape) => void, depth = 0
   return sharedGeo(`shape:${key}`, () => {
     const s = new THREE.Shape();
     build(s);
-    const g = depth > 0 ? new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false }) : new THREE.ShapeGeometry(s, 12);
+    const g = depth > 0 ? new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false }) : new THREE.ShapeGeometry(s, 16);
+    // テクスチャを形の外接矩形に合わせる
+    g.computeBoundingBox();
+    const b = g.boundingBox!;
+    const pos = g.attributes.position as THREE.BufferAttribute;
+    const uv = new Float32Array(pos.count * 2);
+    for (let i = 0; i < pos.count; i++) {
+      uv[i * 2] = (pos.getX(i) - b.min.x) / (b.max.x - b.min.x || 1);
+      uv[i * 2 + 1] = (pos.getY(i) - b.min.y) / (b.max.y - b.min.y || 1);
+    }
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     g.computeVertexNormals();
     return g;
   });
@@ -48,4 +58,22 @@ export function halfSphere(): THREE.BufferGeometry {
 /** 縦に半分の楕円体（左右の前ばね） */
 export function elytronGeo(): THREE.BufferGeometry {
   return sharedGeo('elytron', () => new THREE.SphereGeometry(1, 16, 12, 0, Math.PI, 0, Math.PI / 2));
+}
+
+/** 回転体（軸は +Z）。profile は [半径, z] の列（後ろ→前） */
+export function latheZ(key: string, profile: Array<[number, number]>, segments = 24): THREE.BufferGeometry {
+  return sharedGeo(`lathe:${key}`, () => {
+    const g = new THREE.LatheGeometry(
+      profile.map(([r, z]) => new THREE.Vector2(Math.max(0.0001, r), z)),
+      segments,
+    );
+    g.rotateX(Math.PI / 2);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
+/** 上半分のドーム（甲虫の前ばね・テントウの背中） */
+export function domeGeo(): THREE.BufferGeometry {
+  return sharedGeo('dome', () => new THREE.SphereGeometry(1, 36, 18, 0, Math.PI * 2, 0, Math.PI / 2));
 }

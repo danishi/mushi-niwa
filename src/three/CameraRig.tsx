@@ -8,6 +8,8 @@ export interface CameraShot {
   position: [number, number, number];
   target: [number, number, number];
   fov?: number;
+  /** この幅（ワールド単位）が 横に ちょうど収まる距離まで寄る／下がる */
+  fitWidth?: number;
   /** ユーザーの回転・ピンチを許すか（虫ケースの中を覗く程度に制限） */
   orbit?: {
     minDistance: number;
@@ -34,7 +36,7 @@ export function CameraRig({ shot, locked = false }: { shot: CameraShot; locked?:
 
   useEffect(() => {
     // 縦長画面では横幅が足りなくなるので、そのぶん後ろに下がる
-    const fit = fitFactor(aspect);
+    const fit = shotFit(shot, aspect);
     goalTarget.current.set(...shot.target);
     goalPos.current.set(...shot.position).sub(goalTarget.current).multiplyScalar(fit).add(goalTarget.current);
     moving.current = true;
@@ -63,7 +65,7 @@ export function CameraRig({ shot, locked = false }: { shot: CameraShot; locked?:
   });
 
   const o = shot.orbit;
-  const fit = fitFactor(aspect);
+  const fit = shotFit(shot, aspect);
   const azCenter = Math.atan2(shot.position[0] - shot.target[0], shot.position[2] - shot.target[2]);
   return (
     <OrbitControls
@@ -89,4 +91,14 @@ export function CameraRig({ shot, locked = false }: { shot: CameraShot; locked?:
 export function fitFactor(aspect: number): number {
   const ref = 1.3;
   return aspect >= ref ? 1 : Math.pow(ref / aspect, 0.75);
+}
+
+/** 指定幅が 横に収まるよう、基準の距離を何倍にするか */
+export function shotFit(shot: CameraShot, aspect: number): number {
+  if (!shot.fitWidth) return fitFactor(aspect);
+  const base = Math.hypot(shot.position[0] - shot.target[0], shot.position[1] - shot.target[1], shot.position[2] - shot.target[2]);
+  const vfov = THREE.MathUtils.degToRad(shot.fov ?? 40);
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
+  const need = shot.fitWidth / 2 / Math.tan(hfov / 2);
+  return Math.max(need / base, 0.6);
 }

@@ -1,224 +1,311 @@
-import { Outlines } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { createContext, useContext, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
-import { GEO, OUTLINE_COLOR, toon } from '../three/toon';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GEO, mat, sharedGeo, SURF, type MatOpts } from '../three/materials';
+import { grainBump } from '../three/textures';
 import type { CreatureAnim } from './anim';
-import { cachedTube } from './geom';
+import { taperedTube } from './geom';
 
 type V3 = [number, number, number];
 type AnimRef = { current: CreatureAnim };
 
-/** 棚に並べた小さな虫など、遠目の表示では 脚や目を簡略化してドローコールを減らす */
+/** 棚に並べた小さな虫など、遠目の表示では細部を省いてドローコールを減らす */
 export const LiteContext = createContext(false);
 
-/** 輪郭線つきのメッシュ。part を付けるとかんさつモードでタップできる */
+/** 1 つの部位のメッシュ。part を付けると かんさつモードで タップできる */
 export function Part({
   geometry,
   color,
+  surface,
   position,
   rotation,
   scale,
-  outline = true,
-  outlines,
   part,
-  emissive,
   children,
   castShadow = false,
   meshRef,
 }: {
   geometry: THREE.BufferGeometry;
   color: string;
+  surface?: MatOpts;
   position?: V3;
   rotation?: V3;
   scale?: V3 | number;
-  outline?: boolean;
-  outlines: boolean;
   part?: string;
-  emissive?: string;
   children?: ReactNode;
   castShadow?: boolean;
   meshRef?: (m: THREE.Mesh | null) => void;
 }) {
-  const mat = useMemo(() => toon(color, emissive ? { emissive, emissiveIntensity: 0.25 } : {}), [color, emissive]);
+  const material = useMemo(() => mat(color, surface ?? SURF.matteChitin()), [color, surface]);
   return (
     <mesh
       ref={meshRef}
       geometry={geometry}
-      material={mat}
+      material={material}
       position={position}
       rotation={rotation}
       scale={scale}
-      castShadow={castShadow || (outline && outlines)}
+      castShadow={castShadow}
       userData={part ? { part } : undefined}
     >
-      {outline && outlines ? <Outlines thickness={0.045} color={OUTLINE_COLOR} /> : null}
       {children}
     </mesh>
   );
 }
 
-/** デフォルメした目：白目＋黒目＋ハイライト。寝ると閉じる */
-export function Eye({ position, size = 0.1, anim, pupil = '#2b2118' }: { position: V3; size?: number; anim: AnimRef; pupil?: string }) {
-  const lid = useRef<THREE.Group>(null);
-  const white = useMemo(() => toon('#ffffff'), []);
-  const black = useMemo(() => toon(pupil), [pupil]);
-  const shine = useMemo(() => toon('#ffffff', { emissive: '#ffffff', emissiveIntensity: 1.5 }), []);
-  const blinkSeed = useMemo(() => Math.random() * 5, []);
-  const lite = useContext(LiteContext);
-  useFrame(() => {
-    const a = anim.current;
-    const blink = ((a.t + blinkSeed) % 4.2) < 0.12 ? 0.15 : 1;
-    const open = THREE.MathUtils.lerp(1, 0.12, a.sleep) * blink;
-    if (lid.current) lid.current.scale.y = open;
+/** 複眼：黒っぽく つやのある 楕円体（デフォルメなし） */
+export function CompoundEye({ position, size, color = '#1a1512', part }: { position: V3; size: [number, number, number] | number; color?: string; part?: string }) {
+  const material = useMemo(() => mat(color, { ...SURF.eye(), bumpMap: grainBump(3, 96), bumpScale: 0.6 }), [color]);
+  return <mesh geometry={GEO.sphere()} material={material} position={position} scale={size} userData={part ? { part } : undefined} />;
+}
+
+export interface LegSpec {
+  femur: number;
+  tibia: number;
+  tarsus: number;
+  /** 太さ（腿節のいちばん太いところ） */
+  thick: number;
+  /** ふ節の数 */
+  tarsi?: number;
+  /** すねの外側の とげ（カブトムシなど） */
+  teeth?: number;
+  /** 腿節を太くする（跳ぶ虫の後ろあし） */
+  jumper?: boolean;
+}
+
+function legKey(s: LegSpec) {
+  return `${s.femur}:${s.tibia}:${s.tarsus}:${s.thick}:${s.tarsi ?? 5}:${s.teeth ?? 0}:${s.jumper ? 1 : 0}`;
+}
+
+/** 腿節（根元→ひざ。+X 方向に伸びる） */
+function femurGeo(s: LegSpec) {
+  return sharedGeo(`femur:${legKey(s)}`, () => {
+    const L = s.femur;
+    const t = s.thick * (s.jumper ? 1.8 : 1);
+    const g = taperedTube(
+      [new THREE.Vector3(0, 0, 0), new THREE.Vector3(L * 0.35, 0.01, 0), new THREE.Vector3(L * 0.7, 0.005, 0), new THREE.Vector3(L, 0, 0)],
+      t * 0.8,
+      t * 0.55,
+      10,
+      8,
+    );
+    // まんなかを少し太らせる
+    const p = g.attributes.position as THREE.BufferAttribute;
+    const v = new THREE.Vector3();
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i);
+      const k = 1 + 0.35 * Math.sin((v.x / L) * Math.PI) * (s.jumper ? 1.6 : 1);
+      v.y *= k;
+      v.z *= k;
+      p.setXYZ(i, v.x, v.y, v.z);
+    }
+    g.computeVertexNormals();
+    return g;
   });
-  return (
-    <group position={position}>
-      <group ref={lid}>
-        <mesh geometry={GEO.sphere()} material={white} scale={size} />
-        <mesh geometry={GEO.sphere()} material={black} scale={size * 0.62} position={[0, 0, size * 0.48]} />
-        {lite ? null : <mesh geometry={GEO.sphereLo()} material={shine} scale={size * 0.22} position={[size * 0.25, size * 0.3, size * 0.95]} />}
-      </group>
-    </group>
-  );
+}
+
+/** 脛節＋ふ節＋つめ（ひざ→先。-Y 方向へ下りて、先は外へ） */
+function lowerLegGeo(s: LegSpec) {
+  return sharedGeo(`lower:${legKey(s)}`, () => {
+    const parts: THREE.BufferGeometry[] = [];
+    const T = s.tibia;
+    const th = s.thick * 0.75;
+    parts.push(
+      taperedTube([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.02 * T, -T * 0.5, 0), new THREE.Vector3(0.05 * T, -T, 0)], th, th * 0.85, 8, 7),
+    );
+    // すねの外側の歯（とげ）
+    for (let i = 0; i < (s.teeth ?? 0); i++) {
+      const c = new THREE.ConeGeometry(th * 0.45, th * 1.6, 5);
+      c.rotateZ(-Math.PI / 2);
+      c.translate(th * 1.1, -T * (0.45 + i * 0.18), 0);
+      parts.push(c);
+    }
+    // ふ節：小さな節が つらなる
+    const n = s.tarsi ?? 5;
+    const base = new THREE.Vector3(0.05 * T, -T, 0);
+    const seg = s.tarsus / n;
+    for (let i = 0; i < n; i++) {
+      const sp = new THREE.SphereGeometry(1, 8, 6);
+      sp.scale(seg * 0.55, th * 0.42, th * 0.42);
+      const a = -1.1 + (i / n) * 0.5; // 外向きに なだらかに
+      sp.rotateZ(a);
+      sp.translate(base.x + Math.cos(a) * seg * (i + 0.5), base.y + Math.sin(a) * seg * (i + 0.5), 0);
+      parts.push(sp);
+    }
+    // つめ（2 本）
+    const tip = new THREE.Vector3(base.x + Math.cos(-0.6) * seg * n, base.y + Math.sin(-0.6) * seg * n, 0);
+    for (const z of [-1, 1]) {
+      const c = new THREE.ConeGeometry(th * 0.18, seg * 0.9, 4);
+      c.rotateZ(-Math.PI / 2 - 0.9);
+      c.translate(tip.x, tip.y, z * th * 0.2);
+      parts.push(c);
+    }
+    const merged = mergeGeometries(parts.map((g) => g.toNonIndexed()))!;
+    merged.computeVertexNormals();
+    return merged;
+  });
 }
 
 /**
- * 2 節の脚。walk に合わせて交互（3 脚歩行）に振る。
+ * 写実的な脚（腿節・脛節・ふ節・つめ）。walk に合わせて 3 脚歩行で動く。
  * side: 左 -1 / 右 +1、pair: 前 0 / 中 1 / 後 2
  */
 export function Leg({
   position,
   side,
   pair,
-  length = 0.4,
-  thick = 0.035,
+  spec,
   color,
   anim,
-  spread = 0.9,
-  outlines,
+  spread = 0.3,
+  yaw = 0,
   part,
 }: {
   position: V3;
   side: 1 | -1;
   pair: number;
-  length?: number;
-  thick?: number;
+  spec: LegSpec;
   color: string;
   anim: AnimRef;
+  /** 腿節の持ち上げ角 */
   spread?: number;
-  outlines: boolean;
+  /** 前後の向き（ラジアン、+ で前向き） */
+  yaw?: number;
   part?: string;
 }) {
   const hip = useRef<THREE.Group>(null);
   const knee = useRef<THREE.Group>(null);
-  const mat = useMemo(() => toon(color), [color]);
-  // 3 脚歩行：左前・右中・左後 が同じ位相
-  const phase = ((pair % 2 === 0 ? 0 : Math.PI) + (side > 0 ? Math.PI : 0)) % (Math.PI * 2);
-  const baseYaw = (pair - 1) * -0.55 * side;
   const lite = useContext(LiteContext);
+  const material = useMemo(() => mat(color, SURF.matteChitin()), [color]);
+  const phase = ((pair % 2 === 0 ? 0 : Math.PI) + (side > 0 ? Math.PI : 0)) % (Math.PI * 2);
+  const defaultYaw = yaw || (1 - pair) * 0.55;
   useFrame(() => {
     const a = anim.current;
     const g = a.gait + phase;
-    const swing = Math.sin(g) * 0.45 * a.walk;
-    const lift = Math.max(0, Math.cos(g)) * 0.35 * a.walk;
-    const tuck = a.sleep * 0.5;
+    const swing = Math.sin(g) * 0.4 * a.walk;
+    const lift = Math.max(0, Math.cos(g)) * 0.3 * a.walk;
+    const tuck = a.sleep * 0.35;
+    // 右側（+X）の脚として回す。左は外側の group で鏡写しにする
     if (hip.current) {
-      hip.current.rotation.y = baseYaw + swing * side;
-      hip.current.rotation.z = side * (spread * 0.6 - lift - tuck * 0.3) * -1;
+      hip.current.rotation.y = -(defaultYaw + swing);
+      hip.current.rotation.z = spread + lift + tuck;
     }
-    if (knee.current) knee.current.rotation.z = -side * (1.1 + tuck);
+    // すねは 外側へ ひらいて 地面に つく（たたむと 体の下へ）
+    if (knee.current) knee.current.rotation.z = 0.7 - spread * 0.5 + lift * 0.25 - tuck * 0.8;
   });
-  const half = length / 2;
   return (
-    <group ref={hip} position={position}>
-      <mesh geometry={GEO.cylinder()} material={mat} position={[side * half * 0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[thick, half, thick]} userData={part ? { part } : undefined}>
-        {outlines ? <Outlines thickness={0.6} color={OUTLINE_COLOR} /> : null}
-      </mesh>
-      {lite ? null : (
-      <group ref={knee} position={[side * half, 0, 0]}>
-        <mesh geometry={GEO.cylinder()} material={mat} position={[side * half * 0.55, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[thick * 0.8, half * 1.1, thick * 0.8]} userData={part ? { part } : undefined}>
-          {outlines ? <Outlines thickness={0.6} color={OUTLINE_COLOR} /> : null}
-        </mesh>
+    <group position={position} scale={[side, 1, 1]}>
+      <group ref={hip}>
+        <mesh geometry={femurGeo(spec)} material={material} userData={part ? { part } : undefined} />
+        {lite ? null : (
+          <group ref={knee} position={[spec.femur, 0, 0]}>
+            <mesh geometry={lowerLegGeo(spec)} material={material} userData={part ? { part } : undefined} />
+          </group>
+        )}
       </group>
-      )}
     </group>
   );
 }
 
-/** 触角。ゆらゆら揺れる。kind で先の形を変える */
+export type AntennaKind = 'filiform' | 'clubbed' | 'lamellate' | 'bipectinate' | 'clavate';
+
+function antennaGeo(kind: AntennaKind, L: number, thick: number) {
+  return sharedGeo(`ant:${kind}:${L}:${thick}`, () => {
+    const parts: THREE.BufferGeometry[] = [];
+    const pts = [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0.12 * L, 0.25 * L, 0.35 * L),
+      new THREE.Vector3(0.25 * L, 0.45 * L, 0.7 * L),
+      new THREE.Vector3(0.38 * L, 0.55 * L, 1.0 * L),
+    ];
+    const curve = new THREE.CatmullRomCurve3(pts);
+    if (kind === 'lamellate') {
+      // カブトムシ：短い柄と、先の 3 枚の板（片状部）
+      parts.push(taperedTube(pts.slice(0, 3), thick, thick * 0.8, 6, 5));
+      const tip = curve.getPoint(0.7);
+      for (let i = 0; i < 3; i++) {
+        const b = new THREE.SphereGeometry(1, 8, 6);
+        b.scale(thick * 2.6, thick * 0.6, thick * 1.8);
+        b.rotateZ(0.3);
+        b.translate(tip.x + i * thick * 0.4, tip.y + i * thick * 0.9, tip.z + thick);
+        parts.push(b);
+      }
+    } else {
+      parts.push(taperedTube(pts, thick, kind === 'filiform' ? thick * 0.35 : thick * 0.8, 18, 5));
+      if (kind === 'clubbed' || kind === 'clavate') {
+        const tip = curve.getPoint(1);
+        const c = new THREE.SphereGeometry(1, 10, 8);
+        c.scale(thick * (kind === 'clubbed' ? 1.9 : 2.4), thick * (kind === 'clubbed' ? 1.9 : 2.4), thick * (kind === 'clubbed' ? 4 : 3));
+        c.translate(tip.x, tip.y, tip.z);
+        parts.push(c);
+      }
+      if (kind === 'bipectinate') {
+        // カイコガのオス：くしのような 枝
+        for (let i = 2; i < 16; i++) {
+          const t = i / 16;
+          const p = curve.getPoint(t);
+          for (const s of [-1, 1]) {
+            const br = new THREE.CylinderGeometry(thick * 0.18, thick * 0.12, L * 0.18 * Math.sin(t * Math.PI), 4);
+            br.rotateZ(s * 1.0);
+            br.rotateX(0.4);
+            br.translate(p.x + s * L * 0.06, p.y, p.z);
+            parts.push(br);
+          }
+        }
+      }
+      if (kind === 'filiform') {
+        // 節の ふくらみ（スズムシなどの長い触角に）
+        for (let i = 1; i < 14; i++) {
+          const p = curve.getPoint(i / 14);
+          const r = THREE.MathUtils.lerp(thick, thick * 0.35, i / 14) * 1.25;
+          const s = new THREE.SphereGeometry(r, 5, 4);
+          s.translate(p.x, p.y, p.z);
+          parts.push(s);
+        }
+      }
+    }
+    const m = mergeGeometries(parts.map((g) => g.toNonIndexed()))!;
+    m.computeVertexNormals();
+    return m;
+  });
+}
+
+/** 触角。ゆっくり揺れて まわりを さぐる */
 export function Antenna({
   position,
   side,
-  length = 0.4,
+  length,
+  thick = 0.012,
+  kind,
   color,
   anim,
-  kind = 'thread',
-  up = 0.5,
-  forward = 0.6,
+  rotation = [0, 0, 0],
   part,
-  outlines,
 }: {
   position: V3;
   side: 1 | -1;
-  length?: number;
+  length: number;
+  thick?: number;
+  kind: AntennaKind;
   color: string;
   anim: AnimRef;
-  kind?: 'thread' | 'club' | 'comb' | 'short';
-  up?: number;
-  forward?: number;
+  rotation?: V3;
   part?: string;
-  outlines: boolean;
 }) {
   const ref = useRef<THREE.Group>(null);
-  const mat = useMemo(() => toon(color), [color]);
+  const material = useMemo(() => mat(color, SURF.matteChitin()), [color]);
   const seed = useMemo(() => Math.random() * 6, []);
-  const L = length;
-  const geo = useMemo(
-    () =>
-      cachedTube(
-        `ant:${kind}:${L.toFixed(2)}:${up}:${forward}`,
-        [
-          [0, 0, 0],
-          [0.15 * L, up * 0.5 * L, forward * 0.4 * L],
-          [0.3 * L, up * L, forward * 0.9 * L],
-          [0.45 * L, up * 1.1 * L, forward * 1.3 * L],
-        ],
-        kind === 'thread' ? 0.018 : 0.025,
-        kind === 'thread' ? 0.006 : 0.02,
-        12,
-        5,
-      ),
-    [kind, L, up, forward],
-  );
   useFrame(() => {
     const a = anim.current;
     if (!ref.current) return;
-    const sway = Math.sin(a.t * (1.5 + a.energy) + seed) * 0.15 * (0.4 + a.energy);
-    ref.current.rotation.set(sway * 0.6 - a.sleep * 0.4, sway, 0);
+    const sway = Math.sin(a.t * (1.2 + a.energy * 1.5) + seed) * 0.12 * (0.3 + a.energy);
+    ref.current.rotation.set(rotation[0] + sway * 0.5 - a.sleep * 0.3, rotation[1] + sway, rotation[2]);
   });
-  const tip: V3 = [0.45 * L, up * 1.1 * L, forward * 1.3 * L];
   return (
     <group position={position} scale={[side, 1, 1]}>
       <group ref={ref}>
-        <mesh geometry={geo} material={mat} userData={part ? { part } : undefined}>
-          {outlines && kind !== 'thread' ? <Outlines thickness={0.01} color={OUTLINE_COLOR} /> : null}
-        </mesh>
-        {kind === 'club' || kind === 'short' ? (
-          <mesh geometry={GEO.sphereLo()} material={mat} position={tip} scale={kind === 'short' ? 0.05 : 0.04} userData={part ? { part } : undefined} />
-        ) : null}
-        {kind === 'comb'
-          ? [0.3, 0.5, 0.7, 0.9].map((t) => (
-              <mesh
-                key={t}
-                geometry={GEO.cylinder()}
-                material={mat}
-                position={[tip[0] * t + 0.03, tip[1] * t, tip[2] * t]}
-                rotation={[0, 0, Math.PI / 2.5]}
-                scale={[0.008, 0.1 * (1 - Math.abs(t - 0.6)), 0.008]}
-              />
-            ))
-          : null}
+        <mesh geometry={antennaGeo(kind, length, thick)} material={material} userData={part ? { part } : undefined} />
       </group>
     </group>
   );

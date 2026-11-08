@@ -961,3 +961,66 @@ ruby rt {
   align-items: center;
   text-align: center;
 }
+
+/* 虫の「してほしいこと」吹き出し */
+.want-bubble {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow: 0 5px 0 var(--c-shadow), 0 0 0 4px rgba(255, 209, 102, 0.9);
+  display: grid;
+  place-items: center;
+  animation: want-pulse 1.4s ease-in-out infinite;
+}
+
+.want-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 10px solid transparent;
+  border-top-color: #fffaf0;
+  border-bottom: 0;
+}
+
+.want-bubble svg {
+  width: 64%;
+  height: 64%;
+}
+
+@keyframes want-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* してほしいことに 合う 道具は 光って ぴょんぴょん */
+.tool-btn.want {
+  background: var(--c-sun);
+  box-shadow: 0 4px 0 #e0a800, 0 0 0 5px rgba(255, 209, 102, 0.6);
+  animation: tool-hop 0.9s ease-in-out infinite;
+}
+
+@keyframes tool-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .want-bubble,
+  .tool-btn.want {
+    animation: none;
+  }
+}

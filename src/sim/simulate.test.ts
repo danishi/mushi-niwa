@@ -134,3 +134,16 @@ describe('observation parts', () => {
     expect(partsFor(female).map((p) => p.id)).toContain('ovipositor');
   });
 });
+
+describe('wants', () => {
+  it('asks for the most needed thing and nothing when satisfied', async () => {
+    const { wantOf } = await import('./simulate');
+    const s = adopt(newGame(NOW), 'kabutomushi', 0, NOW, () => 0.1);
+    const c = s.creatures[0]!;
+    expect(wantOf(c)).toBeNull();
+    expect(wantOf({ ...c, needs: { ...c.needs, moisture: 0.2, hunger: 0.4 } })).toBe('mist');
+    expect(wantOf({ ...c, needs: { ...c.needs, hunger: 0.1 } })).toBe('food');
+    expect(wantOf({ ...c, food: 0.5, needs: { ...c.needs, hunger: 0.1 } })).toBeNull();
+    expect(wantOf({ ...c, needs: { ...c.needs, mood: 0.1 } })).toBe('pet');
+  });
+});

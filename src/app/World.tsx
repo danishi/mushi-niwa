@@ -56,12 +56,15 @@ export function World() {
   return (
     <Canvas
       dpr={dpr}
-      shadows={{ type: THREE.PCFShadowMap }}
-      flat
+      shadows={{ type: THREE.PCFSoftShadowMap }}
       frameloop={visible ? 'always' : 'never'}
-      gl={{ antialias: QUALITY[initialTier].antialias, powerPreference: 'high-performance', alpha: false }}
+      gl={{ antialias: QUALITY[initialTier].antialias, powerPreference: 'high-performance', alpha: false, toneMapping: THREE.AgXToneMapping }}
       camera={{ fov: 40, near: 0.05, far: 80, position: [0, 4, 12] }}
       data-testid="world-canvas"
+      onCreated={(state) => {
+        // E2E・デバッグ用（?e2e のときだけ）
+        if (new URLSearchParams(location.search).has('e2e')) (window as unknown as Record<string, unknown>).__r3f = state;
+      }}
     >
       <QualityManager />
       <EnvDriver />

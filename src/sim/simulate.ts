@@ -286,3 +286,30 @@ export function clamp01(v: number): number {
 export function partsFor(c: Creature) {
   return stageOf(c).parts.filter((p) => !p.sex || p.sex === c.sex);
 }
+
+/** 虫が いちばん してほしいこと（吹き出しに出す）。なければ null */
+export type Want = ToolId | 'pet';
+
+export function wantOf(c: Creature): Want | null {
+  if (c.finished) return null;
+  const st = stageOf(c);
+  const order: Array<[NeedKey, Want]> = [
+    ['hunger', 'food'],
+    ['moisture', 'mist'],
+    ['clean', 'scoop'],
+    ['mood', st.tools.includes('house') && !c.house ? 'house' : 'pet'],
+  ];
+  let best: Want | null = null;
+  let lowest = 0.55;
+  for (const [k, want] of order) {
+    if ((st.decay[k] ?? 0) <= 0) continue;
+    // ごはんが置いてあって食べている最中なら、ごはんは頼まない
+    if (k === 'hunger' && c.food > 0.05) continue;
+    if (want !== 'pet' && !st.tools.includes(want)) continue;
+    if (c.needs[k] < lowest) {
+      lowest = c.needs[k];
+      best = want;
+    }
+  }
+  return best;
+}

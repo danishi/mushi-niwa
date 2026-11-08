@@ -9,7 +9,7 @@ import type { CameraShot } from '../../three/CameraRig';
 import { Meadow } from '../../three/Diorama';
 import { useTier } from '../../three/QualityManager';
 import { QUALITY } from '../../three/quality';
-import { GEO, toon } from '../../three/toon';
+import { GEO, mat } from '../../three/materials';
 
 export const zukanShot = (): CameraShot => ({
   // 下半分は解説シートなので、標本が画面の上半分に来るよう注視点を下げる
@@ -31,7 +31,7 @@ function Specimen() {
     a.energy = 1;
     a.walk = 0.6;
     a.gait += dt * 4;
-    a.flap = 0.5;
+    a.flap = 0;
     a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
     if (spin.current) spin.current.rotation.y += dt * 0.5;
   });
@@ -51,8 +51,8 @@ function Specimen() {
 }
 
 export function ZukanScene() {
-  const wood = useMemo(() => toon('#c8a27a'), []);
-  const top = useMemo(() => toon('#fffaf0'), []);
+  const wood = useMemo(() => mat('#c8a27a'), []);
+  const top = useMemo(() => mat('#fffaf0'), []);
   return (
     <group>
       <Meadow radius={8} />

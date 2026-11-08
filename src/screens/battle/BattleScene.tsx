@@ -13,7 +13,7 @@ import { Meadow } from '../../three/Diorama';
 import { emitParticles } from '../../three/Particles';
 import { useTier } from '../../three/QualityManager';
 import { QUALITY } from '../../three/quality';
-import { GEO, toon } from '../../three/toon';
+import { GEO, mat } from '../../three/materials';
 
 export const battleShot = (): CameraShot => ({ position: [0, 2.6, 5.2], target: [0, 0.7, 0], fov: 38 });
 
@@ -75,9 +75,9 @@ export function BattleScene() {
   // 毎フレーム変わる meter では再描画しない（対戦相手の組み合わせと演出だけ購読）
   const pair = useBattle((b) => (b.state ? `${b.state.player}|${b.state.cpu}` : ''));
   const fx = useBattle((b) => b.fx);
-  const wood = useMemo(() => toon('#a0785a'), []);
-  const ring = useMemo(() => toon('#e8d3a9'), []);
-  const line = useMemo(() => toon('#fffaf0'), []);
+  const wood = useMemo(() => mat('#a0785a'), []);
+  const ring = useMemo(() => mat('#e8d3a9'), []);
+  const line = useMemo(() => mat('#fffaf0'), []);
   const step = useBattle((b) => b.step);
   useFrame((_, dt) => step(Math.min(dt, 0.05)));
   useEffect(() => {

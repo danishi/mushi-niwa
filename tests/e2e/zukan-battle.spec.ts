@@ -15,7 +15,7 @@ async function start(page: Page) {
 
 test('zukan shows met species with facts and hides unmet ones', async ({ page }) => {
   await start(page);
-  await page.getByTestId('to-zukan').tap();
+  await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('zukan'));
   await expect(page.getByTestId('zukan-hud')).toBeVisible();
   await expect(page.getByTestId('zukan-kaiko')).toContainText('？？？');
   await page.getByTestId('zukan-nanahoshi').tap();
@@ -26,7 +26,7 @@ test('zukan shows met species with facts and hides unmet ones', async ({ page })
 test('mushi-zumou can be played to a gentle result', async ({ page }) => {
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
-  await page.getByTestId('to-battle').tap();
+  await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('battle'));
   await expect(page.getByTestId('battle-select')).toContainText('たたかわない');
   await page.getByTestId('battle-pick-nanahoshi').tap();
   const push = page.getByTestId('battle-push');

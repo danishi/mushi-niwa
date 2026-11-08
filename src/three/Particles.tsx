@@ -3,7 +3,7 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useTier } from './QualityManager';
 import { QUALITY } from './quality';
-import { GEO } from './toon';
+import { GEO } from './materials';
 
 export type ParticleKind = 'sparkle' | 'mist' | 'dust' | 'smoke' | 'heart' | 'leaf' | 'pollen';
 

@@ -5,7 +5,6 @@ import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
 import { speak } from '../../text/speech';
 import { Icon } from '../../ui/Icon';
-import { IconButton } from '../../ui/IconButton';
 import { SettingsGateButton } from '../../ui/ParentalGate';
 import { SpeciesIcon } from '../../ui/SpeciesIcon';
 
@@ -50,7 +49,6 @@ function SpeciesPicker({ slot, onClose }: { slot: number; onClose: () => void })
 }
 
 export function GardenHud() {
-  const go = useUi((s) => s.go);
   const picking = useUi((s) => s.pickingSlot);
   const setPicking = useUi((s) => s.setPickingSlot);
   const count = useGame((s) => s.creatures.length);
@@ -60,10 +58,7 @@ export function GardenHud() {
   return (
     <div className="hud" data-testid="garden-hud">
       <div className="hud-row top">
-        <IconButton icon="back" label="タイトルへ" onPress={() => go('title')} testId="to-title" />
         <span className="hud-spacer" />
-        <IconButton icon="book" label="ずかん" onPress={() => go('zukan')} testId="to-zukan" />
-        <IconButton icon="paw" label="むしずもう" onPress={() => go('battle')} testId="to-battle" />
         <SettingsGateButton />
       </div>
       <div className="hud-spacer" />

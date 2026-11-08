@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { audio } from '../../audio/audio';
 import { actors } from '../../creatures/Actor';
 import { SPECIES } from '../../data/species';
-import { conditionOf, stageOf } from '../../sim/simulate';
+import { stageOf, wantOf } from '../../sim/simulate';
 import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
 import { Ruby } from '../../text/ruby';
@@ -10,14 +10,10 @@ import { speak } from '../../text/speech';
 import { emitParticles } from '../../three/Particles';
 import { IconButton } from '../../ui/IconButton';
 import { Icon } from '../../ui/Icon';
-import { NeedsBar } from '../../ui/NeedsBar';
-import { NightToggle } from '../../ui/NightToggle';
 import { SettingsGateButton } from '../../ui/ParentalGate';
 import { ToolBar } from '../../ui/ToolBar';
 import { MemoryCardModal } from '../zukan/MemoryCard';
 
-const FACE = { genki: '😊', futsuu: '🙂', genkiganai: '😢' } as const;
-const FACE_TEXT = { genki: 'げんき！', futsuu: 'ふつう', genkiganai: 'げんきが ないみたい' } as const;
 
 export function CareHud() {
   const id = useUi((s) => s.selectedId);
@@ -54,7 +50,6 @@ export function CareHud() {
   }
   const sp = SPECIES[creature.species];
   const stage = stageOf(creature);
-  const cond = conditionOf(creature);
 
   const sendOff = () => {
     if (leaving) return;
@@ -89,20 +84,12 @@ export function CareHud() {
       <div className="hud-row top">
         <IconButton icon="home" label="むしにわに もどる" onPress={() => go('garden', null)} testId="back" />
         <span className="hud-spacer" />
-        <NightToggle />
-        <IconButton icon="magnifier" label="かんさつ" onPress={() => go('observe')} testId="observe" />
         <SettingsGateButton />
       </div>
       <div className="hud-row" style={{ marginTop: 8 }}>
         <div className="stage-chip" data-testid="stage-label">
           {sp.name}・<Ruby text={stage.label} />
         </div>
-      </div>
-      <div className="hud-row" style={{ marginTop: 8 }}>
-        <button className="cond-face" aria-label={FACE_TEXT[cond]} onClick={() => speak(FACE_TEXT[cond], true)} data-testid="condition">
-          {FACE[cond]}
-        </button>
-        <NeedsBar creature={creature} />
       </div>
       {cine ? <div className="banner">{cine.label}</div> : null}
       <div className="hud-spacer" />
@@ -112,7 +99,7 @@ export function CareHud() {
           もりに かえす
         </button>
       ) : (
-        <ToolBar creature={creature} />
+        <ToolBar creature={creature} want={wantOf(creature)} />
       )}
     </div>
   );

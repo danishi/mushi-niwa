@@ -7,7 +7,7 @@
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`） |
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア）と `window.__r3f`（three のシーン）） |
 | `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
 | `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
 | `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要 |
@@ -31,15 +31,18 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **罰を与えない**: 虫は死なない。お世話不足は「げんきがない」（成長が一時停止）になるだけ。寿命を終えた成虫は送り出し演出 → ずかんに思い出カード。
 - **時間**: 通常は遊んでいる間だけ進む。設定の「リアルタイムモード」でのみ離席中も進む（追いつき計算は上限つき）。
 - **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
-- **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。`PerformanceMonitor` で FPS が落ちたら下げる。DPR 上限 2。影・後処理・輪郭線は high/mid のみ。
-- **遠目の表示は軽量版**: 棚のミニケースは `LiteContext` で脚・目を簡略化。ケース枠は 1 ジオメトリに結合。影は主要パーツ（輪郭線つき）だけが落とす。
-- **ドローコール削減**: マテリアルは `toon()`、ジオメトリは `GEO.*` / `sharedGeo()` でキャッシュ共有。同じ小物が多いものは `InstancedMesh`（`Scatter`）。
+- **見た目は図鑑のような写実**（ユーザー判断で トゥーン調から変更）: 物理ベース材質 `mat()`／`SURF`（`src/three/materials.ts`）、環境マップ（RoomEnvironment を PMREM で生成）、AgX トーンマッピング、やわらかい影。テクスチャは `src/three/textures.ts` で Canvas から生成（外部画像なし）。虫の目はデフォルメせず複眼（`CompoundEye`）。脚は腿節・脛節・ふ節・つめ（`Leg` + `LegSpec`）、触角は種類別（`AntennaKind`）。
+- **3〜5 歳でも遊べる操作**: 道具はタップだけ（`toolAction` → `AutoTool` が 3D で飛んでいって自動で使う。ドラッグなし）。お世話パラメータの数値・ゲージは出さず、虫の頭上の吹き出し（`WantBubble`、`wantOf()`）と、対応する道具ボタンの点滅で「してほしいこと」を伝える。画面のボタンは最小限：昼夜は空の太陽／月（`SkyToggle`）、かんさつは虫をタップ、ずかん・むしずもうは棚の前の 3D の本・切り株から入る。
+- **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。`PerformanceMonitor` で FPS が落ちたら下げる。DPR 上限 2。影・後処理は high のみ、草の本数も画質で変える。
+- **遠目の表示は軽量版**: 棚のミニケースは `LiteContext` で脚の先を省略。脚・触角・ケースの角はそれぞれ 1 ジオメトリに結合。影は主要パーツ（`castShadow` 指定）だけが落とす。
+- **ドローコール削減**: マテリアルは `mat()`、ジオメトリは `GEO.*` / `sharedGeo()` でキャッシュ共有。同じ小物が多いものは `InstancedMesh`（`Scatter`）。
+- **`useBodyMotion` の group には position を付けない**（毎フレーム上書きされる）。持ち上げたいときは外側に group を重ねる。
 - **3D アセットは外部に頼らない**: 虫・ジオラマはプリミティブとプロシージャル生成のみ。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。
 
 ## 規約
 
 - 子ども向けの文言はひらがな中心。漢字は `{漢字|かんじ}` 記法で書き、`<Ruby text>` で表示、`speak()` で読み上げ（`src/text/`）。大人向けの設定画面だけは通常表記。
-- 操作はアイコン（`src/ui/Icon.tsx`）・音・動きで伝える。ボタンは `IconButton`（64px、最低 56px）。ホバー前提の UI は作らない。
+- 操作はアイコン（`src/ui/Icon.tsx`）・音・動きで伝える。ボタンは `IconButton`（64px、最低 56px）。ホバー前提の UI やドラッグ操作は作らない。
 - E2E 用に主要要素へ `data-testid` を付ける。
 - 設定画面はペアレンタルゲート（歯車 2.5 秒長押し → 漢数字の順番タップ）の先に置く。
 - 広告・課金・外部トラッキング・個人情報の取得はしない。保存は端末内（IndexedDB → localStorage → メモリの順に退避）。
@@ -50,7 +53,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 ```
 src/app/          App・World(Canvas)・画面レジストリ・PWA 登録
 src/screens/      title / garden / care / observe / zukan / settings（各画面のシーンと HUD）
-src/three/        共有 3D（toon マテリアル、カメラリグ、ライト、画質、ジオラマ、パーティクル）
+src/three/        共有 3D（写実マテリアル・Canvas テクスチャ、カメラリグ、ライト、画質、ジオラマ、パーティクル）
 src/creatures/    虫のプロシージャルモデルとアニメーション
 src/sim/          純 TS のゲームロジック
 src/data/species/ 種ごとの生態データ

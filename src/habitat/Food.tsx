@@ -3,45 +3,48 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { FoodId } from '../sim/types';
 import { leafGeometry } from '../three/Diorama';
-import { GEO, toon } from '../three/toon';
+import { GEO, mat, type MatOpts } from '../three/materials';
+import { barkTexture, grainBump, leafTexture, matTexture } from '../three/textures';
 
 type V3 = [number, number, number];
 
-function Mesh({ color, ...p }: { color: string; geometry: THREE.BufferGeometry; position?: V3; rotation?: V3; scale?: V3 | number }) {
-  const m = useMemo(() => toon(color), [color]);
+function Mesh({ color, surface, ...p }: { color: string; surface?: MatOpts; geometry: THREE.BufferGeometry; position?: V3; rotation?: V3; scale?: V3 | number }) {
+  const m = useMemo(() => mat(color, surface ?? { roughness: 0.7 }), [color, surface]);
   return <mesh material={m} castShadow {...p} />;
 }
 
-/** 食べ物の見た目（3D のごはん）。ドラッグ中の道具にも使う */
+const leafSurf = (c: string): MatOpts => ({ map: leafTexture(c), roughness: 0.55, side: THREE.DoubleSide });
+
+/** 食べ物の見た目（3D のごはん）。道具として運ぶときにも使う */
 export function FoodModel({ food }: { food: FoodId }) {
   switch (food) {
     case 'jelly':
-      // 昆虫ゼリーのカップ
+      // 昆虫ゼリーのカップ（とうめいな カップに、つやのある ゼリー）
       return (
         <group>
-          <Mesh color="#fffaf0" geometry={GEO.cylinder()} position={[0, 0.12, 0]} scale={[0.2, 0.24, 0.2]} />
-          <Mesh color="#e76f51" geometry={GEO.cylinder()} position={[0, 0.245, 0]} scale={[0.18, 0.02, 0.18]} />
-          <Mesh color="#f4a261" geometry={GEO.sphere()} position={[0, 0.26, 0]} scale={[0.12, 0.04, 0.12]} />
+          <Mesh color="#f4f4f0" surface={{ roughness: 0.1, clearcoat: 1, opacity: 0.55 }} geometry={GEO.cylinder()} position={[0, 0.12, 0]} scale={[0.19, 0.24, 0.19]} />
+          <Mesh color="#c8432a" surface={{ roughness: 0.08, clearcoat: 1, translucent: true }} geometry={GEO.cylinder()} position={[0, 0.1, 0]} scale={[0.17, 0.2, 0.17]} />
+          <Mesh color="#d9d9d4" surface={{ roughness: 0.3, metalness: 0.6 }} geometry={GEO.cylinder()} position={[0.12, 0.245, 0]} rotation={[0, 0, 0.6]} scale={[0.12, 0.005, 0.18]} />
         </group>
       );
     case 'mat':
-      // 新しいマット（ふかふかの腐葉土の山）
+      // 新しい マット（ふかふかの 腐葉土）
       return (
         <group>
-          <Mesh color="#3b261a" geometry={GEO.sphere()} position={[0, 0.02, 0]} scale={[0.5, 0.14, 0.4]} />
-          <Mesh color="#a07850" geometry={leafGeometry()} position={[0.1, 0.12, 0]} rotation={[0.2, 1, 0]} scale={0.25} />
+          <Mesh color="#ffffff" surface={{ map: matTexture(), roughness: 1, bumpMap: grainBump(9, 64), bumpScale: 3 }} geometry={GEO.sphere()} position={[0, 0.02, 0]} scale={[0.5, 0.14, 0.4]} />
         </group>
       );
     case 'citrusLeaf':
     case 'mulberry':
-      // ミカン（サンショウ）／クワの葉の枝
+      // ミカン（サンショウ）／クワの葉の 枝
       return (
         <group>
-          <Mesh color="#8d6e63" geometry={GEO.cylinder()} position={[0, 0.05, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.025, 0.8, 0.025]} />
+          <Mesh color="#ffffff" surface={{ map: barkTexture(), roughness: 0.9 }} geometry={GEO.cylinder()} position={[0, 0.05, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.022, 0.8, 0.022]} />
           {[-0.3, -0.1, 0.1, 0.3].map((x, i) => (
             <Mesh
               key={x}
-              color={food === 'mulberry' ? '#6a9e3a' : '#4f8a2b'}
+              color="#ffffff"
+              surface={leafSurf(food === 'mulberry' ? '#5a8f32' : '#3a6f22')}
               geometry={leafGeometry()}
               position={[x, 0.06, 0]}
               rotation={[0.15, i % 2 ? 0.6 : -0.6 + Math.PI, 0]}
@@ -54,40 +57,40 @@ export function FoodModel({ food }: { food: FoodId }) {
       // 花（みつ）
       return (
         <group>
-          <Mesh color="#7cb342" geometry={GEO.cylinder()} position={[0, 0.35, 0]} scale={[0.025, 0.7, 0.025]} />
+          <Mesh color="#4f7f2a" geometry={GEO.cylinder()} position={[0, 0.35, 0]} scale={[0.02, 0.7, 0.02]} />
           {[0, 1, 2, 3, 4].map((i) => (
-            <Mesh key={i} color="#ff8fab" geometry={GEO.sphere()} position={[Math.cos(i * 1.26) * 0.11, 0.72, Math.sin(i * 1.26) * 0.11]} scale={[0.09, 0.025, 0.09]} />
+            <Mesh key={i} color="#f29bb5" surface={{ roughness: 0.6, sheen: 0.7 }} geometry={GEO.sphere()} position={[Math.cos(i * 1.26) * 0.1, 0.72, Math.sin(i * 1.26) * 0.1]} scale={[0.085, 0.02, 0.085]} />
           ))}
-          <Mesh color="#ffd166" geometry={GEO.sphere()} position={[0, 0.74, 0]} scale={0.05} />
+          <Mesh color="#f2c14e" geometry={GEO.sphere()} position={[0, 0.74, 0]} scale={0.045} />
         </group>
       );
     case 'eggplant':
-      // ナスの輪切りを串に刺して（土に直接触れないように）
+      // ナスの 輪切りを くしに さして（土に 直接 ふれないように）
       return (
         <group>
-          <Mesh color="#c8a27a" geometry={GEO.cylinder()} position={[0, 0.2, 0]} scale={[0.015, 0.4, 0.015]} />
-          <Mesh color="#f3ecd2" geometry={GEO.cylinder()} position={[0, 0.25, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.17, 0.05, 0.17]} />
-          <Mesh color="#5b2a6e" geometry={GEO.cylinder()} position={[0, 0.25, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.18, 0.04, 0.18]} />
+          <Mesh color="#c9a77a" geometry={GEO.cylinder()} position={[0, 0.2, 0]} scale={[0.012, 0.4, 0.012]} />
+          <Mesh color="#efe6c8" surface={{ roughness: 0.6, bumpMap: grainBump(14, 48), bumpScale: 1 }} geometry={GEO.cylinder()} position={[0, 0.25, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.16, 0.05, 0.16]} />
+          <Mesh color="#3e1c4f" surface={{ roughness: 0.2, clearcoat: 1 }} geometry={GEO.cylinder()} position={[0, 0.25, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.17, 0.04, 0.17]} />
         </group>
       );
     case 'aphid':
-      // アブラムシのついた草（小さな緑の点々）
+      // アブラムシの ついた 草（小さな 黄緑の 虫が たくさん）
       return (
         <group>
-          <Mesh color="#6d8b3a" geometry={GEO.cylinder()} position={[0, 0.3, 0]} scale={[0.025, 0.6, 0.025]} />
-          <Mesh color="#7cb342" geometry={leafGeometry()} position={[0, 0.45, 0]} rotation={[0.8, 0.5, 0]} scale={0.3} />
-          {Array.from({ length: 9 }, (_, i) => (
-            <Mesh key={i} color="#a5d66b" geometry={GEO.sphereLo()} position={[0.03 * Math.cos(i * 2.4), 0.1 + i * 0.05, 0.03 * Math.sin(i * 2.4)]} scale={0.022} />
+          <Mesh color="#5d7f2f" geometry={GEO.cylinder()} position={[0, 0.3, 0]} scale={[0.022, 0.6, 0.022]} />
+          <Mesh color="#ffffff" surface={leafSurf('#4f8a2b')} geometry={leafGeometry()} position={[0, 0.45, 0]} rotation={[0.8, 0.5, 0]} scale={0.3} />
+          {Array.from({ length: 14 }, (_, i) => (
+            <Mesh key={i} color="#9ccc4a" surface={{ roughness: 0.4, translucent: true }} geometry={GEO.sphereLo()} position={[0.026 * Math.cos(i * 2.4), 0.1 + i * 0.035, 0.026 * Math.sin(i * 2.4)]} scale={[0.014, 0.012, 0.02]} />
           ))}
         </group>
       );
     case 'smallInsect':
-      // 小皿にのせた ちいさな むし（ミイデラゴミムシのごはん）
+      // 小皿に のせた 小さな 虫（ミイデラゴミムシの ごはん）
       return (
         <group>
-          <Mesh color="#e8e2d0" geometry={GEO.cylinder()} position={[0, 0.02, 0]} scale={[0.22, 0.04, 0.22]} />
+          <Mesh color="#e8e2d0" surface={{ roughness: 0.3, clearcoat: 0.6 }} geometry={GEO.cylinder()} position={[0, 0.02, 0]} scale={[0.22, 0.04, 0.22]} />
           {[0, 1, 2].map((i) => (
-            <Mesh key={i} color="#b5835a" geometry={GEO.capsule()} position={[-0.08 + i * 0.08, 0.07, (i - 1) * 0.04]} rotation={[Math.PI / 2, 0, i]} scale={[0.05, 0.08, 0.05]} />
+            <Mesh key={i} color="#a8743e" surface={{ roughness: 0.4, clearcoat: 0.6, bumpMap: grainBump(15, 32), bumpScale: 1 }} geometry={GEO.capsule()} position={[-0.08 + i * 0.08, 0.06, (i - 1) * 0.04]} rotation={[Math.PI / 2, 0, i]} scale={[0.035, 0.08, 0.035]} />
           ))}
         </group>
       );
@@ -96,7 +99,7 @@ export function FoodModel({ food }: { food: FoodId }) {
   }
 }
 
-/** ケースに置いたごはん。量が減ると小さくなり、なくなると消える */
+/** ケースに置いた ごはん。量が減ると 小さくなり、なくなると 消える */
 export function PlacedFood({ food, amount, position }: { food: FoodId; amount: number; position: V3 }) {
   const ref = useRef<THREE.Group>(null);
   const shown = useRef(0);
