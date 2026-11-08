@@ -3,6 +3,7 @@ import type { CreatureAnim } from './anim';
 import { AgehaAdult, AgehaEgg, AgehaLarva, AgehaPupa } from './ageha';
 import { KabutoAdult, KabutoLarva, KabutoPupa } from './kabuto';
 import { KaikoAdult, KaikoCocoon, KaikoEgg, KaikoLarva, MiideraAdult, TentouAdult, TentouEgg, TentouLarva, TentouPupa } from './others';
+import { CentipedeAdult, CentipedeYoung, GomadaraAdult, GomadaraLarva, GomadaraPupa, MantisAdult, MantisNymph, MantisOotheca, ScorpionAdult, ScorpionYoung } from './predators';
 import { SuzuAdult, SuzuNymph } from './suzumushi';
 
 export interface ModelProps {
@@ -46,6 +47,16 @@ export const MODELS: Record<string, ModelEntry> = {
   'kaiko-cocoon': { C: KaikoCocoon, locomotion: 'still', length: 0.8, speed: 0 },
   'kaiko-adult': { C: KaikoAdult, locomotion: 'crawl', length: 0.8, speed: 0.12 },
   'miidera-adult': { C: MiideraAdult, locomotion: 'crawl', length: 0.9, speed: 0.55 },
+  'mantis-ootheca': { C: MantisOotheca, locomotion: 'still', length: 0.6, speed: 0 },
+  'mantis-nymph': { C: MantisNymph, locomotion: 'crawl', length: 0.7, speed: 0.2 },
+  'mantis-adult': { C: MantisAdult, locomotion: 'crawl', length: 1.4, speed: 0.18 },
+  'centipede-young': { C: CentipedeYoung, locomotion: 'crawl', length: 0.8, speed: 0.4 },
+  'centipede-adult': { C: CentipedeAdult, locomotion: 'crawl', length: 1.4, speed: 0.45 },
+  'scorpion-young': { C: ScorpionYoung, locomotion: 'crawl', length: 0.6, speed: 0.2 },
+  'scorpion-adult': { C: ScorpionAdult, locomotion: 'crawl', length: 1.2, speed: 0.22 },
+  'gomadara-larva': { C: GomadaraLarva, locomotion: 'burrow', length: 0.9, speed: 0.08 },
+  'gomadara-pupa': { C: GomadaraPupa, locomotion: 'still', length: 0.8, speed: 0 },
+  'gomadara-adult': { C: GomadaraAdult, locomotion: 'crawl', length: 1.1, speed: 0.3 },
 };
 
 export function modelFor(key: string): ModelEntry {

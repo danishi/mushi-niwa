@@ -17,6 +17,8 @@ const FOOD_ICON: Record<FoodId, IconName> = {
   aphid: 'aphid',
   mulberry: 'leaf',
   smallInsect: 'bug',
+  wood: 'log',
+  twig: 'leaf',
   none: 'food',
 };
 
@@ -29,6 +31,8 @@ const FOOD_LABEL: Record<FoodId, string> = {
   aphid: 'アブラムシ',
   mulberry: 'クワの は',
   smallInsect: 'ちいさな むし',
+  wood: 'きの えだ',
+  twig: 'わかい えだ',
   none: '',
 };
 

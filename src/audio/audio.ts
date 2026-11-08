@@ -20,7 +20,8 @@ export type SfxName =
   | 'farewell'
   | 'pickup'
   | 'drop'
-  | 'nope';
+  | 'nope'
+  | 'squeak';
 
 export type BgmMood = 'day' | 'night' | 'title';
 
@@ -196,6 +197,10 @@ class AudioEngine {
         break;
       case 'farewell':
         [7, 4, 2, 0, -5].forEach((n, i) => this.tone(midi(76 + n), t + i * 0.18, 0.7, { type: 'triangle', gain: 0.15 }));
+        break;
+      case 'squeak':
+        // カミキリムシの「キィキィ」（むねを こする 音）
+        for (let i = 0; i < 5; i++) this.noiseBurst(t + i * 0.11, 0.07, { type: 'bandpass', freq: 3200, q: 6, gain: 0.25 });
         break;
       case 'nope':
         this.tone(330, t, 0.12, { type: 'sine', gain: 0.2 });

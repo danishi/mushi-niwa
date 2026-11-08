@@ -30,7 +30,8 @@ export type IconName =
   | 'bug'
   | 'bag'
   | 'eggplant'
-  | 'aphid';
+  | 'aphid'
+  | 'log';
 
 const S = { stroke: '#4a3b2a', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
@@ -179,6 +180,13 @@ const PATHS: Record<IconName, ReactElement> = {
     <g {...S}>
       <path d="M50 30 C30 34 24 62 36 76 C46 86 64 82 70 68 C78 50 66 32 50 30 Z" fill="#6a3d8f" />
       <path d="M44 30 Q50 18 58 30 Q52 36 44 30 Z" fill="#7cb342" />
+    </g>
+  ),
+  log: (
+    <g {...S}>
+      <rect x="18" y="38" width="64" height="28" rx="14" fill="#8d6e63" />
+      <ellipse cx="74" cy="52" rx="10" ry="14" fill="#d7b98a" />
+      <ellipse cx="74" cy="52" rx="4" ry="6" fill="none" strokeWidth={3} />
     </g>
   ),
   aphid: (

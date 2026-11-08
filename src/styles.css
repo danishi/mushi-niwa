@@ -1127,3 +1127,10 @@ ruby rt {
 .bubble-anchor .tutorial-hand {
   pointer-events: none;
 }
+
+.not-insect {
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #fff1d6;
+  border: 2px dashed #e0a800;
+}

@@ -2,10 +2,10 @@ import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import type { Creature, SpeciesDef, SubstrateId } from '../sim/types';
+import type { Creature, DecorId, SpeciesDef, SubstrateId } from '../sim/types';
 import { rng, Scatter } from '../three/Diorama';
 import { GEO, mat, sharedGeo } from '../three/materials';
-import { grainBump, leafLitterTexture, lidTexture, matTexture, paperTexture, soilTexture } from '../three/textures';
+import { grainBump, leafLitterTexture, lidTexture, matTexture, paperTexture, soilTexture, woodCrossTexture } from '../three/textures';
 import { CASE } from './case';
 import { Decor } from './Decor';
 
@@ -25,6 +25,8 @@ function substrateMap(id: SubstrateId) {
       return leafLitterTexture();
     case 'paper':
       return paperTexture();
+    case 'wood':
+      return woodCrossTexture();
   }
 }
 
@@ -34,6 +36,7 @@ const CRUMBS: Record<SubstrateId, string[]> = {
   moistSoil: ['#3f3328', '#5a4a3a', '#6c7a4a'],
   leafbed: ['#8a6a3c', '#a07a48', '#6f8a3a'],
   paper: [],
+  wood: ['#c9a06a', '#b08850'],
 };
 
 export function soilTop(sp: SpeciesDef): number {
@@ -173,5 +176,17 @@ function edgeGeometry(): THREE.BufferGeometry {
 }
 
 export function houseFor(id: SpeciesDef['id']) {
-  return ({ kabutomushi: 'log', namiageha: 'branch', suzumushi: 'bark', nanahoshi: 'leaf', kaiko: 'mulberryTwig', miidera: 'stone' } as const)[id];
+  const map: Record<SpeciesDef['id'], DecorId> = {
+    kabutomushi: 'log',
+    namiageha: 'branch',
+    suzumushi: 'bark',
+    nanahoshi: 'leaf',
+    kaiko: 'mulberryTwig',
+    miidera: 'stone',
+    ookamakiri: 'branch',
+    tobizumukade: 'bark',
+    madarasasori: 'bark',
+    gomadara: 'branch',
+  };
+  return map[id];
 }

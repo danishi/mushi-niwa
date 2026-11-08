@@ -44,6 +44,7 @@ export const miidera: SpeciesDef = {
     'よるに うごく むし。ひるは しめった いしの したに かくれているよ',
     'ふしぎ：ようちゅうは ケラの たまごの へやに もぐりこんで そだつよ',
   ],
+  threat: { kind: 'spray', text: 'プッ！ びっくりしたみたい。すでで さわらないでね' },
   caution: '噴射液は皮膚に褐色のしみや刺激を残すことがあります。素手でつかまず、顔を近づけないでください。地域によっては準絶滅危惧（東京都RDB）です。',
   sources: [
     'https://dom.ocm.osaka/database/omnh/1570',

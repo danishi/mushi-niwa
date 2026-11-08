@@ -85,6 +85,50 @@ export const BATTLE: Record<SpeciesId, BattleDef> = {
       sfx: 'flap',
     },
   },
+  ookamakiri: {
+    power: 1.15,
+    special: {
+      label: 'カマを ひろげる',
+      effect: 'stun',
+      strength: 0.15,
+      seconds: 2.2,
+      fact: 'カマキリは カマを ひろげて からだを そらし、あいてを おどかすよ',
+      sfx: 'whoosh',
+    },
+  },
+  tobizumukade: {
+    power: 1.1,
+    special: {
+      label: 'うしろあしを もちあげる',
+      effect: 'stun',
+      strength: 0.15,
+      seconds: 2.2,
+      fact: 'オオムカデの なかまは いちばん うしろの ながい あしを もちあげて あいてを おどかすよ',
+      sfx: 'whoosh',
+    },
+  },
+  madarasasori: {
+    power: 1.0,
+    special: {
+      label: 'ハサミと しっぽを ふりあげる',
+      effect: 'stun',
+      strength: 0.15,
+      seconds: 2.4,
+      fact: 'サソリは ハサミと しっぽを ふりあげて あいてを おどかすよ',
+      sfx: 'whoosh',
+    },
+  },
+  gomadara: {
+    power: 1.05,
+    special: {
+      label: 'キィキィ なく',
+      effect: 'stun',
+      strength: 0.1,
+      seconds: 2.0,
+      fact: 'カミキリムシは むねを こすって キィキィ なき、あいてを びっくりさせるよ',
+      sfx: 'chirp',
+    },
+  },
   miidera: {
     power: 1.0,
     special: {

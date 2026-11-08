@@ -83,6 +83,75 @@ const DRAW: Record<SpeciesId, ReactElement> = {
       <Eyes y={52} dx={-32} r={3} />
     </g>
   ),
+  ookamakiri: (
+    <g>
+      <path d="M50 52 L50 90 M42 60 L26 84 M58 60 L74 84" {...S} strokeWidth={3} />
+      <ellipse cx="50" cy="72" rx="9" ry="20" fill="#7ea044" {...S} />
+      <path d="M50 52 L50 30" {...S} strokeWidth={6} stroke="#5f7f32" />
+      <path d="M50 44 Q34 40 30 26 L38 30 M50 44 Q66 40 70 26 L62 30" fill="none" {...S} stroke="#5f7f32" strokeWidth={5} />
+      <path d="M38 18 L62 18 L50 32 Z" fill="#7ea044" {...S} />
+      <circle cx="40" cy="19" r="5" fill="#b8d07a" {...S} strokeWidth={2} />
+      <circle cx="60" cy="19" r="5" fill="#b8d07a" {...S} strokeWidth={2} />
+      <circle cx="40" cy="20" r="1.6" fill="#2b2118" />
+      <circle cx="60" cy="20" r="1.6" fill="#2b2118" />
+    </g>
+  ),
+  tobizumukade: (
+    <g>
+      {Array.from({ length: 9 }, (_, i) => {
+        const y = 24 + i * 7;
+        const x = 50 + Math.sin(i * 0.8) * 6;
+        return (
+          <g key={i}>
+            <path d={`M${x - 8} ${y} L${x - 18} ${y + 4} M${x + 8} ${y} L${x + 18} ${y + 4}`} stroke="#e4b13c" strokeWidth={3} strokeLinecap="round" />
+            <ellipse cx={x} cy={y} rx="9" ry="4" fill="#1e2a26" {...S} strokeWidth={2} />
+          </g>
+        );
+      })}
+      <ellipse cx="50" cy="17" rx="9" ry="6" fill="#c2401f" {...S} strokeWidth={2} />
+      <path d="M44 13 Q36 4 30 2 M56 13 Q64 4 70 2" fill="none" stroke="#d9973a" strokeWidth={2.5} strokeLinecap="round" />
+      <path d="M44 90 L32 98 M56 90 L68 98" stroke="#e4b13c" strokeWidth={3} strokeLinecap="round" />
+    </g>
+  ),
+  madarasasori: (
+    <g>
+      {[44, 52, 60, 68].map((y) => (
+        <path key={y} d={`M38 ${y} L22 ${y + 8} M62 ${y} L78 ${y + 8}`} {...S} strokeWidth={2.5} />
+      ))}
+      <path d="M42 40 Q28 30 22 18 M58 40 Q72 30 78 18" fill="none" {...S} strokeWidth={4} stroke="#8a6436" />
+      <path d="M18 18 L24 10 M22 14 L28 8 M82 18 L76 10 M78 14 L72 8" {...S} strokeWidth={3} />
+      <ellipse cx="50" cy="56" rx="13" ry="20" fill="#b48a4e" {...S} />
+      <circle cx="46" cy="52" r="2.5" fill="#5a3a1a" />
+      <circle cx="54" cy="60" r="2.5" fill="#5a3a1a" />
+      <path d="M50 76 Q50 92 62 92 Q74 90 70 76 Q68 68 60 70" fill="none" stroke="#b48a4e" strokeWidth={7} strokeLinecap="round" />
+      <path d="M60 70 L56 64" {...S} strokeWidth={3} />
+    </g>
+  ),
+  gomadara: (
+    <g>
+      <path d="M44 30 Q26 14 8 20 M56 30 Q74 14 92 20" fill="none" stroke="#1a1a1e" strokeWidth={3} strokeLinecap="round" />
+      {[0.2, 0.4, 0.6, 0.8].map((t) => (
+        <g key={t}>
+          <circle cx={44 - t * 36} cy={30 - Math.sin(t * Math.PI) * 14 - t * 2} r="2.4" fill="#dfe6ee" />
+          <circle cx={56 + t * 36} cy={30 - Math.sin(t * Math.PI) * 14 - t * 2} r="2.4" fill="#dfe6ee" />
+        </g>
+      ))}
+      {[46, 60, 74].map((y) => (
+        <path key={y} d={`M38 ${y} L24 ${y + 8} M62 ${y} L76 ${y + 8}`} {...S} strokeWidth={2.5} />
+      ))}
+      <ellipse cx="50" cy="64" rx="15" ry="24" fill="#16161c" {...S} />
+      {[
+        [44, 54],
+        [56, 58],
+        [46, 68],
+        [55, 74],
+        [48, 80],
+      ].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="2.8" fill="#f2f2ee" />
+      ))}
+      <ellipse cx="50" cy="36" rx="10" ry="7" fill="#16161c" {...S} />
+    </g>
+  ),
   miidera: (
     <g>
       {[44, 58, 72].map((y) => (

@@ -109,6 +109,11 @@ export function ZukanHud() {
           <Ruby text={sp.season} />
         </p>
         {sp.dimorphism ? <p>{sp.dimorphism}</p> : null}
+        {sp.notInsect ? (
+          <p className="not-insect" data-testid="not-insect">
+            <Ruby text={sp.notInsect} />
+          </p>
+        ) : null}
         <h3>まめちしき</h3>
         <ul className="facts">
           {sp.facts.map((f) => (

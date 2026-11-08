@@ -94,6 +94,24 @@ export function FoodModel({ food }: { food: FoodId }) {
           ))}
         </group>
       );
+    case 'wood':
+      // カミキリムシの 幼虫が 食べる 生きた 木の 枝（木の 断面に 足す）
+      return (
+        <group>
+          <Mesh color="#ffffff" surface={{ map: barkTexture(), roughness: 0.95 }} geometry={GEO.cylinder()} position={[0, 0.1, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.1, 0.6, 0.1]} />
+          <Mesh color="#e8d0a0" geometry={GEO.cylinder()} position={[0.301, 0.1, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.09, 0.005, 0.09]} />
+        </group>
+      );
+    case 'twig':
+      // 若い 枝と 葉（成虫は 樹皮を かじる）
+      return (
+        <group>
+          <Mesh color="#7a8a4a" surface={{ roughness: 0.7 }} geometry={GEO.cylinder()} position={[0, 0.05, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.025, 0.8, 0.025]} />
+          {[-0.25, 0.05, 0.3].map((x, i) => (
+            <Mesh key={x} color="#ffffff" surface={leafSurf('#3f7426')} geometry={leafGeometry()} position={[x, 0.06, 0]} rotation={[0.15, i % 2 ? 0.7 : -0.7 + Math.PI, 0]} scale={0.38} />
+          ))}
+        </group>
+      );
     case 'none':
       return null;
   }

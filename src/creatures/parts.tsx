@@ -282,11 +282,14 @@ export function Antenna({
   anim,
   rotation = [0, 0, 0],
   part,
+  bands,
 }: {
   position: V3;
   side: 1 | -1;
   length: number;
   thick?: number;
+  /** 節の つけねの 色の帯（ゴマダラカミキリの 白い しまなど） */
+  bands?: string;
   kind: AntennaKind;
   color: string;
   anim: AnimRef;
@@ -306,7 +309,34 @@ export function Antenna({
     <group position={position} scale={[side, 1, 1]}>
       <group ref={ref}>
         <mesh geometry={antennaGeo(kind, length, thick)} material={material} userData={part ? { part } : undefined} />
+        {bands ? <mesh geometry={bandsGeo(length, thick)} material={bandMat(bands)} /> : null}
       </group>
     </group>
   );
+}
+
+function bandMat(color: string) {
+  return mat(color, { roughness: 0.6 });
+}
+
+/** 触角に そった 帯（小さな 球を まとめて 1 ジオメトリ） */
+function bandsGeo(L: number, thick: number) {
+  return sharedGeo(`bands:${L}:${thick}`, () => {
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0.12 * L, 0.25 * L, 0.35 * L),
+      new THREE.Vector3(0.25 * L, 0.45 * L, 0.7 * L),
+      new THREE.Vector3(0.38 * L, 0.55 * L, 1.0 * L),
+    ]);
+    const parts: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 10; i++) {
+      const t = 0.12 + i * 0.085;
+      const p = curve.getPoint(t);
+      const r = THREE.MathUtils.lerp(thick, thick * 0.35, t) * 1.45;
+      const sp = new THREE.SphereGeometry(r, 6, 5);
+      sp.translate(p.x, p.y, p.z);
+      parts.push(sp.toNonIndexed());
+    }
+    return mergeGeometries(parts)!;
+  });
 }

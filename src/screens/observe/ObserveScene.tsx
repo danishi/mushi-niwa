@@ -10,6 +10,7 @@ import { useUi } from '../../state/ui';
 import { speak } from '../../text/speech';
 import type { CameraShot } from '../../three/CameraRig';
 import { Meadow } from '../../three/Diorama';
+import { maybeThreat } from '../care/CareScene';
 import { emitParticles } from '../../three/Particles';
 import { useTier } from '../../three/QualityManager';
 import { QUALITY } from '../../three/quality';
@@ -66,7 +67,6 @@ export function ObserveScene() {
   const tier = useTier();
   const parts = useMemo(() => (creature ? partsFor(creature).map((p) => p.id) : []), [creature]);
   if (!creature) return <Meadow radius={8} />;
-  void SPECIES;
   return (
     <group>
       <Meadow radius={9} />
@@ -79,6 +79,9 @@ export function ObserveScene() {
           const part = partOf(e.object);
           if (part && parts.includes(part)) explainPart(creature.id, part, e.point);
           else audio.play('tap');
+          // 何度も さわると いかくする（さわらない ほうが いい 生きもの）
+          const threat = SPECIES[creature.species].threat;
+          if (threat) maybeThreat(creature.id, threat);
         }}
       />
     </group>

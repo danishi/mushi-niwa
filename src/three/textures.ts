@@ -425,3 +425,56 @@ export function lidTexture() {
       }
   });
 }
+
+/** マダラサソリの まだら模様（黄褐色に こげ茶の まだら） */
+export function mottledTexture() {
+  return make('mottled', 128, (g, s) => {
+    const r = rng(91);
+    g.fillStyle = '#b48a4e';
+    g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 90; i++) {
+      g.fillStyle = `rgba(${50 + r() * 30},${30 + r() * 20},${15 + r() * 10},${0.5 + r() * 0.4})`;
+      g.beginPath();
+      g.ellipse(r() * s, r() * s, 2 + r() * 7, 2 + r() * 5, r() * 3, 0, Math.PI * 2);
+      g.fill();
+    }
+  });
+}
+
+/** ゴマダラカミキリの 前ばね（つやのある 黒に 白い 点々）。UV は ドームの 経度・緯度 */
+export function gomadaraElytra() {
+  return make('gomadara', 256, (g, s) => {
+    const r = rng(101);
+    g.fillStyle = '#0d0d10';
+    g.fillRect(0, 0, s, s);
+    g.fillStyle = '#f2f2ee';
+    // 点は 前後に 5 列ほど、左右に ちらばる
+    for (let row = 0; row < 5; row++) {
+      for (let k = 0; k < 9; k++) {
+        const x = (k / 9) * s + r() * 12;
+        const y = s * (0.2 + row * 0.15) + (r() - 0.5) * 18;
+        g.beginPath();
+        g.ellipse(x, y, 4 + r() * 4, 3 + r() * 3, r() * 3, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+  });
+}
+
+/** 木の 断面（幼虫が トンネルを ほる 木） */
+export function woodCrossTexture() {
+  return make('woodCross', 256, (g, s) => {
+    const n = (x: number, y: number) => Math.sin(x * 0.07 + Math.sin(y * 0.05) * 2) * 0.5 + 0.5;
+    const img = g.createImageData(s, s);
+    for (let y = 0; y < s; y++)
+      for (let x = 0; x < s; x++) {
+        const v = 0.5 + 0.5 * Math.sin(y * 0.35 + n(x, y) * 3);
+        const i = (y * s + x) * 4;
+        img.data[i] = 200 + v * 30;
+        img.data[i + 1] = 160 + v * 26;
+        img.data[i + 2] = 110 + v * 20;
+        img.data[i + 3] = 255;
+      }
+    g.putImageData(img, 0, 0);
+  }, { repeat: 2 });
+}

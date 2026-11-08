@@ -13,6 +13,8 @@
 | `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要 |
 | `npm run icons` | PWA アイコン PNG を `scripts/gen-icons.mjs` から再生成 |
 
+見た目の確認は、`vite preview` を起動した状態で Playwright（WebKit・iPhone 16）からスクリーンショットを撮るのが確実（Claude の Browser ペインは非表示だと描画が止まる）。
+
 完了の条件（各フェーズ共通）: `npm run build`・`npm test`・`npm run e2e` がすべて通ること。
 
 ## 技術スタック
@@ -24,8 +26,11 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 
 - **Canvas は 1 つだけ常駐**させ、画面遷移では中身（シーン）と DOM の HUD だけを入れ替える（iOS で WebGL コンテキストを作り直さない）。画面→シーン/カメラの対応は `src/app/scenes.ts`、HUD は `src/app/App.tsx`。
 - **ゲームロジックは `src/sim/` の純 TS**。React / three を import しない。固定ステップ（1 秒）で進め、描画 FPS とは独立。Vitest で検証する。
-- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md` の出典付き調査に基づく。
+- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md`（最初の 6 種）と `docs/species-research-2.md`（オオカマキリ・トビズムカデ・マダラサソリ・ゴマダラカミキリ）の出典付き調査に基づく。ムカデ・サソリは昆虫ではないので `notInsect` を付け、ずかんで説明する。
 - **むしずもう（異種対戦）**: ユーザー要望で入れる。ケガ・罰なしの押し合いミニゲーム。得意技は各種の実際の防御行動から取り、「実際には異なる種どうしは戦わない」注記を出す。
+- **ケースは 6 つまで**（ユーザー判断）: いっぱいのときは「あたらしい むし」→ どの子を もりに かえすか選ぶ → 思い出カード → あいたケースで種を選ぶ。途中で送り出しても罰はない。
+- **さわると いかく**: `SpeciesDef.threat`（spray / display / squeak）。かんさつモードで何度も触ると出る安全学習。生きた虫を捕まえる場面は描かず、えさは小皿の「ちいさな むし」で表す。
+- **お世話の わかりやすさ**: 道具を使う間はカメラが寄り（`cinematic.kind = 'tool'`）、終わると吹き出しが よろこびに変わる（`ui.reaction`）。初回は お手本（`tutorialStep`、`settings.tutorialDone`）。吹き出しは drei の `Html` ではなく、3D 側で画面座標を計算して DOM を重ねる（`BubbleAnchor` + `WantBubble`）。
 - **送り出し**: ユーザー判断で全種「もりにかえす」（物語上の表現）。現実の放虫注意は各種データの `caution` に書き、ずかんの大人向け注記で出す。
 - **ミイデラゴミムシ**: 幼虫はケラの卵室で育つため家庭飼育不可。ゲームでは成虫のみ飼育し、幼虫期はずかんのコラムで紹介（ユーザー判断）。
 - **罰を与えない**: 虫は死なない。お世話不足は「げんきがない」（成長が一時停止）になるだけ。寿命を終えた成虫は送り出し演出 → ずかんに思い出カード。

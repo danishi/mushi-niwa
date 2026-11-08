@@ -6,7 +6,7 @@ import { SPECIES } from '../../data/species';
 import { CASE } from '../../habitat/case';
 import { CaseView } from '../../habitat/CaseView';
 import { soilTop } from '../../habitat/Terrarium';
-import type { GrowthEvent } from '../../sim/types';
+import type { GrowthEvent, SpeciesDef } from '../../sim/types';
 import { simEvents } from '../../state/events';
 import { useGame } from '../../state/game';
 import { useUi } from '../../state/ui';
@@ -109,7 +109,6 @@ export function CareScene({ freeze = false }: { freeze?: boolean }) {
                 audio.play('bounce');
                 const g = actors.get(creature.id)?.group;
                 if (g) emitParticles('heart', g.position.clone().add(new THREE.Vector3(0, 0.8, 0)), 3);
-                if (creature.species === 'miidera') maybeSpray(creature.id);
                 window.setTimeout(() => {
                   if (!toolAction.tool && useUi.getState().screen === 'care') useUi.getState().go('observe');
                 }, 450);
@@ -123,21 +122,35 @@ export function CareScene({ freeze = false }: { freeze?: boolean }) {
   );
 }
 
-/** ミイデラゴミムシは何度もさわると「プッ」とする（安全学習。罰はない） */
+/**
+ * 何度も さわると いかくする（安全学習。罰は ない）。
+ * ミイデラゴミムシ：プッと ふきだす／カマキリ・ムカデ・サソリ：からだを おおきく みせる／カミキリ：キィキィ なく
+ */
 const taps: number[] = [];
-function maybeSpray(id: string) {
+export function maybeThreat(id: string, threat: NonNullable<SpeciesDef['threat']>) {
   const now = performance.now();
   taps.push(now);
   while (taps.length && now - taps[0]! > 2500) taps.shift();
-  if (taps.length >= 3) {
-    taps.length = 0;
-    const h = actors.get(id);
-    if (!h?.group) return;
-    h.anim.spray = 1;
-    const p = h.group.position;
+  if (taps.length < 3) return;
+  taps.length = 0;
+  const h = actors.get(id);
+  if (!h?.group) return;
+  h.anim.spray = 1;
+  const p = h.group.position;
+  if (threat.kind === 'spray') {
     const back = new THREE.Vector3(Math.sin(h.group.rotation.y), 0, Math.cos(h.group.rotation.y)).multiplyScalar(-0.55);
     audio.play('puff');
     emitParticles('smoke', [p.x + back.x, p.y + 0.25, p.z + back.z], 22, back.clone().multiplyScalar(2));
-    speak('プッ！ びっくりしたみたい。すでで さわらないでね');
+  } else if (threat.kind === 'squeak') {
+    audio.play('squeak');
+  } else {
+    audio.play('whoosh');
   }
+  // いかくの ポーズを しばらく つづける
+  const hold = window.setInterval(() => {
+    const a = actors.get(id)?.anim;
+    if (a) a.spray = Math.max(a.spray, 0.9);
+  }, 100);
+  window.setTimeout(() => window.clearInterval(hold), 1800);
+  speak(threat.text, true);
 }

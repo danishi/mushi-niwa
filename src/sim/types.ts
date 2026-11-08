@@ -2,7 +2,17 @@
  * ゲームロジックの型。React / three には依存しない。
  */
 
-export type SpeciesId = 'kabutomushi' | 'namiageha' | 'suzumushi' | 'nanahoshi' | 'kaiko' | 'miidera';
+export type SpeciesId =
+  | 'kabutomushi'
+  | 'namiageha'
+  | 'suzumushi'
+  | 'nanahoshi'
+  | 'kaiko'
+  | 'miidera'
+  | 'ookamakiri'
+  | 'tobizumukade'
+  | 'madarasasori'
+  | 'gomadara';
 
 export type NeedKey = 'hunger' | 'moisture' | 'clean' | 'mood';
 /** 0..1。1 が「満たされている」 */
@@ -29,9 +39,11 @@ export type FoodId =
   | 'aphid' // アブラムシ
   | 'mulberry' // クワの葉
   | 'smallInsect' // 小さな虫・ミミズなど
+  | 'wood' // 生きた木の枝（カミキリムシの幼虫は 木の中を 食べる）
+  | 'twig' // 若い枝（カミキリムシの成虫は 樹皮を かじる）
   | 'none';
 
-export type SubstrateId = 'mat' | 'soil' | 'leafbed' | 'paper' | 'moistSoil';
+export type SubstrateId = 'mat' | 'soil' | 'leafbed' | 'paper' | 'moistSoil' | 'wood';
 
 export type DecorId = 'log' | 'leaf' | 'branch' | 'stone' | 'bark' | 'flower' | 'potPlant' | 'mulberryTwig';
 
@@ -96,6 +108,10 @@ export interface SpeciesDef {
   dimorphism?: string;
   /** ずかんの豆知識（ルビ記法） */
   facts: string[];
+  /** 何度も さわると する いかく（安全学習。罰は ない） */
+  threat?: { kind: 'spray' | 'display' | 'squeak'; text: string };
+  /** 昆虫では ない（ずかんで 教える） */
+  notInsect?: string;
   /** 気をつけること（大人向け注意書きにも使う） */
   caution?: string;
   season: string;
