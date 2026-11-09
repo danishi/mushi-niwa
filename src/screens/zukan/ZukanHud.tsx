@@ -194,7 +194,7 @@ function Album() {
     return (
       <p className="album-empty" data-testid="album-empty">
         <Icon name="camera" />
-        <Ruby text="かんさつの がめんで カメラを おすと しゃしんが とれるよ" />
+        <Ruby text="むしの がめんで カメラを おすと しゃしんが とれるよ" />
       </p>
     );
   }

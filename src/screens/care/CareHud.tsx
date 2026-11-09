@@ -9,6 +9,7 @@ import { useUi } from '../../state/ui';
 import { Ruby } from '../../text/ruby';
 import { speak } from '../../text/speech';
 import { emitParticles } from '../../three/Particles';
+import { CameraButton } from '../../ui/CameraButton';
 import { IconButton } from '../../ui/IconButton';
 import { Icon } from '../../ui/Icon';
 import { SettingsGateButton } from '../../ui/ParentalGate';
@@ -117,6 +118,7 @@ export function CareHud() {
       <div className="hud-row top">
         <IconButton icon="home" label="むしにわに もどる" onPress={() => go('garden', null)} testId="back" />
         <span className="hud-spacer" />
+        {!cine ? <CameraButton creature={creature} /> : null}
         <SettingsGateButton />
       </div>
       <div className="hud-row" style={{ marginTop: 8 }}>

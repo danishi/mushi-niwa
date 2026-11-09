@@ -86,6 +86,19 @@ test('a garden visitor can be found and appears in the zukan', async ({ page }) 
   await expect(page.getByTestId('guest-list')).toBeVisible();
 });
 
+test('the camera button is on the care screen too', async ({ page }) => {
+  await start(page);
+  test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
+  await page.evaluate(() => {
+    const m = (window as unknown as W).__mushi;
+    m.ui.getState().go('care', m.game.getState().creatures[0]!.id);
+  });
+  await expect(page.getByTestId('care-hud').getByTestId('photo-btn')).toBeVisible();
+  await page.getByTestId('photo-btn').tap();
+  await expect(page.getByTestId('photo-thumb')).toBeVisible({ timeout: 15000 });
+  await expect.poll(() => page.evaluate(() => (window as unknown as W).__mushi.photos.getState().photos.length)).toBe(1);
+});
+
 test('a photo can be taken in observe mode and seen in the album', async ({ page }) => {
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');

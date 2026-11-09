@@ -46,7 +46,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **あきずに 遊べる しかけ**（ユーザーから「任せる」で追加）: どれも罰なし・失うものなし。
   - シールちょう: `src/data/stickers.ts`（条件はデータ）＋ `src/sim/progress.ts`（判定）＋ `src/state/progress.ts`（保存・トースト）。遊びの できごとは `playEvents`（`src/state/events.ts`）で中継し、ストアどうしは直接 import しあわない。トーストはクイズ回答中は出さない。
   - にわの おきゃくさん: `src/data/visitors.ts`（13 種。昼の虫・夜の虫（ホタル・コオロギ）・昆虫じゃない仲間（ダンゴムシ・クモ・カタツムリ））、モデルは `src/creatures/visitors.tsx`、出かたは `src/sim/visitors.ts` と `src/screens/garden/Visitors.tsx`。1 匹ずつ、まだ見つけていない子が来やすい。来る時間は データの `time`（day / night / any、`visitorsAt()`）。ジョロウグモは 奥の板に あみを はって 上から おりてくる。出る場所は手前の本・立てふだ・切り株の当たり判定と重ならない所（上の段・棚の奥板・空中）。
-  - かんさつ しゃしん: `src/three/snapshot.ts`（`addAfterEffect` で描画直後に読む。preserveDrawingBuffer は使わない）→ `src/state/photos.ts`（端末内、30 枚まで）。ずかんの「しゃしん」タブで見る。大人は設定で消せる。
+  - しゃしん: カメラボタン（`src/ui/CameraButton.tsx`）は お世話画面（道具の 演出中は かくす）と かんさつ画面の 右上。かんさつ画面だけだと 見つけにくかったので 両方に 置く。`src/three/snapshot.ts`（`addAfterEffect` で描画直後に読む。preserveDrawingBuffer は使わない）→ `src/state/photos.ts`（端末内、30 枚まで）。ずかんの「しゃしん」タブで見る。大人は設定で消せる。
   - むしクイズ: `src/sim/quiz.ts` が種データから 3 択を作る（手書きの問題を増やさない）。入口は にわの「？」立てふだ。画面は `quiz`。
   - ずかんは タブ（むし／おきゃくさん／シール／しゃしん）。おきゃくさんも むしと 同じく 台の 上の 3D（`GuestSpecimen`、外接箱で 大きさを そろえる）＋説明パネル（`ui.zukanGuest`）。説明パネル（`DetailSheet`）は 続きが あると 下に「↓」を 出す。
 - **リロードで最新版になる**（ユーザー要望）: Service Worker は index.html を 先に取りおかず、ページは NetworkFirst（`cache: 'no-cache'`、4 秒で オフライン用の 保存版に 切りかえ）。js/css は ハッシュ付きなので precache。新しい SW は skipWaiting / clientsClaim で すぐ入れかわるが、遊んでいる最中の 自動再読みこみは しない（タイトル画面のときだけ。`src/app/pwa.ts`）。アプリに もどったときにも 更新を確かめる。設定画面に 版（`__APP_VERSION__`、CI では コミットの 先頭 7 文字）を出す。
