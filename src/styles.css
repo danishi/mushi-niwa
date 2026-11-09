@@ -1504,7 +1504,14 @@ ruby rt {
   flex: none;
 }
 
+/* 写真は 画面の 高さに おさめる（横長の 画面でも スクロール しないで 全部 見える）。
+   写真の 縦横比は およそ 360:418（snapshot.ts）なので、高さから 幅を きめる。44px は 左右の 余白 */
+.photo-modal {
+  width: min(560px, 100%, calc((100dvh - var(--safe-t) - var(--safe-b) - 72px) * 0.86 + 44px));
+}
+
 .photo-modal img {
+  display: block;
   width: 100%;
   border-radius: 10px;
 }

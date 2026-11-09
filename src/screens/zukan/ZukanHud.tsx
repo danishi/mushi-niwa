@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { VISITORS, VISITOR_ORDER, type VisitorId } from '../../data/visitors';
 import { usePhotos, type Photo } from '../../state/photos';
 import { useProgress } from '../../state/progress';
@@ -216,16 +217,20 @@ function Album() {
           </button>
         ))}
       </div>
-      {open ? (
-        <div className="modal-backdrop" data-testid="photo-view" onPointerDown={(e) => e.target === e.currentTarget && setOpen(null)}>
-          <div className="modal center photo-modal">
-            <img src={open.url} alt={SPECIES[open.species].name} />
-            <button className="icon-btn modal-close" aria-label="とじる" onClick={() => setOpen(null)}>
-              <Icon name="close" />
-            </button>
-          </div>
-        </div>
-      ) : null}
+      {/* アルバムの 枠（.sheet）の 中に 置くと 枠の 高さで 切れるので、画面 全体（.app）に 出す */}
+      {open
+        ? createPortal(
+            <div className="modal-backdrop" data-testid="photo-view" onPointerDown={(e) => e.target === e.currentTarget && setOpen(null)}>
+              <div className="modal center photo-modal">
+                <img src={open.url} alt={SPECIES[open.species].name} />
+                <button className="icon-btn modal-close" aria-label="とじる" data-testid="photo-close" onClick={() => setOpen(null)}>
+                  <Icon name="close" />
+                </button>
+              </div>
+            </div>,
+            document.querySelector('.app') ?? document.body,
+          )
+        : null}
     </>
   );
 }

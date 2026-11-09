@@ -112,4 +112,17 @@ test('a photo can be taken in observe mode and seen in the album', async ({ page
   await page.evaluate(() => (window as unknown as W).__mushi.ui.getState().go('zukan'));
   await page.getByTestId('tab-photo').tap();
   await expect(page.getByTestId('album').locator('img')).toHaveCount(1);
+  // ひらいた 写真と とじる ボタンが 画面から はみださない
+  await page.getByTestId('album').locator('button').first().tap();
+  const view = page.getByTestId('photo-view');
+  await expect(view).toBeVisible();
+  const vp = page.viewportSize()!;
+  for (const el of [view.locator('img'), page.getByTestId('photo-close')]) {
+    const b = (await el.boundingBox())!;
+    expect(b.y).toBeGreaterThanOrEqual(0);
+    expect(b.y + b.height).toBeLessThanOrEqual(vp.height + 1);
+  }
+  await page.screenshot({ path: test.info().outputPath('photo-view.png') });
+  await page.getByTestId('photo-close').tap();
+  await expect(view).toHaveCount(0);
 });
