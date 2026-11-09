@@ -10,6 +10,7 @@ import {
   nightFromPhase,
   playSecondsFor,
   REALTIME_SCALE,
+  stageMinutes,
   tick,
   useTool,
 } from './simulate';
@@ -50,6 +51,13 @@ describe('simulation', () => {
     s = adopt(s, 'kaiko', 0, NOW, fixedRand);
     expect(s.creatures).toHaveLength(1);
     expect(s.met).toEqual(['kabutomushi']);
+  });
+
+  it('grows twice as fast before adulthood, but keeps the adult span', () => {
+    const sp = SPECIES.kabutomushi;
+    expect(stageMinutes(sp, 0)).toBe(sp.stages[0]!.playMinutes / 2);
+    const last = sp.stages.length - 1;
+    expect(stageMinutes(sp, last)).toBe(sp.stages[last]!.playMinutes);
   });
 
   it('never kills: neglected creatures become genkiganai and stop growing', () => {

@@ -6,6 +6,7 @@ import type {
   NeedKey,
   Needs,
   SimEvent,
+  SpeciesDef,
   SpeciesId,
   StageDef,
   ToolId,
@@ -52,6 +53,15 @@ export function conditionOf(c: Creature): Condition {
 /** げんき度による成長の速さ。げんきがない間は成長が止まるだけ（死なない） */
 export function growthFactor(cond: Condition): number {
   return cond === 'genki' ? 1 : cond === 'futsuu' ? 0.6 : 0;
+}
+
+/** たまご〜さなぎの 進みを 何倍に するか（ユーザー要望で 2 倍）。成虫の 期間は データどおり */
+export const GROWTH_SPEED = 2;
+
+/** その段階に かかる「遊び時間」（分）。最後の 段階（成虫）だけは 速めない */
+export function stageMinutes(sp: SpeciesDef, stageIdx: number): number {
+  const st = sp.stages[stageIdx]!;
+  return stageIdx < sp.stages.length - 1 ? st.playMinutes / GROWTH_SPEED : st.playMinutes;
 }
 
 let idCounter = 0;
@@ -194,7 +204,7 @@ export function tick(state: GameState, dtPlay: number, night: boolean): { state:
     if (cond !== before) events.push({ type: 'condition', id: c.id, from: before, to: cond });
 
     // 成長
-    let progress = c.progress + (minutes / stage.playMinutes) * growthFactor(cond);
+    let progress = c.progress + (minutes / stageMinutes(sp, c.stage)) * growthFactor(cond);
     let stageIdx = c.stage;
     let moltsDone = c.moltsDone;
     let finished = false;
