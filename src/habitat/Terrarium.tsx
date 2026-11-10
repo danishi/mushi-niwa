@@ -109,7 +109,8 @@ export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
   const soilMat = useMemo(() => new THREE.MeshStandardMaterial({ map, roughness: 0.95, bumpMap: grainBump(3, 96), bumpScale: 2 }), [map]);
   const cavityMat = useMemo(() => new THREE.MeshStandardMaterial({ map, color: '#9a8a7a', roughness: 1 }), [map]);
   const wall = useMemo(
-    () => mat('#eef7fb', { roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.02, opacity: 0.12, side: THREE.DoubleSide, envMapIntensity: 2.2 }),
+    // 透明な 壁は 光を 拡散しない（白く かすませない）。まわりの 映りこみだけを うすく のせる
+    () => mat('#ffffff', { roughness: 0.03, metalness: 1, opacity: 0.07, side: THREE.DoubleSide, envMapIntensity: 1 }),
     [],
   );
   const edge = useMemo(() => mat('#dfeef2', { roughness: 0.1, clearcoat: 1, opacity: 0.5 }), []);
@@ -138,7 +139,7 @@ export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
         <mesh material={soilMat} geometry={GEO.box()} position={[0, top / 2, 0]} scale={[w - 0.02, top, d - 0.02]} receiveShadow />
       )}
       {detail && CRUMBS[sub].length ? (
-        <Scatter count={140} radius={0} rect={[w - 0.2, d - 0.2]} seed={creature.slot * 7 + 1} geometry={GEO.sphereLo()} colors={CRUMBS[sub]} scale={[0.015, 0.05]} stretchY={0.45} y={top + 0.004} />
+        <Scatter count={320} radius={0} rect={[w - 0.2, d - 0.2]} seed={creature.slot * 7 + 1} geometry={GEO.chunk()} colors={CRUMBS[sub]} scale={[0.008, 0.03]} stretchY={0.7} y={top + 0.003} />
       ) : null}
       {detail && droplets ? <Droplets moisture={usesMoisture ? moisture : 0} /> : null}
       <Droppings clean={creature.needs.clean} top={top} seed={creature.slot + 3} />

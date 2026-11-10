@@ -3,9 +3,9 @@ import { createContext, useContext, useMemo, useRef, type ReactNode } from 'reac
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { GEO, mat, sharedGeo, SURF, type MatOpts } from '../three/materials';
-import { grainBump } from '../three/textures';
+import { facetNormal } from '../three/textures';
 import type { CreatureAnim } from './anim';
-import { taperedTube } from './geom';
+import { mergedGeo, shapedTube, taperedTube } from './geom';
 
 type V3 = [number, number, number];
 type AnimRef = { current: CreatureAnim };
@@ -56,7 +56,7 @@ export function Part({
 
 /** 複眼：黒っぽく つやのある 楕円体（デフォルメなし） */
 export function CompoundEye({ position, size, color = '#1a1512', part }: { position: V3; size: [number, number, number] | number; color?: string; part?: string }) {
-  const material = useMemo(() => mat(color, { ...SURF.eye(), bumpMap: grainBump(3, 96), bumpScale: 0.6 }), [color]);
+  const material = useMemo(() => mat(color, { ...SURF.eye(), normalMap: facetNormal(), normalScale: 0.5 }), [color]);
   return <mesh geometry={GEO.sphere()} material={material} position={position} scale={size} userData={part ? { part } : undefined} />;
 }
 
@@ -78,72 +78,119 @@ function legKey(s: LegSpec) {
   return `${s.femur}:${s.tibia}:${s.tarsus}:${s.thick}:${s.tarsi ?? 5}:${s.teeth ?? 0}:${s.jumper ? 1 : 0}`;
 }
 
-/** 腿節（根元→ひざ。+X 方向に伸びる） */
+/** 腿節（根元→ひざ。+X 方向に伸びる）。つけねに 基節・転節の ふくらみ、ひざに 関節 */
 function femurGeo(s: LegSpec) {
-  return sharedGeo(`femur:${legKey(s)}`, () => {
+  return mergedGeo(`femur:${legKey(s)}`, () => {
     const L = s.femur;
     const t = s.thick * (s.jumper ? 1.8 : 1);
-    const g = taperedTube(
-      [new THREE.Vector3(0, 0, 0), new THREE.Vector3(L * 0.35, 0.01, 0), new THREE.Vector3(L * 0.7, 0.005, 0), new THREE.Vector3(L, 0, 0)],
-      t * 0.8,
-      t * 0.55,
+    const swell = s.jumper ? 1.0 : 0.55;
+    // 腿節は まん中が ふくらみ、上下に 少し 平たい。ひざの 手前で くびれる
+    const femur = shapedTube(
+      [[0, 0, 0], [L * 0.35, t * 0.25, 0], [L * 0.7, t * 0.15, 0], [L, 0, 0]],
+      (u) => {
+        const k = 0.55 + swell * 0.8 * Math.sin(Math.PI * Math.min(1, u * 1.15)) ** 0.8 - 0.12 * THREE.MathUtils.smoothstep(u, 0.8, 1);
+        return [t * k * 0.82, t * k * 1.08];
+      },
+      12,
       10,
-      8,
+      [0, 0, 1],
     );
-    // まんなかを少し太らせる
-    const p = g.attributes.position as THREE.BufferAttribute;
-    const v = new THREE.Vector3();
-    for (let i = 0; i < p.count; i++) {
-      v.fromBufferAttribute(p, i);
-      const k = 1 + 0.35 * Math.sin((v.x / L) * Math.PI) * (s.jumper ? 1.6 : 1);
-      v.y *= k;
-      v.z *= k;
-      p.setXYZ(i, v.x, v.y, v.z);
-    }
-    g.computeVertexNormals();
-    return g;
+    const coxa = new THREE.SphereGeometry(1, 12, 8);
+    coxa.scale(t * 1.1, t * 0.95, t * 1.1);
+    const knee = new THREE.SphereGeometry(1, 10, 8);
+    knee.scale(t * 0.6, t * 0.62, t * 0.56);
+    knee.translate(L, 0, 0);
+    return [femur, coxa, knee];
   });
 }
 
-/** 脛節＋ふ節＋つめ（ひざ→先。-Y 方向へ下りて、先は外へ） */
+/**
+ * 脛節＋ふ節＋つめ（ひざ→先。-Y 方向へ下りて、先は外へ）。
+ * 脛節は 先へ 向かって 広がり、外がわに 歯、先に 2 本の 距（きょ）。
+ * ふ節は 先が 太い 小さな 節が つらなり、最後の 節に かぎ形の つめが 2 本。
+ */
 function lowerLegGeo(s: LegSpec) {
-  return sharedGeo(`lower:${legKey(s)}`, () => {
+  return mergedGeo(`lower:${legKey(s)}`, () => {
     const parts: THREE.BufferGeometry[] = [];
     const T = s.tibia;
     const th = s.thick * 0.75;
+    const teeth = s.teeth ?? 0;
+    const flare = teeth > 0 ? 0.55 : 0.22;
+    const end: [number, number, number] = [0.05 * T, -T, 0];
     parts.push(
-      taperedTube([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.02 * T, -T * 0.5, 0), new THREE.Vector3(0.05 * T, -T, 0)], th, th * 0.85, 8, 7),
+      shapedTube(
+        [[0, 0, 0], [0.02 * T, -T * 0.5, 0], end],
+        (u) => [th * (0.62 + flare * u * u), th * (0.52 + 0.06 * u)],
+        10,
+        8,
+        [1, 0, 0],
+      ),
     );
-    // すねの外側の歯（とげ）
-    for (let i = 0; i < (s.teeth ?? 0); i++) {
-      const c = new THREE.ConeGeometry(th * 0.45, th * 1.6, 5);
-      c.rotateZ(-Math.PI / 2);
-      c.translate(th * 1.1, -T * (0.45 + i * 0.18), 0);
+    // すねの 外がわの 歯（先ほど 大きく、下・外へ 向く）
+    for (let i = 0; i < teeth; i++) {
+      const u = 1 - (i + 0.35) / (teeth + 0.6);
+      const w = th * (0.62 + flare * u * u);
+      const c = new THREE.ConeGeometry(th * 0.42, th * (1.5 + u * 0.9), 6);
+      c.scale(1, 1, 0.6);
+      c.rotateZ(-Math.PI / 2 - 0.5);
+      c.translate(0.02 * T + 0.03 * T * u + w * 1.15, -T * u - th * 0.25, 0);
       parts.push(c);
     }
-    // ふ節：小さな節が つらなる
-    const n = s.tarsi ?? 5;
-    const base = new THREE.Vector3(0.05 * T, -T, 0);
-    const seg = s.tarsus / n;
-    for (let i = 0; i < n; i++) {
-      const sp = new THREE.SphereGeometry(1, 8, 6);
-      sp.scale(seg * 0.55, th * 0.42, th * 0.42);
-      const a = -1.1 + (i / n) * 0.5; // 外向きに なだらかに
-      sp.rotateZ(a);
-      sp.translate(base.x + Math.cos(a) * seg * (i + 0.5), base.y + Math.sin(a) * seg * (i + 0.5), 0);
-      parts.push(sp);
-    }
-    // つめ（2 本）
-    const tip = new THREE.Vector3(base.x + Math.cos(-0.6) * seg * n, base.y + Math.sin(-0.6) * seg * n, 0);
+    // 先の 距
     for (const z of [-1, 1]) {
-      const c = new THREE.ConeGeometry(th * 0.18, seg * 0.9, 4);
-      c.rotateZ(-Math.PI / 2 - 0.9);
-      c.translate(tip.x, tip.y, z * th * 0.2);
+      const c = new THREE.ConeGeometry(th * 0.2, th * 1.3, 5);
+      c.rotateZ(Math.PI - 0.5);
+      c.translate(end[0] - th * 0.3, end[1] - th * 0.45, z * th * 0.45);
       parts.push(c);
     }
-    const merged = mergeGeometries(parts.map((g) => g.toNonIndexed()))!;
-    merged.computeVertexNormals();
-    return merged;
+    // ふ節
+    const n = s.tarsi ?? 5;
+    const unit = s.tarsus / (n + 0.6);
+    let x = end[0];
+    let y = end[1];
+    let ang = -1.15;
+    for (let i = 0; i < n; i++) {
+      const last = i === n - 1;
+      const len = unit * (last ? 1.6 : 1);
+      ang = -1.15 + ((i + 0.5) / n) * 0.75;
+      const nx = x + Math.cos(ang) * len;
+      const ny = y + Math.sin(ang) * len;
+      parts.push(
+        shapedTube(
+          [[x, y, 0], [(x + nx) / 2, (y + ny) / 2, 0], [nx, ny, 0]],
+          (u) => {
+            const k = last ? 0.2 + 0.1 * u : 0.17 + 0.2 * u * u;
+            return [th * k, th * k * 1.1];
+          },
+          4,
+          7,
+          [0, 0, 1],
+        ),
+      );
+      x = nx;
+      y = ny;
+    }
+    // つめ：外へ ひらいて 下へ 曲がる かぎ
+    const cl = unit * 0.95;
+    const dx = Math.cos(ang);
+    const dy = Math.sin(ang);
+    for (const z of [-1, 1]) {
+      parts.push(
+        shapedTube(
+          [
+            [x, y, 0],
+            [x + dx * cl * 0.55, y + dy * cl * 0.55 + cl * 0.12, z * cl * 0.3],
+            [x + dx * cl * 0.95, y + dy * cl * 0.95 - cl * 0.1, z * cl * 0.48],
+            [x + dx * cl * 1.05, y + dy * cl * 1.05 - cl * 0.5, z * cl * 0.5],
+          ],
+          (u) => [th * 0.11 * (1 - u * 0.85), th * 0.11 * (1 - u * 0.85)],
+          6,
+          5,
+          [0, 0, 1],
+        ),
+      );
+    }
+    return parts;
   });
 }
 

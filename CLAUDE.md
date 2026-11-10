@@ -36,7 +36,14 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **罰を与えない**: 虫は死なない。お世話不足は「げんきがない」（成長が一時停止）になるだけ。寿命を終えた成虫は送り出し演出 → ずかんに思い出カード。
 - **時間**: 通常は遊んでいる間だけ進む。たまご〜さなぎは データの `playMinutes` の 2 倍速（ユーザー要望。`GROWTH_SPEED`・`stageMinutes()`）、成虫の期間は データどおり。設定の「リアルタイムモード」でのみ離席中も進む（追いつき計算は上限つき）。
 - **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
-- **見た目は図鑑のような写実**（ユーザー判断で トゥーン調から変更）: 物理ベース材質 `mat()`／`SURF`（`src/three/materials.ts`）、環境マップ（RoomEnvironment を PMREM で生成）、AgX トーンマッピング、やわらかい影。テクスチャは `src/three/textures.ts` で Canvas から生成（外部画像なし）。虫の目はデフォルメせず複眼（`CompoundEye`）。脚は腿節・脛節・ふ節・つめ（`Leg` + `LegSpec`）、触角は種類別（`AntennaKind`）。
+- **見た目は図鑑のような写実**（ユーザー判断で トゥーン調から変更）: 物理ベース材質 `mat()`／`SURF`（`src/three/materials.ts`）、AgX トーンマッピング、やわらかい影。テクスチャは `src/three/textures.ts` で Canvas から生成（外部画像なし）。虫の目はデフォルメせず複眼（`CompoundEye`、個眼の 法線マップ）。脚は 基節・腿節・脛節（歯と 距）・ふ節・かぎづめ（`Leg` + `LegSpec`）、触角は種類別（`AntennaKind`）。
+- **写実造形の 作り方**（カブトムシ・オオクワガタの 成虫が お手本。ほかの 種も 順に この 方式へ 置きかえる）:
+  - 体は 球の 寄せ集めではなく `loft()`（`src/creatures/geom.ts`）で つくる。体の 軸（+Z）に そって 断面（半分の はば・上下の 高さ・角ばり `nt`/`nb`）を 並べ、`displace` で 合わせ目の みぞ・肩の こぶ・ふちどりを 足す。前ばね・前胸は `arc: 'top'` の から、下がわは 別の ロフト。寸法は 実物の 比率（体長に 対する はば・高さ・各部の 長さ）から 決める。
+  - 角・大あごは `shapedTube()`（断面が だ円で 太さが 変わる チューブ）を `mergedGeo()` で 1 ジオメトリに まとめる。
+  - 表面は 法線マップ: `punctureNormal`（点刻）、`granuleNormal`（顆粒）、`striaeNormal`（前ばねの 条溝。ロフトの UV 用）、`facetNormal`（個眼）、`skinNormal`（幼虫の しわ）。色むらは `elytraShade`。`SURF.chitin()`／`granular()`／`matteChitin()` には 既定で 入っている。
+  - 反射に 映る 環境は 屋外（`gardenEnvironment()`：青空・地平線・地面・太陽の 面）。空の 明るさを 上げると 黒い 虫が 灰色に 見えるので 注意。
+  - ケースの 壁は 拡散色を 持たせない（白く かすむ）。金属扱い＋低い 不透明度で 映りこみだけを のせる。
+  - 部位の 位置（`part`、脚の つけね、頭の 関節）は 変えない。かんさつ・むしずもう・カメラが 参照している。
 - **3〜5 歳でも遊べる操作**: 道具はタップだけ（`toolAction` → `AutoTool` が 3D で飛んでいって自動で使う。ドラッグなし）。お世話パラメータの数値・ゲージは出さず、虫の頭上の吹き出し（`WantBubble`、`wantOf()`）と、対応する道具ボタンの点滅で「してほしいこと」を伝える。画面のボタンは最小限：昼夜は空の太陽／月（`SkyToggle`）、かんさつは虫をタップ、ずかん・むしずもうは棚の前の 3D の本・切り株から入る。棚の前の入口（本・クイズの立てふだ・切り株）は 下の段のケースや「あたらしい むし」ボタンと重ならないよう、画面の縦横比で置き場所を変える（`portalLayout`）。当たり判定も見た目の大きさに合わせる。
 - **横長画面の ずかん・クイズ**: 説明・選択肢は 右の 列に 出し、標本は 左半分に 見せる。カメラは `CameraShot.wide`（アスペクト比 1.2 超で 上書き）と `shiftX`（`setViewOffset` で 見た目だけ ずらすので 回転の 中心は 標本のまま）。CSS の `@media (min-aspect-ratio: 6/5)` と 対に なっている。
 - **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。`PerformanceMonitor` で FPS が落ちたら下げる。DPR 上限 2。影・後処理は high のみ、草の本数も画質で変える。
@@ -50,7 +57,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
   - むしクイズ: `src/sim/quiz.ts` が種データから 3 択を作る（手書きの問題を増やさない）。入口は にわの「？」立てふだ。画面は `quiz`。
   - ずかんは タブ（むし／おきゃくさん／シール／しゃしん）。おきゃくさんも むしと 同じく 台の 上の 3D（`GuestSpecimen`、外接箱で 大きさを そろえる）＋説明パネル（`ui.zukanGuest`）。説明パネル（`DetailSheet`）は 続きが あると 下に「↓」を 出す。
 - **リロードで最新版になる**（ユーザー要望）: Service Worker は index.html を 先に取りおかず、ページは NetworkFirst（`cache: 'no-cache'`、4 秒で オフライン用の 保存版に 切りかえ）。js/css は ハッシュ付きなので precache。新しい SW は skipWaiting / clientsClaim で すぐ入れかわるが、遊んでいる最中の 自動再読みこみは しない（タイトル画面のときだけ。`src/app/pwa.ts`）。アプリに もどったときにも 更新を確かめる。設定画面に 版（`__APP_VERSION__`、CI では コミットの 先頭 7 文字）を出す。
-- **3D アセットは外部に頼らない**: 虫・ジオラマはプリミティブとプロシージャル生成のみ。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。
+- **3D アセットは外部に頼らない**: 虫・ジオラマはプロシージャル生成のみ（ロフト曲面・チューブ・プリミティブ）。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。
 
 ## 規約
 
@@ -82,4 +89,4 @@ docs/             調査資料
 ## ローカル環境メモ（Claude Code のサンドボックス）
 
 - npm キャッシュに書けないときは `npm_config_cache=$TMPDIR/npm-cache` を付ける。
-- Playwright のブラウザは `PLAYWRIGHT_BROWSERS_PATH=/tmp/claude-501/ms-playwright`。`vite preview` のポート待ち受けはサンドボックス外で実行する必要がある。
+- Playwright のブラウザは `PLAYWRIGHT_BROWSERS_PATH=/tmp/claude-501/ms-playwright`。クラウドの セッションには WebKit が なく Chromium だけ（`/opt/pw-browsers/chromium`）。そのときは `browserName: 'chromium'`・`--use-angle=swiftshader` の 一時設定で E2E と スクリーンショットを 回す（設定ファイルは コミットしない）。`vite preview` のポート待ち受けはサンドボックス外で実行する必要がある。

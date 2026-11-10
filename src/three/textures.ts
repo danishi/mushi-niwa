@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { rng } from './Diorama';
+import { rng } from './rng';
 
 /**
  * 外部画像を使わずに、Canvas で描く写実寄りのテクスチャ。
@@ -553,5 +553,147 @@ export function signTexture(big: string, small: string) {
     g.fillStyle = '#4a3b2a';
     g.font = `bold ${s * 0.17}px "Hiragino Maru Gothic ProN", system-ui, sans-serif`;
     g.fillText(small, s / 2, s * 0.84);
+  });
+}
+
+/* ───────────── 法線マップ（表面の 細かい 凹凸） ───────────── */
+
+/**
+ * 高さの 場（0..1 の 2 次元 配列）から、くり返せる 法線マップを つくる。
+ * バンプより 軽く、つやの ハイライトが 細部で くだけて「本物の 表面」に 見える。
+ */
+function normalFromHeight(key: string, size: number, repeat: [number, number], build: (h: Float32Array, s: number) => void, strength: number) {
+  const k = `nrm:${key}:${repeat[0]}:${repeat[1]}`;
+  const hit = cache.get(k);
+  if (hit) return hit;
+  const h = new Float32Array(size * size);
+  build(h, size);
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(size, size);
+  const at = (x: number, y: number) => h[((y + size) % size) * size + ((x + size) % size)]!;
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const dx = (at(x + 1, y) - at(x - 1, y)) * strength;
+      const dy = (at(x, y + 1) - at(x, y - 1)) * strength;
+      const l = 1 / Math.hypot(dx, dy, 1);
+      const i = (y * size + x) * 4;
+      img.data[i] = (-dx * l * 0.5 + 0.5) * 255;
+      // Canvas は 上が v = 1 なので、縦の かたむきは 逆に なる
+      img.data[i + 1] = (dy * l * 0.5 + 0.5) * 255;
+      img.data[i + 2] = (l * 0.5 + 0.5) * 255;
+      img.data[i + 3] = 255;
+    }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat[0], repeat[1]);
+  t.anisotropy = 4;
+  cache.set(k, t);
+  return t;
+}
+
+/** まるい くぼみ・こぶを 場に 押す（はしは 反対がわへ 回りこむので つなぎ目が 出ない） */
+function stamp(h: Float32Array, s: number, cx: number, cy: number, r: number, amp: number) {
+  const R = Math.ceil(r * 2);
+  for (let dy = -R; dy <= R; dy++)
+    for (let dx = -R; dx <= R; dx++) {
+      const d2 = (dx * dx + dy * dy) / (r * r);
+      if (d2 > 4) continue;
+      const x = (Math.round(cx) + dx + s) % s;
+      const y = (Math.round(cy) + dy + s) % s;
+      h[y * s + x] = h[y * s + x]! + amp * Math.exp(-d2 * 1.6);
+    }
+}
+
+/** 甲虫の 点刻（てんこく）：細かい くぼみが ちらばる。density が 大きいほど ざらつく */
+export function punctureNormal(repeat = 5, density = 1, strength = 2.2) {
+  return normalFromHeight(`punct:${density}:${strength}`, 256, [repeat, repeat], (h, s) => {
+    const r = rng(301);
+    const n = valueNoise(302, 32);
+    for (let i = 0; i < h.length; i++) h[i] = n((i % s) / s, Math.floor(i / s) / s) * 0.12;
+    for (let i = 0; i < 520 * density; i++) stamp(h, s, r() * s, r() * s, 1.6 + r() * 2.2, -0.5 - r() * 0.5);
+  }, strength);
+}
+
+/** 顆粒（かりゅう）：こまかい つぶつぶ（カブトムシの 前胸・頭、ざらざらの 脚） */
+export function granuleNormal(repeat = 6, strength = 2.4) {
+  return normalFromHeight(`gran:${strength}`, 256, [repeat, repeat], (h, s) => {
+    const r = rng(311);
+    for (let i = 0; i < 1500; i++) stamp(h, s, r() * s, r() * s, 1.3 + r() * 1.6, 0.4 + r() * 0.5);
+  }, strength);
+}
+
+/**
+ * 前ばねの 条溝（じょうこう）：体の 軸に そった 浅い みぞと、みぞの 中の 点刻の 列。
+ * ロフトの UV（u = 周方向、v = 軸方向）で 使う。rows は 片がわの みぞの 本数
+ */
+export function striaeNormal(rows = 8, depth = 1, strength = 2.6) {
+  return normalFromHeight(`striae:${rows}:${depth}:${strength}`, 512, [1, 1], (h, s) => {
+    const r = rng(321);
+    const n = valueNoise(322, 64);
+    const lines = rows * 2;
+    for (let y = 0; y < s; y++)
+      for (let x = 0; x < s; x++) {
+        const f = ((x / s) * lines) % 1;
+        const d = Math.abs(f - 0.5) * 2; // 0 = みぞの 底
+        h[y * s + x] = -depth * 0.55 * Math.exp(-d * d * 28) + n(x / s, y / s) * 0.1;
+      }
+    for (let k = 0; k < lines; k++)
+      for (let y = 0; y < s; y += 7) stamp(h, s, ((k + 0.5) / lines) * s + (r() - 0.5) * 1.5, y + r() * 3, 1.8, -0.5 * depth);
+    for (let i = 0; i < 900; i++) stamp(h, s, r() * s, r() * s, 1.3 + r(), -0.22);
+  }, strength);
+}
+
+/** 複眼の 個眼（こがん）：六角形に ならぶ 小さな レンズ */
+export function facetNormal(repeat = 9, strength = 1.6) {
+  return normalFromHeight(`facet:${strength}`, 128, [repeat * 2, repeat], (h, s) => {
+    // 3 方向の 波を 重ねると 六角格子の こぶに なる（周期が タイルに 合うよう 整数倍に する）
+    const q = (Math.PI * 2 * 4) / s;
+    for (let y = 0; y < s; y++)
+      for (let x = 0; x < s; x++) {
+        const a = Math.cos(q * x * 2);
+        const b = Math.cos(q * (x + y * 2));
+        const c = Math.cos(q * (x - y * 2));
+        h[y * s + x] = (a + b + c) / 3;
+      }
+  }, strength);
+}
+
+/** やわらかい 皮ふの こまかい しわ（幼虫）。v 方向に 節の しわ、全体に 細かい ちりめん */
+export function skinNormal(repeat = 3, strength = 2) {
+  return normalFromHeight(`skin:${strength}`, 256, [repeat, repeat], (h, s) => {
+    const n = valueNoise(331, 24);
+    const f = valueNoise(332, 96);
+    for (let y = 0; y < s; y++)
+      for (let x = 0; x < s; x++) {
+        const u = x / s;
+        const v = y / s;
+        h[y * s + x] = 0.5 * Math.sin(v * Math.PI * 16 + n(u, v) * 4) + 0.35 * f(u, v);
+      }
+  }, strength);
+}
+
+/**
+ * 前ばねの 色むら（色に かけ合わせる 明暗）。合わせ目と ふちが 暗く、肩と 背の まん中が 明るい。
+ * ロフトの UV（u = 周方向）で 使う。本物の 甲虫は 一色ではなく、うすい ところが 赤っぽく すける。
+ */
+export function elytraShade(seed = 1, contrast = 0.45) {
+  return make(`elyShade:${seed}:${contrast}`, 128, (g, s) => {
+    const n = fbm(400 + seed);
+    const img = g.createImageData(s, s);
+    for (let y = 0; y < s; y++)
+      for (let x = 0; x < s; x++) {
+        const u = x / s;
+        const suture = Math.exp(-(((u - 0.5) / 0.035) ** 2));
+        const rim = Math.exp(-((Math.min(u, 1 - u) / 0.07) ** 2));
+        const v = 1 - contrast * Math.max(suture, rim) - contrast * 0.35 * (1 - n(u, y / s));
+        const c = Math.max(0, Math.min(1, v)) * 255;
+        const i = (y * s + x) * 4;
+        img.data[i] = img.data[i + 1] = img.data[i + 2] = c;
+        img.data[i + 3] = 255;
+      }
+    g.putImageData(img, 0, 0);
   });
 }

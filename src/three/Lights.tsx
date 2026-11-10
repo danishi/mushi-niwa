@@ -1,7 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { useTier } from './QualityManager';
 import { QUALITY } from './quality';
 
@@ -19,6 +18,43 @@ const NIGHT = {
   hemiGround: new THREE.Color('#1c2420'),
   sun: new THREE.Color('#a8b8ff'),
 };
+
+/**
+ * 反射に 映りこむ「まわりの 景色」。室内の 箱ではなく、青い 空・明るい 地平線・草と 土の 地面と、
+ * 太陽／うす雲の やわらかい 光の 面を 置く。甲虫の 背中に、空の 青と 細長い ハイライトが 映る。
+ */
+function gardenEnvironment(): THREE.Scene {
+  const scene = new THREE.Scene();
+  const geo = new THREE.SphereGeometry(20, 32, 24);
+  const p = geo.attributes.position as THREE.BufferAttribute;
+  const colors = new Float32Array(p.count * 3);
+  const zenith = new THREE.Color('#4d86c8');
+  const horizon = new THREE.Color('#e9f1f4');
+  const meadow = new THREE.Color('#5d7a3a');
+  const earth = new THREE.Color('#3b2f22');
+  const c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i) / 20;
+    if (y >= 0) c.copy(horizon).lerp(zenith, Math.pow(y, 0.55));
+    else c.copy(meadow).lerp(earth, Math.min(1, -y * 1.6)).lerp(horizon, Math.max(0, 1 + y * 14) * 0.6);
+    // 空は 地面より ずっと 明るい
+    c.multiplyScalar(y >= 0 ? 0.5 : 0.26);
+    colors.set([c.r, c.g, c.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const panel = (pos: [number, number, number], size: [number, number], power: number, tint = '#fff4e2') => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(size[0], size[1]), new THREE.MeshBasicMaterial({ color: new THREE.Color(tint).multiplyScalar(power), side: THREE.DoubleSide }));
+    m.position.set(...pos);
+    m.lookAt(0, 0, 0);
+    scene.add(m);
+  };
+  // 太陽（directionalLight と 同じ 向き）と、反対がわの うす雲、手前の 明るい 空
+  panel([6, 13.5, 9], [4, 4], 60);
+  panel([-11, 9, -4], [9, 4], 4, '#eaf2ff');
+  panel([0, 7, 15], [10, 2.5], 3, '#ffffff');
+  return scene;
+}
 
 /** 上が濃く、地平線が明るい 空のグラデーション（大きな球の内側） */
 function Sky({ night }: { night: { current: number } }) {
@@ -70,7 +106,13 @@ export function Lights({ night }: { night: { current: number } }) {
   // 環境マップは 1 回だけ生成（外部の画像ファイルは使わない）
   useEffect(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const src = gardenEnvironment();
+    const env = pmrem.fromScene(src, 0.03).texture;
+    src.traverse((o) => {
+      const m = o as THREE.Mesh;
+      m.geometry?.dispose();
+      (m.material as THREE.Material | undefined)?.dispose();
+    });
     scene.environment = env;
     return () => {
       env.dispose();
@@ -82,7 +124,7 @@ export function Lights({ night }: { night: { current: number } }) {
     const n = THREE.MathUtils.clamp(night.current, 0, 1);
     fog.current.color.copy(DAY.horizon).lerp(NIGHT.horizon, n);
     scene.fog = fog.current;
-    scene.environmentIntensity = THREE.MathUtils.lerp(0.55, 0.3, n);
+    scene.environmentIntensity = THREE.MathUtils.lerp(0.62, 0.26, n);
     if (hemi.current) {
       hemi.current.color.copy(DAY.hemiSky).lerp(NIGHT.hemiSky, n);
       hemi.current.groundColor.copy(DAY.hemiGround).lerp(NIGHT.hemiGround, n);

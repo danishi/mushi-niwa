@@ -3,15 +3,10 @@ import * as THREE from 'three';
 import { useTier } from './QualityManager';
 import { GEO, mat, sharedGeo } from './materials';
 import { grainBump, grassTexture, leafTexture } from './textures';
+import { rng } from './rng';
 
 /** 決定的な疑似乱数（毎回同じ配置にしてチラつきを防ぐ） */
-export function rng(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
+export { rng };
 
 interface ScatterProps {
   count: number;
