@@ -100,8 +100,8 @@ export interface Section {
 export interface LoftOpts {
   rings?: number;
   radial?: number;
-  /** 'top' は 上半分だけの から（前ばね・前胸の 背板） */
-  arc?: 'full' | 'top';
+  /** 'top' は 上半分だけの から（前ばね・前胸の 背板）。'half' は その 右半分（ひらく 前ばね） */
+  arc?: 'full' | 'top' | 'half';
   /** 頂点を 動かして 溝・こぶ・ふちを つくる。u は 周方向（0..1）、v は 軸方向（0..1） */
   displace?: (p: THREE.Vector3, u: number, v: number) => void;
 }
@@ -138,7 +138,8 @@ export function loft(key: string, sections: Section[], opts: LoftOpts = {}): THR
   return sharedGeo(`loft:${key}`, () => {
     const rings = opts.rings ?? 40;
     const radial = opts.radial ?? 32;
-    const top = opts.arc === 'top';
+    const half = opts.arc === 'half';
+    const top = opts.arc === 'top' || half;
     const zs = sections.map((s) => s.z);
     const col = (f: (s: Section) => number) => sections.map(f);
     const W = col((s) => s.w);
@@ -164,7 +165,7 @@ export function loft(key: string, sections: Section[], opts: LoftOpts = {}): THR
       const nb = hermite(zs, NB, z);
       for (let j = 0; j <= radial; j++) {
         const u = j / radial;
-        const th = top ? Math.PI * u : -Math.PI / 2 + Math.PI * 2 * u;
+        const th = half ? (Math.PI / 2) * u : top ? Math.PI * u : -Math.PI / 2 + Math.PI * 2 * u;
         const c = Math.cos(th);
         const s = Math.sin(th);
         const n = s >= 0 ? nt : nb;
@@ -273,4 +274,104 @@ export function mergedGeo(key: string, build: () => THREE.BufferGeometry[]): THR
     });
     return mergeGeometries(parts)!;
   });
+}
+
+const gaussian = (x: number, w: number) => Math.exp(-((x / w) ** 2));
+
+/** [z, 半分の はば, 上, 下] */
+export type BodyProfile = Array<[number, number, number, number]>;
+
+/**
+ * 胴体（頭・胸・はら・幼虫の 体）。segs = [z の 始まり, 終わり, 節の 数, くびれの 深さ] で 節の くびれを つける。
+ */
+export function bodyGeo(
+  key: string,
+  prof: BodyProfile,
+  o: { nt?: number; nb?: number; mid?: number; segs?: [number, number, number, number]; rings?: number; radial?: number; extra?: LoftOpts['displace'] } = {},
+): THREE.BufferGeometry {
+  const m = o.mid ?? 0.5;
+  const cy = prof.reduce((a, q) => a + q[3] + (q[2] - q[3]) * m, 0) / prof.length;
+  return loft(
+    `body:${key}`,
+    prof.map(([z, w, top, bottom]) => ({ z, w, top, bottom, mid: bottom + (top - bottom) * m, nt: o.nt, nb: o.nb })),
+    {
+      rings: o.rings ?? (o.segs ? Math.max(36, o.segs[2] * 7) : 28),
+      radial: o.radial ?? 24,
+      displace: (p, u, v) => {
+        if (o.segs) {
+          const [a, b, n, depth] = o.segs;
+          const t = (p.z - a) / (b - a);
+          if (t > 0 && t < 1) {
+            const k = 1 - depth * Math.abs(Math.cos(Math.PI * t * n)) ** 10;
+            p.x *= k;
+            p.y = cy + (p.y - cy) * k;
+          }
+        }
+        o.extra?.(p, u, v);
+      },
+    },
+  );
+}
+
+/** [z, 半分の はば, 上] */
+export type ShellProfile = Array<[number, number, number]>;
+
+/** 背中の から（前ばね・前胸）。base は すその 高さ。suture は 合わせ目の みぞ、rim は すその そり返り */
+export function shellGeo(
+  key: string,
+  prof: ShellProfile,
+  o: { base: number; nt?: number; suture?: number; rim?: number; half?: boolean; rings?: number; radial?: number; extra?: LoftOpts['displace'] },
+): THREE.BufferGeometry {
+  return loft(
+    `shell:${key}`,
+    prof.map(([z, w, top]) => ({ z, w, top, mid: o.base, nt: o.nt })),
+    {
+      arc: o.half ? 'half' : 'top',
+      rings: o.rings ?? 36,
+      radial: o.radial ?? (o.half ? 18 : 32),
+      displace: (p, u, v) => {
+        if (o.suture) p.y -= o.suture * gaussian(p.x, o.suture * 0.9);
+        if (o.rim) {
+          const e = o.half ? u : Math.min(u, 1 - u);
+          const k = Math.max(0, 1 - e / 0.07);
+          p.x *= 1 + o.rim * k * k;
+        }
+        o.extra?.(p, u, v);
+      },
+    },
+  );
+}
+
+/** 幼虫の 節 1 つ（半径 1 の たる形。軸は Z）。つらねると 節の くびれが できる */
+export function segmentGeo(): THREE.BufferGeometry {
+  const pr: BodyProfile = [];
+  for (let i = 0; i <= 12; i++) {
+    const z = -1 + (i / 12) * 2;
+    const r = (1 - Math.abs(z) ** 2.7) ** (1 / 2.7);
+    pr.push([z, r, r, -r]);
+  }
+  return bodyGeo('segment', pr, { rings: 16, radial: 20 });
+}
+
+/** bodyGeo を Y 軸に 立てた もの（GEO.capsule を rotation x = π/2 で 寝かせて 使う 所の 置きかえ用。+y が 前、背中は -z） */
+export function yBody(key: string, prof: BodyProfile, o: Parameters<typeof bodyGeo>[2] = {}): THREE.BufferGeometry {
+  return sharedGeo(`ybody:${key}`, () => bodyGeo(`y:${key}`, prof, o).clone().rotateX(-Math.PI / 2));
+}
+
+/** 背板 1 枚（半径 1。ムカデ・サソリの 節）：角の まるい 四角い 板で、まん中が 少し 高い */
+export function plateGeo(): THREE.BufferGeometry {
+  return bodyGeo(
+    'plate',
+    [[-1, 0.7, 0.45, -0.5], [-0.75, 0.97, 0.9, -0.85], [0, 1, 1, -1], [0.75, 0.97, 0.9, -0.85], [1, 0.7, 0.45, -0.5]],
+    { nt: 3, nb: 3.4, rings: 12, radial: 20 },
+  );
+}
+
+/** さなぎの 胴（半径 1・Y 軸）：下が 節の ある はら、上が 胸 */
+export function pupaGeo(): THREE.BufferGeometry {
+  return yBody(
+    'pupa',
+    [[-1, 0, 0, 0], [-0.93, 0.3, 0.3, -0.3], [-0.55, 0.8, 0.8, -0.72], [-0.1, 1, 1, -0.88], [0.4, 0.96, 0.96, -0.85], [0.8, 0.72, 0.72, -0.6], [1, 0.3, 0.3, -0.25]],
+    { segs: [-0.95, 0.05, 5, 0.07], rings: 40 },
+  );
 }

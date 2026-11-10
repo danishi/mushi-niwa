@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GEO, mat, SURF } from '../three/materials';
 import { cricketWing, grainBump } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube } from './geom';
+import { cachedTube, bodyGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -50,8 +50,8 @@ function Cricket({ anim, sex, adult, size }: ModelProps & { adult: boolean; size
     <group scale={size}>
       <group ref={body}>
         {/* 腹・胸・頭（やや 平たい 体） */}
-        <Part geometry={GEO.sphere()} color={BODY} surface={chitin} position={[0, 0.13, -0.1]} scale={[0.11, 0.08, 0.22]} castShadow part="body" />
-        <Part geometry={GEO.sphere()} color={BODY} surface={chitin} position={[0, 0.15, 0.13]} scale={[0.1, 0.075, 0.08]} castShadow part="body" />
+        <Part geometry={bodyGeo('suzuAbdomen', [[-0.325, 0, 0.13, 0.13], [-0.305, 0.05, 0.165, 0.095], [-0.2, 0.1, 0.2, 0.06], [-0.08, 0.112, 0.21, 0.055], [0.05, 0.1, 0.2, 0.065], [0.1, 0.085, 0.19, 0.08]], { segs: [-0.31, 0.06, 7, 0.05], nb: 2.5 })} color={BODY} surface={chitin} castShadow part="body" />
+        <Part geometry={bodyGeo('suzuPronotum', [[0.05, 0.085, 0.2, 0.085], [0.09, 0.102, 0.226, 0.08], [0.15, 0.098, 0.226, 0.085], [0.2, 0.082, 0.215, 0.095], [0.218, 0.06, 0.2, 0.11]], { nt: 2.7 })} color={BODY} surface={chitin} castShadow part="body" />
         <Part geometry={GEO.sphere()} color="#2c2219" surface={chitin} position={[0, 0.16, 0.24]} scale={[0.075, 0.07, 0.07]} part="antenna" />
         <CompoundEye position={[0.06, 0.18, 0.27]} size={[0.018, 0.025, 0.022]} color="#3b3026" />
         <CompoundEye position={[-0.06, 0.18, 0.27]} size={[0.018, 0.025, 0.022]} color="#3b3026" />

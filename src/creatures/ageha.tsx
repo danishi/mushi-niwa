@@ -3,9 +3,9 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, SURF } from '../three/materials';
-import { agehaWing, grainBump, leafTexture, wrinkleBump } from '../three/textures';
+import { agehaWing, grainBump, leafTexture, wrinkleBump, bandTexture } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube, shapeGeo } from './geom';
+import { cachedTube, shapeGeo, bodyGeo, segmentGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -74,7 +74,7 @@ export function AgehaLarva({ anim, molts }: ModelProps) {
             meshRef={(m) => {
               segs.current[i] = m;
             }}
-            geometry={GEO.sphere()}
+            geometry={segmentGeo()}
             color={c}
             surface={surf}
             castShadow={i % 3 === 0}
@@ -236,18 +236,25 @@ export function AgehaAdult({ anim }: ModelProps) {
     }
   });
   const fur = useMemo(() => ({ roughness: 0.75, sheen: 0.5, sheenColor: '#4a3e2c', bumpMap: grainBump(23, 96), bumpScale: 1 }), []);
+  const thorax = useMemo(() => ({ ...fur, map: bandTexture('agehaThorax', '#1f1915', [[0.4, 0.045, '#e8d27a'], [0.6, 0.045, '#e8d27a'], [0.25, 0.08, '#cdb968'], [0.75, 0.08, '#cdb968']]) }), [fur]);
+  const abdomen = useMemo(() => ({ ...fur, map: bandTexture('agehaAbdomen', '#241d17', [[0.22, 0.13, '#e3cb72'], [0.78, 0.13, '#e3cb72'], [0, 0.12, '#d8c98a'], [1, 0.12, '#d8c98a']]) }), [fur]);
   return (
     <group position={[0, 0.3, 0]} scale={1.45}>
     <group ref={body}>
-      {/* 胸（黒地に 黄色の すじ）と 腹 */}
-      <Part geometry={GEO.sphere()} color="#1f1915" surface={fur} position={[0, 0.02, 0.1]} scale={[0.065, 0.065, 0.11]} castShadow part="wings" />
-      {[1, -1].map((s) => (
-        <M key={s} geo={GEO.box()} color="#e8d27a" surface={fur} position={[s * 0.03, 0.065, 0.1]} scale={[0.008, 0.008, 0.14]} />
-      ))}
-      <Part geometry={GEO.capsule()} color="#2a221b" surface={fur} position={[0, 0.0, -0.13]} rotation={[Math.PI / 2, 0, 0]} scale={[0.055, 0.2, 0.055]} part="wings" />
-      {[1, -1].map((s) => (
-        <M key={`b${s}`} geo={GEO.box()} color="#e3cb72" position={[s * 0.035, -0.01, -0.14]} scale={[0.008, 0.012, 0.2]} />
-      ))}
+      {/* 胸（黒い 毛に 黄色の すじ）と、節の ある 細い 腹（わきに 黄色の 帯） */}
+      <Part
+        geometry={bodyGeo('agehaThorax', [[-0.02, 0.03, 0.05, -0.02], [0.02, 0.06, 0.082, -0.04], [0.1, 0.068, 0.088, -0.045], [0.17, 0.055, 0.075, -0.035], [0.2, 0.03, 0.05, -0.01]], {})}
+        color="#ffffff"
+        surface={thorax}
+        castShadow
+        part="wings"
+      />
+      <Part
+        geometry={bodyGeo('agehaAbdomen', [[-0.34, 0, 0, 0], [-0.32, 0.022, 0.02, -0.02], [-0.22, 0.042, 0.04, -0.04], [-0.1, 0.052, 0.05, -0.05], [-0.02, 0.05, 0.05, -0.045], [0.02, 0.035, 0.04, -0.03]], { segs: [-0.33, 0, 7, 0.07] })}
+        color="#ffffff"
+        surface={abdomen}
+        part="wings"
+      />
       {/* 頭 */}
       <Part geometry={GEO.sphere()} color="#1f1915" surface={fur} position={[0, 0.02, 0.22]} scale={0.045} part="proboscis" />
       <CompoundEye position={[0.032, 0.03, 0.235]} size={0.022} color="#3a2f22" />

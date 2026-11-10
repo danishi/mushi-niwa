@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GEO, SURF } from '../three/materials';
 import { grainBump, striaeNormal } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube, loft, mergedGeo, shapedTube } from './geom';
+import { cachedTube, loft, mergedGeo, shapedTube, pupaGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -231,7 +231,7 @@ export function KuwaPupa({ anim, sex }: ModelProps) {
       {/* 蛹室（くち木の くずを 固めた 部屋） */}
       <M color="#8a6640" surface={{ roughness: 1, bumpMap: grainBump(9, 48), bumpScale: 3 }} position={[0, 0.55, -0.05]} scale={[0.42, 0.62, 0.3]} part="chamber" />
       <group ref={body} position={[0, 0.2, 0.05]}>
-        <Part geometry={GEO.sphere()} color="#e8c48a" surface={amber} position={[0, 0.36, 0]} scale={[0.23, 0.36, 0.19]} castShadow part="body" />
+        <Part geometry={pupaGeo()} color="#e8c48a" surface={amber} position={[0, 0.36, 0]} scale={[0.23, 0.36, 0.19]} castShadow part="body" />
         {[0.12, 0.2, 0.28, 0.36].map((y, i) => (
           <M key={y} color="#c99a5c" surface={amber} geo={GEO.cylinder()} position={[0, y, 0]} scale={[0.228 - (3 - i) * 0.02, 0.008, 0.19 - (3 - i) * 0.015]} />
         ))}

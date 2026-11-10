@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GEO, SURF } from '../three/materials';
 import { elytraShade, grainBump, punctureNormal, striaeNormal, wrinkleBump } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube, loft, mergedGeo, shapedTube } from './geom';
+import { cachedTube, loft, mergedGeo, segmentGeo, shapedTube, pupaGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -59,7 +59,7 @@ export function KabutoLarva({ anim, molts }: ModelProps) {
             meshRef={(m) => {
               segs.current[i] = m;
             }}
-            geometry={GEO.sphere()}
+            geometry={segmentGeo()}
             color={i >= N - 3 ? GUT : SKIN}
             surface={i >= N - 3 ? gut : skin}
             castShadow={i % 3 === 0}
@@ -116,7 +116,7 @@ export function KabutoPupa({ anim, sex }: ModelProps) {
       {/* 蛹室（土を固めて つくった 部屋） */}
       <M color="#3d2a1e" surface={{ roughness: 1, bumpMap: grainBump(7, 48), bumpScale: 3 }} position={[0, 0.62, -0.05]} scale={[0.42, 0.7, 0.3]} part="chamber" />
       <group ref={body} position={[0, 0.2, 0.05]}>
-        <Part geometry={GEO.sphere()} color="#c98b48" surface={amber} position={[0, 0.4, 0]} scale={[0.25, 0.42, 0.21]} castShadow part="body" />
+        <Part geometry={pupaGeo()} color="#c98b48" surface={amber} position={[0, 0.4, 0]} scale={[0.25, 0.42, 0.21]} castShadow part="body" />
         {[0.12, 0.22, 0.32, 0.42].map((y, i) => (
           <M key={y} color="#a86a30" surface={amber} geo={GEO.cylinder()} position={[0, y, 0]} scale={[0.248 - (3 - i) * 0.02, 0.008, 0.21 - (3 - i) * 0.015]} />
         ))}

@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { GEO, mat, sharedGeo, SURF } from '../three/materials';
 import { barkTexture, gomadaraElytra, grainBump, mottledTexture, wrinkleBump } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube, domeGeo } from './geom';
+import { cachedTube, bodyGeo, shellGeo, yBody, plateGeo, segmentGeo } from './geom';
 import { Antenna, CompoundEye, Leg, LiteContext, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -81,7 +81,7 @@ function Mantis({ anim, sex, molts, adult }: ModelProps & { adult: boolean }) {
       <group ref={body}>
         {/* 腹 */}
         <group ref={abdomen} position={[0, 0.17, -0.02]}>
-          <Part geometry={GEO.capsule()} color={color} surface={surf} position={[0, 0, -0.22]} rotation={[Math.PI / 2, 0, 0]} scale={[0.07, 0.36, 0.055]} castShadow part="body" />
+          <Part geometry={yBody('mantisAbdomen', [[-1, 0, 0, 0], [-0.92, 0.2, 0.2, -0.2], [-0.45, 0.5, 0.42, -0.5], [0.2, 0.46, 0.38, -0.46], [0.8, 0.3, 0.3, -0.3], [1, 0.2, 0.2, -0.2]], { segs: [-0.95, 0.9, 7, 0.06], nb: 2.4 })} color={color} surface={surf} position={[0, 0, -0.22]} rotation={[Math.PI / 2, 0, 0]} scale={[0.07, 0.36, 0.055]} castShadow part="body" />
           <group ref={wings} position={[0, 0.045, -0.02]}>
             {[1, -1].map((s) => (
               <group key={s}>
@@ -92,11 +92,11 @@ function Mantis({ anim, sex, molts, adult }: ModelProps & { adult: boolean }) {
           </group>
         </group>
         {/* 中胸・後胸 */}
-        <Part geometry={GEO.capsule()} color={color} surface={surf} position={[0, 0.17, 0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.05, 0.12, 0.045]} part="body" />
+        <Part geometry={yBody('mantisThorax', [[-1, 0.3, 0.3, -0.3], [-0.4, 0.5, 0.48, -0.5], [0.4, 0.48, 0.46, -0.48], [1, 0.28, 0.28, -0.28]])} color={color} surface={surf} position={[0, 0.17, 0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.05, 0.12, 0.045]} part="body" />
         {/* 長い 前胸（首）：ななめ上に 立てる */}
         <group ref={lean} position={[0, 0.17, 0.14]}>
         <group rotation={[-0.75, 0, 0]}>
-          <Part geometry={GEO.capsule()} color={dark} surface={surf} position={[0, 0, 0.16]} rotation={[Math.PI / 2, 0, 0]} scale={[0.032, 0.32, 0.03]} castShadow part="neck" />
+          <Part geometry={yBody('mantisNeck', [[-1, 0.3, 0.3, -0.3], [-0.3, 0.36, 0.36, -0.34], [0.3, 0.52, 0.44, -0.4], [0.7, 0.5, 0.42, -0.38], [0.95, 0.3, 0.3, -0.28], [1, 0.15, 0.15, -0.15]], { nt: 2.4 })} color={dark} surface={surf} position={[0, 0, 0.16]} rotation={[Math.PI / 2, 0, 0]} scale={[0.032, 0.32, 0.03]} castShadow part="neck" />
           {/* カマ */}
           <group position={[0, -0.01, 0.24]} rotation={[0.75, 0, 0]}>
             <RaptorialLeg side={1} color={color} anim={anim} />
@@ -104,7 +104,7 @@ function Mantis({ anim, sex, molts, adult }: ModelProps & { adult: boolean }) {
           </group>
           {/* 三角の 頭（よく 回る） */}
           <group ref={head} position={[0, 0.02, 0.33]} rotation={[0.75, 0, 0]}>
-            <Part geometry={GEO.cone()} color={color} surface={surf} position={[0, -0.03, 0.02]} rotation={[Math.PI, 0, 0]} scale={[0.075, 0.1, 0.035]} castShadow part="head" />
+            <Part geometry={bodyGeo('mantisHead', [[-0.018, 0, 0, 0], [-0.01, 0.05, 0.025, -0.06], [0.015, 0.082, 0.04, -0.092], [0.04, 0.07, 0.03, -0.088], [0.056, 0, -0.02, -0.02]], { mid: 0.86, nb: 1.15, nt: 2.4 })} color={color} surface={surf} castShadow part="head" />
             {/* 大きな 複眼と 黒い 点（偽瞳孔） */}
             {[1, -1].map((s) => (
               <group key={s} position={[s * 0.065, 0.02, 0.02]}>
@@ -216,7 +216,7 @@ function CentipedeBody({ anim, young }: { anim: ModelProps['anim']; young: boole
   });
   return (
     <>
-      <instancedMesh ref={tergites} args={[GEO.sphere(), tergMat, SEGMENTS]} castShadow frustumCulled={false} userData={{ part: 'legs' }} />
+      <instancedMesh ref={tergites} args={[plateGeo(), tergMat, SEGMENTS]} castShadow frustumCulled={false} userData={{ part: 'legs' }} />
       <instancedMesh ref={legs} args={[legGeo, legMat, SEGMENTS * 2]} frustumCulled={false} userData={{ part: 'legs' }} />
     </>
   );
@@ -236,7 +236,7 @@ function Centipede({ anim, molts, young }: ModelProps & { young: boolean }) {
     <group scale={size}>
       <CentipedeBody anim={anim} young={young} />
       <group ref={head} position={[0, 0.05, 0.47]}>
-        <Part geometry={GEO.sphere()} color={young ? '#c7754a' : '#c2401f'} surface={shell} scale={[0.055, 0.022, 0.05]} castShadow part="head" />
+        <Part geometry={plateGeo()} color={young ? '#c7754a' : '#c2401f'} surface={shell} scale={[0.055, 0.022, 0.05]} castShadow part="head" />
         {/* 顎肢（毒の あご） */}
         {[1, -1].map((s) => (
           <Part
@@ -293,9 +293,9 @@ function Scorpion({ anim, molts, young }: ModelProps & { young: boolean }) {
     <group scale={size}>
       <group ref={body}>
         {/* 頭胸部と 腹（前腹部） */}
-        <Part geometry={GEO.sphere()} color={color} surface={shell} position={[0, 0.06, 0.12]} scale={[0.065, 0.03, 0.07]} castShadow part="body" />
+        <Part geometry={plateGeo()} color={color} surface={shell} position={[0, 0.06, 0.12]} scale={[0.065, 0.03, 0.07]} castShadow part="body" />
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <Part key={i} geometry={GEO.sphere()} color={color} surface={shell} position={[0, 0.058, 0.04 - i * 0.04]} scale={[0.07 - i * 0.002, 0.026, 0.026]} castShadow={i % 2 === 0} part="body" />
+          <Part key={i} geometry={plateGeo()} color={color} surface={shell} position={[0, 0.058, 0.04 - i * 0.04]} scale={[0.07 - i * 0.002, 0.026, 0.026]} castShadow={i % 2 === 0} part="body" />
         ))}
         <CompoundEye position={[0.012, 0.09, 0.15]} size={0.009} />
         <CompoundEye position={[-0.012, 0.09, 0.15]} size={0.009} />
@@ -395,7 +395,7 @@ export function GomadaraLarva({ anim, molts }: ModelProps) {
             meshRef={(m) => {
               segs.current[i] = m;
             }}
-            geometry={GEO.sphere()}
+            geometry={segmentGeo()}
             color={i === 1 ? '#f2e2bf' : '#f4ead6'}
             surface={skin}
             castShadow={i % 3 === 0}
@@ -439,7 +439,7 @@ const G_LEG: LegSpec = { femur: 0.22, tibia: 0.22, tarsus: 0.14, thick: 0.016, t
 export function GomadaraAdult({ anim, sex }: ModelProps) {
   const body = useBodyMotion(anim, 0.5);
   const head = useRef<THREE.Group>(null);
-  const elytra = useMemo(() => ({ map: gomadaraElytra(), roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 }), []);
+  const elytra = useMemo(() => ({ ...SURF.chitin(1), map: gomadaraElytra() }), []);
   const black = useMemo(() => SURF.chitin(1), []);
   // オスの 触角は 体の 約 2 倍、メスは 少し 短い
   const antLen = sex === 'male' ? 1.3 : 0.95;
@@ -450,15 +450,22 @@ export function GomadaraAdult({ anim, sex }: ModelProps) {
   });
   return (
     <group ref={body}>
-      <Part geometry={domeGeo()} color="#ffffff" surface={elytra} position={[0, 0.13, -0.16]} scale={[0.17, 0.13, 0.36]} castShadow part="elytra" />
-      <M color="#121216" surface={black} position={[0, 0.12, -0.16]} scale={[0.15, 0.05, 0.34]} />
+      {/* 前ばね：肩が 角ばり、両がわが 平行で 細長い */}
+      <Part
+        geometry={shellGeo('gomadaraElytra', [[-0.525, 0, 0.14], [-0.515, 0.06, 0.17], [-0.47, 0.125, 0.215], [-0.35, 0.158, 0.25], [-0.1, 0.168, 0.262], [0.1, 0.172, 0.262], [0.16, 0.166, 0.25], [0.188, 0.14, 0.225]], { base: 0.125, nt: 2.5, suture: 0.004, rim: 0.03, rings: 44 })}
+        color="#ffffff"
+        surface={elytra}
+        castShadow
+        part="elytra"
+      />
+      <M geo={bodyGeo('gomadaraUnder', [[-0.52, 0, 0.12, 0.12], [-0.48, 0.1, 0.14, 0.085], [-0.3, 0.15, 0.15, 0.07], [0.1, 0.16, 0.15, 0.065], [0.2, 0.12, 0.15, 0.075], [0.3, 0.07, 0.15, 0.09]], { nb: 2.8, segs: [-0.5, -0.1, 5, 0.03] })} color="#121216" surface={black} />
       {/* 前胸（よこに とげ）と 白い 点 */}
-      <Part geometry={GEO.sphere()} color="#0f0f12" surface={black} position={[0, 0.16, 0.22]} scale={[0.11, 0.08, 0.09]} castShadow part="pronotum" />
+      <Part geometry={bodyGeo('gomadaraPronotum', [[0.125, 0.08, 0.232, 0.095], [0.16, 0.104, 0.246, 0.085], [0.22, 0.112, 0.248, 0.082], [0.27, 0.1, 0.238, 0.09], [0.308, 0.078, 0.222, 0.1]], { nt: 2.3 })} color="#0f0f12" surface={black} castShadow part="pronotum" />
       {[1, -1].map((s) => (
         <M key={s} geo={GEO.cone()} color="#0f0f12" surface={black} position={[s * 0.11, 0.16, 0.22]} rotation={[0, 0, -s * Math.PI / 2]} scale={[0.02, 0.05, 0.02]} part="pronotum" />
       ))}
       <group ref={head} position={[0, 0.14, 0.34]}>
-        <Part geometry={GEO.sphere()} color="#0f0f12" surface={black} scale={[0.085, 0.075, 0.08]} part="mandibles" />
+        <Part geometry={bodyGeo('gomadaraHead', [[-0.07, 0.05, 0.06, -0.04], [-0.02, 0.085, 0.08, -0.07], [0.04, 0.082, 0.072, -0.08], [0.076, 0.056, 0.03, -0.082], [0.088, 0, -0.03, -0.03]], { nt: 2.3 })} color="#0f0f12" surface={black} part="mandibles" />
         <CompoundEye position={[0.06, 0.02, 0.0]} size={[0.02, 0.04, 0.03]} />
         <CompoundEye position={[-0.06, 0.02, 0.0]} size={[0.02, 0.04, 0.03]} />
         {[1, -1].map((s) => (

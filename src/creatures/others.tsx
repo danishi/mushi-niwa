@@ -3,9 +3,9 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, SURF } from '../three/materials';
-import { fuzzTexture, grainBump, leafTexture, wrinkleBump } from '../three/textures';
+import { fuzzTexture, grainBump, leafTexture, mothWing, paint, striaeNormal, wrinkleBump } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { domeGeo } from './geom';
+import { bodyGeo, segmentGeo, shapeGeo, shellGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -136,7 +136,7 @@ function domeHalf() {
 export function TentouAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0.4);
   const shell = useRef<THREE.Group>(null);
-  const red = useMemo(() => ({ roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.05 }), []);
+  const red = useMemo(() => ({ ...SURF.chitin(1), roughness: 0.22, clearcoatRoughness: 0.05, normalScale: 0.15 }), []);
   const spotMat = useMemo(() => mat('#141210', { roughness: 0.25, clearcoat: 1 }), []);
   const spots = useMemo(
     () =>
@@ -179,11 +179,18 @@ export function TentouAdult({ anim }: ModelProps) {
         ))}
       </group>
       {/* 前胸：黒地に 白い もよう（目のように見える） */}
-      <Part geometry={GEO.sphere()} color="#141210" surface={SURF.chitin(1)} position={[0, 0.1, 0.22]} scale={[0.14, 0.07, 0.065]} part="pronotum" />
+      <Part
+        geometry={shellGeo('tentouPronotum', [[0.14, 0.13, 0.19], [0.17, 0.155, 0.185], [0.21, 0.15, 0.165], [0.25, 0.125, 0.135], [0.28, 0.09, 0.105], [0.292, 0.06, 0.085]], { base: 0.06, nt: 2.1, rim: 0.05, rings: 18 })}
+        color="#141210"
+        surface={SURF.chitin(1)}
+        part="pronotum"
+      />
+      {/* 体の 下がわ（平たい 黒い おなか） */}
+      <M geo={bodyGeo('tentouUnder', [[-0.275, 0.04, 0.09, 0.05], [-0.17, 0.18, 0.1, 0.03], [-0.03, 0.212, 0.1, 0.025], [0.13, 0.17, 0.1, 0.03], [0.24, 0.07, 0.09, 0.045], [0.26, 0, 0.07, 0.07]], { nb: 3 })} color="#161310" />
       {[1, -1].map((s) => (
-        <M key={s} color="#f2efe8" surface={SURF.chitin(1)} position={[s * 0.1, 0.12, 0.25]} scale={[0.035, 0.025, 0.02]} part="pronotum" />
+        <M key={s} color="#f2efe8" surface={SURF.chitin(1)} position={[s * 0.098, 0.112, 0.245]} rotation={[0, s * 0.5, s * -0.5]} scale={[0.034, 0.012, 0.03]} part="pronotum" />
       ))}
-      <Part geometry={GEO.sphere()} color="#141210" surface={SURF.chitin(1)} position={[0, 0.07, 0.28]} scale={[0.075, 0.045, 0.04]} part="pronotum" />
+      <Part geometry={GEO.sphere()} color="#141210" surface={SURF.chitin(1)} position={[0, 0.072, 0.295]} scale={[0.07, 0.04, 0.04]} part="pronotum" />
       {[1, -1].map((s) => (
         <M key={`w${s}`} color="#efe9df" position={[s * 0.035, 0.08, 0.31]} scale={[0.012, 0.01, 0.006]} />
       ))}
@@ -260,7 +267,7 @@ export function KaikoLarva({ anim, molts }: ModelProps) {
             meshRef={(m) => {
               segs.current[i] = m;
             }}
-            geometry={GEO.sphere()}
+            geometry={segmentGeo()}
             color={i % 2 ? '#ece8de' : '#e6e1d4'}
             surface={skin}
             castShadow={i % 3 === 0}
@@ -327,6 +334,19 @@ export function KaikoCocoon({ anim }: ModelProps) {
   );
 }
 
+/** カイコガの 前ばね：先が かぎのように とがる（鎌状）。後ろばねは 小さく まるい */
+const kaikoFore = (s: THREE.Shape) => {
+  s.moveTo(0, 0.02);
+  s.bezierCurveTo(0.12, 0.08, 0.28, 0.08, 0.4, 0.02);
+  s.bezierCurveTo(0.36, -0.02, 0.35, -0.1, 0.3, -0.2);
+  s.bezierCurveTo(0.2, -0.17, 0.08, -0.12, 0, -0.06);
+};
+const kaikoHind = (s: THREE.Shape) => {
+  s.moveTo(0, -0.04);
+  s.bezierCurveTo(0.1, -0.06, 0.22, -0.12, 0.24, -0.2);
+  s.bezierCurveTo(0.2, -0.3, 0.08, -0.3, 0, -0.16);
+};
+
 const K_LEG: LegSpec = { femur: 0.1, tibia: 0.1, tarsus: 0.08, thick: 0.016, tarsi: 5 };
 
 /** 成虫：白い 毛に おおわれた ずんぐりした ガ。くしのような 触角。はねは あるが 飛べない */
@@ -334,7 +354,8 @@ export function KaikoAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0.4);
   const wings = useRef<THREE.Group>(null);
   const fur = useMemo(() => ({ roughness: 1, sheen: 1, sheenColor: '#ffffff', map: fuzzTexture(), bumpMap: grainBump(61, 128), bumpScale: 2 }), []);
-  const wingMat = useMemo(() => mat('#ffffff', { roughness: 0.9, sheen: 0.8, map: fuzzTexture(), side: THREE.DoubleSide }), []);
+  const wingMat = useMemo(() => mat('#ffffff', { roughness: 0.9, sheen: 0.8, map: mothWing([0, -0.2, 0.4, 0.07]), side: THREE.DoubleSide }), []);
+  const hindMat = useMemo(() => mat('#f6f1e6', { roughness: 0.9, sheen: 0.8, map: mothWing([0, -0.3, 0.24, -0.04]), side: THREE.DoubleSide }), []);
   useFrame(() => {
     const a = anim.current;
     // 歩くときに はねを こまかく ふるわせる（飛べない）
@@ -346,10 +367,14 @@ export function KaikoAdult({ anim }: ModelProps) {
   });
   return (
     <group ref={body} scale={1.3}>
-      <Part geometry={GEO.sphere()} color="#efe9dc" surface={fur} position={[0, 0.15, -0.06]} scale={[0.11, 0.1, 0.22]} castShadow part="wings" />
-      {[-0.02, -0.1, -0.18].map((z) => (
-        <M key={z} geo={GEO.cylinder()} color="#d9d0bd" surface={fur} position={[0, 0.15, z]} rotation={[Math.PI / 2, 0, 0]} scale={[0.105, 0.006, 0.09]} />
-      ))}
+      {/* ふとい はら（節の くびれ）と、もこもこの 胸 */}
+      <Part
+        geometry={bodyGeo('kaikoAbdomen', [[-0.29, 0, 0.15, 0.15], [-0.27, 0.05, 0.19, 0.11], [-0.18, 0.1, 0.24, 0.065], [-0.05, 0.112, 0.25, 0.055], [0.05, 0.095, 0.24, 0.07], [0.09, 0.07, 0.22, 0.09]], { segs: [-0.27, 0.05, 6, 0.07] })}
+        color="#efe9dc"
+        surface={fur}
+        castShadow
+        part="wings"
+      />
       <Part geometry={GEO.sphere()} color="#f3eee3" surface={fur} position={[0, 0.18, 0.14]} scale={0.1} castShadow part="mouth" />
       <Part geometry={GEO.sphere()} color="#e9e2d2" surface={fur} position={[0, 0.16, 0.24]} scale={[0.06, 0.055, 0.05]} part="mouth" />
       <CompoundEye position={[0.045, 0.17, 0.26]} size={0.022} color="#1a1715" />
@@ -359,7 +384,10 @@ export function KaikoAdult({ anim }: ModelProps) {
       <group ref={wings} position={[0, 0.22, 0.06]}>
         {[1, -1].map((s) => (
           <group key={s}>
-            <mesh geometry={GEO.sphere()} material={wingMat} position={[s * 0.18, 0, -0.08]} rotation={[0, s * 0.35, 0]} scale={[0.2, 0.015, 0.16]} castShadow userData={{ part: 'wings' }} />
+            <group scale={[s, 1, 1]} rotation={[Math.PI / 2, 0, 0]}>
+              <mesh geometry={shapeGeo('kaikoFore', kaikoFore)} material={wingMat} castShadow userData={{ part: 'wings' }} />
+              <mesh geometry={shapeGeo('kaikoHind', kaikoHind)} material={hindMat} position={[0, 0, 0.004]} userData={{ part: 'wings' }} />
+            </group>
           </group>
         ))}
       </group>
@@ -377,20 +405,31 @@ export function KaikoAdult({ anim }: ModelProps) {
 
 const M_LEG: LegSpec = { femur: 0.18, tibia: 0.18, tarsus: 0.14, thick: 0.014, tarsi: 5 };
 
-let striaeTex: THREE.CanvasTexture | null = null;
-/** 前ばねの たてすじ（条溝）のバンプ */
-function striae() {
-  if (striaeTex) return striaeTex;
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d')!;
-  for (let x = 0; x < 64; x++) {
-    const v = Math.round(128 + 120 * Math.sin((x / 64) * Math.PI * 16));
-    g.fillStyle = `rgb(${v},${v},${v})`;
-    g.fillRect(x, 0, 1, 64);
-  }
-  striaeTex = new THREE.CanvasTexture(c);
-  return striaeTex;
+/** 前ばねの もよう：黒地に、肩の だいだい黄色の 紋と、後ろの 波うつ 帯 */
+function miideraMap() {
+  return paint('miidera', 256, (g, s) => {
+    g.fillStyle = '#141110';
+    g.fillRect(0, 0, s, s);
+    g.fillStyle = '#e59a17';
+    for (const u of [0.27, 0.73]) {
+      g.beginPath();
+      g.ellipse(u * s, s * 0.2, s * 0.085, s * 0.1, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const u = 0.1 + (i / 40) * 0.8;
+      g.lineTo(u * s, s * (0.6 + 0.035 * Math.sin(u * 50)));
+    }
+    for (let i = 40; i >= 0; i--) {
+      const u = 0.1 + (i / 40) * 0.8;
+      g.lineTo(u * s, s * (0.7 + 0.035 * Math.sin(u * 44 + 1)));
+    }
+    g.fill();
+    // ふちの 細い 黄色
+    g.fillRect(0, 0, s * 0.025, s);
+    g.fillRect(s * 0.975, 0, s * 0.025, s);
+  });
 }
 
 /**
@@ -400,7 +439,7 @@ function striae() {
 export function MiideraAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0.6);
   const tail = useRef<THREE.Group>(null);
-  const elytra = useMemo(() => ({ ...SURF.chitin(0.9), bumpMap: striae(), bumpScale: 1.5 }), []);
+  const elytra = useMemo(() => ({ ...SURF.chitin(0.8), map: miideraMap(), normalMap: striaeNormal(4, 1.6), normalScale: 1 }), []);
   const yellow = useMemo(() => SURF.chitin(0.8), []);
   useFrame(() => {
     const a = anim.current;
@@ -410,21 +449,35 @@ export function MiideraAdult({ anim }: ModelProps) {
   return (
     <group ref={body} scale={1.3}>
       <group ref={tail}>
-        <Part geometry={domeGeo()} color="#121010" surface={elytra} position={[0, 0.09, -0.12]} scale={[0.15, 0.1, 0.27]} castShadow part="elytra" />
-        {/* 肩の 紋と 後ろの 帯 */}
-        {[1, -1].map((s) => (
-          <M key={s} color="#e59a17" surface={yellow} position={[s * 0.08, 0.16, 0.05]} scale={[0.045, 0.02, 0.05]} part="elytra" />
-        ))}
-        <M color="#e59a17" surface={yellow} position={[0, 0.165, -0.18]} rotation={[-0.25, 0, 0]} scale={[0.13, 0.02, 0.045]} part="elytra" />
+        {/* 前ばね：細長く、後ろが 切れたように 短い（おしりの 先が 出る）。たての 隆条 */}
+        <Part
+          geometry={shellGeo('miideraElytra', [[-0.375, 0.07, 0.125], [-0.36, 0.125, 0.16], [-0.25, 0.158, 0.19], [-0.05, 0.15, 0.188], [0.08, 0.125, 0.172], [0.135, 0.085, 0.145]], { base: 0.085, nt: 2.5, suture: 0.004, rim: 0.03 })}
+          color="#ffffff"
+          surface={elytra}
+          castShadow
+          part="elytra"
+        />
+        <M geo={bodyGeo('miideraUnder', [[-0.4, 0, 0.09, 0.09], [-0.37, 0.07, 0.11, 0.055], [-0.25, 0.14, 0.12, 0.035], [0, 0.135, 0.12, 0.03], [0.12, 0.08, 0.11, 0.045], [0.15, 0, 0.08, 0.08]], { nb: 2.8, segs: [-0.39, -0.05, 5, 0.03] })} color="#1c1512" />
         <M color="#c9850f" position={[0, 0.07, -0.38]} scale={[0.05, 0.035, 0.035]} part="tail" />
       </group>
       {/* 細い 前胸（くび）と 頭：だいだい黄色に 黒い もよう */}
-      <Part geometry={GEO.sphere()} color="#e9a21b" surface={yellow} position={[0, 0.1, 0.19]} scale={[0.07, 0.055, 0.08]} castShadow part="neck" />
-      <M color="#1a1412" position={[0, 0.15, 0.19]} scale={[0.025, 0.012, 0.045]} part="neck" />
-      <Part geometry={GEO.sphere()} color="#eaa41f" surface={yellow} position={[0, 0.1, 0.3]} scale={[0.075, 0.055, 0.075]} part="neck" />
-      <M color="#1a1412" position={[0, 0.15, 0.3]} scale={[0.03, 0.012, 0.03]} part="neck" />
-      <CompoundEye position={[0.06, 0.12, 0.33]} size={[0.018, 0.022, 0.022]} />
-      <CompoundEye position={[-0.06, 0.12, 0.33]} size={[0.018, 0.022, 0.022]} />
+      <Part
+        geometry={bodyGeo('miideraNeck', [[0.11, 0.035, 0.125, 0.075], [0.14, 0.058, 0.148, 0.06], [0.2, 0.076, 0.155, 0.055], [0.245, 0.064, 0.148, 0.06], [0.268, 0.04, 0.135, 0.072]], { nt: 2.4, nb: 2.4 })}
+        color="#e9a21b"
+        surface={yellow}
+        castShadow
+        part="neck"
+      />
+      <M color="#1a1412" position={[0, 0.152, 0.19]} scale={[0.022, 0.008, 0.045]} part="neck" />
+      <Part
+        geometry={bodyGeo('miideraHead', [[0.25, 0.03, 0.125, 0.085], [0.28, 0.062, 0.148, 0.065], [0.325, 0.07, 0.15, 0.062], [0.365, 0.05, 0.132, 0.07], [0.39, 0.028, 0.115, 0.08], [0.4, 0, 0.098, 0.098]], { nt: 2.3 })}
+        color="#eaa41f"
+        surface={yellow}
+        part="neck"
+      />
+      <M color="#1a1412" position={[0, 0.148, 0.31]} scale={[0.028, 0.008, 0.028]} part="neck" />
+      <CompoundEye position={[0.064, 0.118, 0.325]} size={[0.018, 0.022, 0.022]} />
+      <CompoundEye position={[-0.064, 0.118, 0.325]} size={[0.018, 0.022, 0.022]} />
       {/* 大あご */}
       {[1, -1].map((s) => (
         <M key={s} geo={GEO.cone()} color="#8a5a10" surface={yellow} position={[s * 0.025, 0.08, 0.38]} rotation={[1.4, 0, s * 0.4]} scale={[0.01, 0.04, 0.01]} />

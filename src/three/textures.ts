@@ -292,81 +292,6 @@ export function leafTexture(base = '#4f7f2a') {
   });
 }
 
-/**
- * ナミアゲハの はね（前ばね・後ろばね）。
- * 淡い黄色の地に、黒い翅脈と帯、外縁の黒帯に黄色の三日月紋、後ろばねに青い斑と橙色の眼状紋。
- */
-export function agehaWing(which: 'fore' | 'hind') {
-  return make(`ageha:${which}`, 256, (g, s) => {
-    g.fillStyle = '#f2df8c';
-    g.fillRect(0, 0, s, s);
-    g.fillStyle = '#1d1712';
-    g.strokeStyle = '#1d1712';
-    if (which === 'fore') {
-      // 付け根側の黒い部分と、すじ状の帯
-      g.fillRect(0, 0, s * 0.18, s);
-      for (let i = 0; i < 6; i++) {
-        g.lineWidth = 3 + (i % 2) * 2;
-        g.beginPath();
-        g.moveTo(s * 0.18, s * (0.15 + i * 0.12));
-        g.lineTo(s * (0.75 + i * 0.03), s * (0.05 + i * 0.16));
-        g.stroke();
-      }
-      // 外縁の黒帯と黄色の三日月紋
-      g.fillRect(s * 0.78, 0, s * 0.22, s);
-      g.fillStyle = '#f2df8c';
-      for (let i = 0; i < 8; i++) {
-        g.beginPath();
-        g.ellipse(s * 0.88, s * (0.06 + i * 0.12), 5, 9, 0, 0, Math.PI * 2);
-        g.fill();
-      }
-      g.fillStyle = '#1d1712';
-      g.fillRect(s * 0.4, 0, s * 0.08, s * 0.5);
-    } else {
-      g.fillRect(0, 0, s * 0.15, s);
-      for (let i = 0; i < 5; i++) {
-        g.lineWidth = 2.5;
-        g.beginPath();
-        g.moveTo(s * 0.15, s * (0.2 + i * 0.15));
-        g.lineTo(s * 0.7, s * (0.1 + i * 0.2));
-        g.stroke();
-      }
-      g.fillRect(s * 0.68, 0, s * 0.32, s);
-      // 青い斑
-      g.fillStyle = '#4f7fbf';
-      for (let i = 0; i < 6; i++) {
-        g.beginPath();
-        g.ellipse(s * 0.76, s * (0.12 + i * 0.14), 6, 8, 0, 0, Math.PI * 2);
-        g.fill();
-      }
-      g.fillStyle = '#f2df8c';
-      for (let i = 0; i < 6; i++) {
-        g.beginPath();
-        g.ellipse(s * 0.92, s * (0.12 + i * 0.14), 5, 7, 0, 0, Math.PI * 2);
-        g.fill();
-      }
-      // 内縁の橙色の眼状紋
-      g.fillStyle = '#e07a2f';
-      g.beginPath();
-      g.arc(s * 0.62, s * 0.9, 12, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = '#1d1712';
-      g.beginPath();
-      g.arc(s * 0.62, s * 0.92, 5, 0, Math.PI * 2);
-      g.fill();
-    }
-    // 細い翅脈
-    g.strokeStyle = 'rgba(30,22,16,0.7)';
-    g.lineWidth = 1;
-    for (let i = 0; i < 9; i++) {
-      g.beginPath();
-      g.moveTo(0, s * 0.5);
-      g.lineTo(s, s * (i / 8));
-      g.stroke();
-    }
-  });
-}
-
 /** スズムシの オスの前ばね（半透明の褐色に 太い翅脈） */
 export function cricketWing() {
   return make('cricketWing', 128, (g, s) => {
@@ -695,5 +620,177 @@ export function elytraShade(seed = 1, contrast = 0.45) {
         img.data[i + 3] = 255;
       }
     g.putImageData(img, 0, 0);
+  });
+}
+
+/** 好きな 絵を 描く（色テクスチャ）。ロフトの UV：x = 周方向 u、上が v = 1（前） */
+export function paint(key: string, size: number, draw: (g: CanvasRenderingContext2D, s: number) => void) {
+  return make(`paint:${key}`, size, draw);
+}
+
+/** 3 次ベジェ上の 点 */
+function bez(p: number[][], t: number): [number, number] {
+  const k = 1 - t;
+  const f = (i: number) => k * k * k * p[0]![i]! + 3 * k * k * t * p[1]![i]! + 3 * k * t * t * p[2]![i]! + t * t * t * p[3]![i]!;
+  return [f(0), f(1)];
+}
+
+/**
+ * はねの 形の 座標（shapeGeo と 同じ 単位）で 描くための 道具。
+ * box = [minX, minY, maxX, maxY]（形の 外接矩形）。Canvas の 上が y の 大きい がわ。
+ */
+function wingPainter(g: CanvasRenderingContext2D, s: number, box: [number, number, number, number]) {
+  const X = (x: number) => ((x - box[0]) / (box[2] - box[0])) * s;
+  const Y = (y: number) => (1 - (y - box[1]) / (box[3] - box[1])) * s;
+  const L = (d: number) => (d / (box[2] - box[0])) * s;
+  return {
+    X,
+    Y,
+    L,
+    line(pts: Array<[number, number]>, w: number, color: string) {
+      g.strokeStyle = color;
+      g.lineWidth = L(w);
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+      g.beginPath();
+      pts.forEach(([x, y], i) => (i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))));
+      g.stroke();
+    },
+    dot(x: number, y: number, rx: number, ry: number, color: string, rot = 0) {
+      g.fillStyle = color;
+      g.beginPath();
+      g.ellipse(X(x), Y(y), L(rx), L(ry), rot, 0, Math.PI * 2);
+      g.fill();
+    },
+  };
+}
+
+const CREAM = '#efe3a4';
+const WING_BLACK = '#17130f';
+
+/**
+ * ナミアゲハの はね。形の 座標に 合わせて、翅脈・中室の すじ・外縁の 黒帯と 三日月紋を 描く。
+ * 後ろばねには 青い 鱗粉の 帯と、肛角の だいだい色の 紋、尾状突起。
+ */
+export function agehaWing(which: 'fore' | 'hind') {
+  return make(`ageha2:${which}`, 512, (g, s) => {
+    g.fillStyle = CREAM;
+    g.fillRect(0, 0, s, s);
+    if (which === 'fore') {
+      const w = wingPainter(g, s, [0, -0.12, 0.98, 0.48]);
+      const costa = [[0, 0], [0.25, 0.22], [0.7, 0.48], [0.98, 0.44]];
+      const margin = [[0.98, 0.44], [0.95, 0.2], [0.75, 0.0], [0.42, -0.12]];
+      const pts = (b: number[][], n = 24) => Array.from({ length: n + 1 }, (_, i) => bez(b, i / n));
+      // 外縁の 黒帯 と、中の 2 列の 淡い 紋
+      w.line(pts(margin), 0.36, WING_BLACK);
+      w.line(pts(costa), 0.09, WING_BLACK);
+      const cellEnd: Array<[number, number]> = [[0.5, 0.31], [0.53, 0.25], [0.52, 0.18], [0.47, 0.1], [0.4, 0.03]];
+      for (let i = 0; i <= 8; i++) {
+        const m = bez(margin, 0.04 + (i / 8) * 0.92);
+        const c = cellEnd[Math.min(4, Math.round(i / 2))]!;
+        const dx = c[0] - m[0];
+        const dy = c[1] - m[1];
+        const d = Math.hypot(dx, dy);
+        // 脈の 間の 淡い 室（外へ 向かって 細長い）
+        if (i < 8) {
+          const m2 = bez(margin, 0.04 + ((i + 0.5) / 8) * 0.92);
+          const c2 = cellEnd[Math.min(4, Math.round((i + 0.5) / 2))]!;
+          const ux = (c2[0] - m2[0]) / Math.hypot(c2[0] - m2[0], c2[1] - m2[1]);
+          const uy = (c2[1] - m2[1]) / Math.hypot(c2[0] - m2[0], c2[1] - m2[1]);
+          const rot = -Math.atan2(uy, ux);
+          w.dot(m2[0] + ux * 0.045, m2[1] + uy * 0.045, 0.02, 0.026, CREAM, rot);
+          w.dot(m2[0] + ux * 0.125, m2[1] + uy * 0.125, 0.03, 0.022, CREAM, rot);
+        }
+        w.line([m, [m[0] + (dx / d) * d, m[1] + (dy / d) * d]], 0.022, WING_BLACK);
+      }
+      // 中室：つけねから のびる 黒い すじ と、はしの 横帯
+      w.line(cellEnd, 0.04, WING_BLACK);
+      w.line([[0.36, 0.2], [0.4, 0.06]], 0.035, WING_BLACK);
+      for (const [a, b] of [[0.27, 0.2], [0.19, 0.12], [0.1, 0.05], [0.02, 0.0]] as Array<[number, number]>) w.line([[0, 0], [0.48, a], [0.5, b]].slice(0, 2) as Array<[number, number]>, 0.02, WING_BLACK);
+      w.line([[0, -0.03], [0.22, -0.06], [0.42, -0.1]], 0.03, WING_BLACK);
+      // つけねの 黒い 鱗粉
+      const grd = g.createRadialGradient(w.X(0), w.Y(0), 0, w.X(0), w.Y(0), w.L(0.3));
+      grd.addColorStop(0, 'rgba(23,19,15,0.95)');
+      grd.addColorStop(1, 'rgba(23,19,15,0)');
+      g.fillStyle = grd;
+      g.fillRect(0, 0, s, s);
+    } else {
+      const w = wingPainter(g, s, [0, -0.76, 0.6, -0.04]);
+      const outer = [[0.32, -0.05], [0.6, -0.14], [0.66, -0.36], [0.56, -0.56]];
+      const lower = [[0.5, -0.56], [0.36, -0.62], [0.2, -0.56], [0.06, -0.36]];
+      const pts = (b: number[][], n = 20) => Array.from({ length: n + 1 }, (_, i) => bez(b, i / n));
+      w.line([...pts(outer), ...pts(lower)], 0.3, WING_BLACK);
+      // 尾状突起
+      w.line([[0.52, -0.52], [0.56, -0.78]], 0.12, WING_BLACK);
+      const hub: [number, number] = [0.2, -0.2];
+      const edge = [...pts(outer, 4), ...pts(lower, 3)];
+      edge.forEach((m, i) => {
+        w.line([hub, m], 0.016, WING_BLACK);
+        const n = edge[i + 1];
+        if (!n) return;
+        const cx = (m[0] + n[0]) / 2;
+        const cy = (m[1] + n[1]) / 2;
+        const ux = (hub[0] - cx) / Math.hypot(hub[0] - cx, hub[1] - cy);
+        const uy = (hub[1] - cy) / Math.hypot(hub[0] - cx, hub[1] - cy);
+        const rot = -Math.atan2(uy, ux);
+        // ふちの 黄色い 三日月と、その 内がわの 青い 鱗粉
+        w.dot(cx + ux * 0.035, cy + uy * 0.035, 0.016, 0.034, CREAM, rot);
+        w.dot(cx + ux * 0.1, cy + uy * 0.1, 0.02, 0.036, '#4a78b8', rot);
+      });
+      w.line([[0, -0.06], [0.2, -0.2]], 0.02, WING_BLACK);
+      w.line([[0.07, -0.08], [0.2, -0.2], [0.3, -0.07]], 0.016, WING_BLACK);
+      // 肛角の だいだい色の 紋（黒い 芯）
+      w.dot(0.13, -0.44, 0.05, 0.045, '#e0762a');
+      w.dot(0.13, -0.455, 0.02, 0.018, WING_BLACK);
+      const grd = g.createRadialGradient(w.X(0), w.Y(-0.1), 0, w.X(0), w.Y(-0.1), w.L(0.2));
+      grd.addColorStop(0, 'rgba(23,19,15,0.9)');
+      grd.addColorStop(1, 'rgba(23,19,15,0)');
+      g.fillStyle = grd;
+      g.fillRect(0, 0, s, s);
+    }
+    // 鱗粉の ざらつき
+    const r = rng(701);
+    for (let i = 0; i < 5000; i++) {
+      g.fillStyle = r() < 0.5 ? 'rgba(255,250,220,0.07)' : 'rgba(0,0,0,0.07)';
+      g.fillRect(r() * s, r() * s, 1.5, 1.5);
+    }
+  });
+}
+
+/** ガの はね（カイコ）：白い 鱗粉に、うすい 茶色の 翅脈と 帯。box は 形の 外接矩形 */
+export function mothWing(box: [number, number, number, number]) {
+  return make(`moth:${box.join(',')}`, 256, (g, s) => {
+    g.fillStyle = '#f4f0e6';
+    g.fillRect(0, 0, s, s);
+    const w = wingPainter(g, s, box);
+    const span = box[2] - box[0];
+    for (let i = 0; i < 9; i++) {
+      const a = -1.25 + i * 0.2;
+      w.line([[0, 0], [Math.cos(a) * span * 1.2, Math.sin(a) * span * 1.2]], span * 0.012, 'rgba(150,130,100,0.55)');
+    }
+    for (const k of [0.45, 0.7]) {
+      const arc: Array<[number, number]> = Array.from({ length: 13 }, (_, i) => {
+        const a = -1.4 + i * 0.16;
+        return [Math.cos(a) * span * k, Math.sin(a) * span * k];
+      });
+      w.line(arc, span * 0.035, 'rgba(170,150,120,0.35)');
+    }
+    const r = rng(711);
+    for (let i = 0; i < 2500; i++) {
+      g.fillStyle = `rgba(${200 + r() * 55},${195 + r() * 55},${180 + r() * 50},0.25)`;
+      g.fillRect(r() * s, r() * s, 1, 3);
+    }
+  });
+}
+
+/** 体に そった たての 帯（ロフトの 全周 UV：u = 0 が 腹の まん中、0.5 が 背の まん中） */
+export function bandTexture(key: string, base: string, bands: Array<[number, number, string]>) {
+  return make(`band:${key}`, 128, (g, s) => {
+    g.fillStyle = base;
+    g.fillRect(0, 0, s, s);
+    for (const [u, w, color] of bands) {
+      g.fillStyle = color;
+      g.fillRect((u - w / 2) * s, 0, w * s, s);
+    }
   });
 }
