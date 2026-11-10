@@ -7,6 +7,8 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1"
     />
     <meta name="theme-color" content="#8bc34a" />
+    <!-- ダークモードの 端末で、CSS が 届く 前に 黒い 画面が 一瞬 出るのを 防ぐ -->
+    <meta name="color-scheme" content="light" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -18,7 +20,8 @@
     <title>むしにわ</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- スクリプトが 届くまでの 間も 起動画面と 同じ 見た目に しておく（React が 描くと 入れかわる） -->
+    <div id="root"><div class="boot"><div class="boot-tap boot-loading"></div></div></div>
     <noscript>JavaScript を オンにしてね</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>

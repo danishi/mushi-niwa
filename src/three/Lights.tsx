@@ -1,5 +1,5 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useTier } from './QualityManager';
 import { QUALITY } from './quality';
@@ -79,13 +79,16 @@ function Sky({ night }: { night: { current: number } }) {
       }),
     [],
   );
-  useFrame(() => {
+  const mesh = useRef<THREE.Mesh>(null);
+  useFrame(({ camera }) => {
+    // カメラに ついて 動かす（縦長画面で カメラが 下がっても、空が 描画範囲の 外に 出て 欠けない）
+    mesh.current?.position.copy(camera.position);
     const n = THREE.MathUtils.clamp(night.current, 0, 1);
     (material.uniforms.top!.value as THREE.Color).copy(DAY.top).lerp(NIGHT.top, n);
     (material.uniforms.horizon!.value as THREE.Color).copy(DAY.horizon).lerp(NIGHT.horizon, n);
   });
   return (
-    <mesh material={material} scale={60} renderOrder={-1}>
+    <mesh ref={mesh} material={material} scale={60} renderOrder={-1} frustumCulled={false}>
       <sphereGeometry args={[1, 24, 16]} />
     </mesh>
   );
@@ -103,8 +106,9 @@ export function Lights({ night }: { night: { current: number } }) {
   const sun = useRef<THREE.DirectionalLight>(null);
   const fog = useRef(new THREE.Fog('#dcebf2', 16, 45));
 
-  // 環境マップは 1 回だけ生成（外部の画像ファイルは使わない）
-  useEffect(() => {
+  // 環境マップは 1 回だけ生成（外部の画像ファイルは使わない）。
+  // 最初の フレームより 前に 入れる（あとから 入れると 全部の シェーダを 作りなおし、見た目も 切りかわる）
+  useLayoutEffect(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
     const src = gardenEnvironment();
     const env = pmrem.fromScene(src, 0.03).texture;

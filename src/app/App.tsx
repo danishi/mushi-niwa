@@ -7,6 +7,7 @@ import { ObserveHud } from '../screens/observe/ObserveHud';
 import { QuizHud } from '../screens/quiz/QuizHud';
 import { TitleHud } from '../screens/title/TitleHud';
 import { ZukanHud } from '../screens/zukan/ZukanHud';
+import { FLAGS } from '../state/flags';
 import { useSettings } from '../state/settings';
 import { useUi, type Screen } from '../state/ui';
 import { FpsMeter } from '../ui/FpsMeter';
@@ -30,7 +31,6 @@ export function App() {
   const screen = useUi((s) => s.screen);
   const settingsOpen = useUi((s) => s.settingsOpen);
   const showFps = useSettings((s) => s.showFps);
-  const fpsQuery = useMemo(() => new URLSearchParams(location.search).has('fps'), []);
   const webgl = useMemo(hasWebGL, []);
   const Hud = HUDS[screen];
 
@@ -48,9 +48,9 @@ export function App() {
       </div>
       {Hud ? <Hud /> : null}
       <StickerToast />
-      {screen === 'boot' ? <Boot /> : null}
+      <Boot />
       {settingsOpen ? <SettingsPanel /> : null}
-      {showFps || fpsQuery ? <FpsMeter /> : null}
+      {showFps || FLAGS.fps ? <FpsMeter /> : null}
     </div>
   );
 }

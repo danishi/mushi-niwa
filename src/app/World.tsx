@@ -2,9 +2,10 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Suspense, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { env } from '../state/env';
+import { FLAGS } from '../state/flags';
 import { useUi } from '../state/ui';
 import { CameraRig } from '../three/CameraRig';
-import { Effects } from '../three/Effects';
+import { Effects, TONE_MAPPING } from '../three/Effects';
 import { Lights } from '../three/Lights';
 import { Particles } from '../three/Particles';
 import { QualityManager, useTier } from '../three/QualityManager';
@@ -61,13 +62,15 @@ export function World() {
       dpr={dpr}
       shadows={{ type: THREE.PCFSoftShadowMap }}
       frameloop={visible && !covered ? 'always' : 'never'}
-      gl={{ antialias: QUALITY[initialTier].antialias, powerPreference: 'high-performance', alpha: false, toneMapping: THREE.AgXToneMapping }}
+      gl={{ antialias: QUALITY[initialTier].antialias, powerPreference: 'high-performance', alpha: false, toneMapping: TONE_MAPPING }}
       camera={{ fov: 40, near: 0.05, far: 80, position: [0, 4, 12] }}
       data-testid="world-canvas"
       onCreated={(state) => {
         registerSnapshotCanvas(state.gl.domElement);
+        // シェーダの エラー確認は 開発中だけ（確認の ための 問い合わせで コンパイルを 待たされる）
+        state.gl.debug.checkShaderErrors = import.meta.env.DEV;
         // E2E・デバッグ用（?e2e のときだけ）
-        if (new URLSearchParams(location.search).has('e2e')) (window as unknown as Record<string, unknown>).__r3f = state;
+        if (FLAGS.e2e) (window as unknown as Record<string, unknown>).__r3f = state;
       }}
     >
       <QualityManager />
