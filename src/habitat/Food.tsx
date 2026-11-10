@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { FoodId } from '../sim/types';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, type MatOpts } from '../three/materials';
-import { barkTexture, grainBump, leafTexture, matTexture } from '../three/textures';
+import { barkNormal, barkTexture, grainBump, leafTexture, matTexture } from '../three/textures';
 
 type V3 = [number, number, number];
 
@@ -98,7 +98,7 @@ export function FoodModel({ food }: { food: FoodId }) {
       // カミキリムシの 幼虫が 食べる 生きた 木の 枝（木の 断面に 足す）
       return (
         <group>
-          <Mesh color="#ffffff" surface={{ map: barkTexture(), roughness: 0.95 }} geometry={GEO.cylinder()} position={[0, 0.1, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.1, 0.6, 0.1]} />
+          <Mesh color="#ffffff" surface={{ map: barkTexture(), roughness: 0.95, normalMap: barkNormal(), normalScale: 1.4 }} geometry={GEO.bark()} position={[0, 0.1, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.1, 0.6, 0.1]} />
           <Mesh color="#e8d0a0" geometry={GEO.cylinder()} position={[0.301, 0.1, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.09, 0.005, 0.09]} />
         </group>
       );

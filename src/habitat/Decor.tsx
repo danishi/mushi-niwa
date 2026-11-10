@@ -4,7 +4,7 @@ import { cachedTube } from '../creatures/geom';
 import type { DecorId } from '../sim/types';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, type MatOpts } from '../three/materials';
-import { barkTexture, grainBump, leafTexture, woodTexture } from '../three/textures';
+import { barkNormal, barkTexture, grainBump, granuleNormal, leafTexture, woodTexture } from '../three/textures';
 
 type V3 = [number, number, number];
 
@@ -23,7 +23,7 @@ function Mesh({ color, surface, ...p }: { color: string; surface?: MatOpts; geom
   return <mesh material={m} castShadow receiveShadow {...p} />;
 }
 
-const bark = (): MatOpts => ({ map: barkTexture(), roughness: 0.95, bumpMap: barkTexture(), bumpScale: 3 });
+const bark = (): MatOpts => ({ map: barkTexture(), roughness: 0.95, normalMap: barkNormal(), normalScale: 1.4 });
 const leaf = (c = '#4f7f2a'): MatOpts => ({ map: leafTexture(c), roughness: 0.6, side: THREE.DoubleSide });
 
 /** 飼育ケースの飾り（とまり木・枝・石・樹皮・葉・鉢植え など） */
@@ -35,8 +35,8 @@ export function Decor({ id, top, index, at }: { id: DecorId; top: number; index:
       // とまり木（クヌギなどの 樹皮つきの 枝）
       return (
         <group position={p} rotation={[0, 0.5, 0]}>
-          <Mesh color="#ffffff" surface={bark()} geometry={GEO.cylinder()} position={[0, 0.2, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.22, 1.5, 0.22]} />
-          <Mesh color="#ffffff" surface={{ map: woodTexture(), roughness: 0.8 }} geometry={GEO.cylinder()} position={[0.751, 0.2, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.2, 0.01, 0.2]} />
+          <Mesh color="#ffffff" surface={bark()} geometry={GEO.bark()} position={[0, 0.2, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.22, 1.5, 0.22]} />
+          <Mesh color="#ffffff" surface={{ map: woodTexture(), roughness: 0.8 }} geometry={GEO.cylinder()} position={[0.751, 0.2, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.215, 0.012, 0.215]} />
           <Mesh color="#ffffff" surface={bark()} geometry={GEO.cone()} position={[-0.3, 0.42, 0]} scale={[0.06, 0.18, 0.06]} />
         </group>
       );
@@ -50,13 +50,13 @@ export function Decor({ id, top, index, at }: { id: DecorId; top: number; index:
     case 'stone':
       return (
         <group position={p}>
-          <Mesh color="#9e958b" surface={{ roughness: 0.9, bumpMap: grainBump(77, 48), bumpScale: 4 }} geometry={GEO.sphere()} position={[0, 0.07, 0]} scale={[0.5, 0.15, 0.38]} rotation={[0.1, 0.4, 0.05]} />
+          <Mesh color="#9e958b" surface={{ roughness: 0.9, normalMap: granuleNormal(3, 3), normalScale: 1 }} geometry={GEO.rock()} position={[0, 0.07, 0]} scale={[0.5, 0.15, 0.38]} rotation={[0.1, 0.4, 0.05]} />
         </group>
       );
     case 'bark':
       return (
         <group position={p} rotation={[0, -0.4, 0]}>
-          <Mesh color="#ffffff" surface={bark()} geometry={GEO.cylinder()} position={[0, 0.12, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.25, 0.9, 0.12]} />
+          <Mesh color="#ffffff" surface={bark()} geometry={GEO.bark()} position={[0, 0.12, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.25, 0.9, 0.12]} />
         </group>
       );
     case 'leaf':
@@ -81,7 +81,7 @@ export function Decor({ id, top, index, at }: { id: DecorId; top: number; index:
       // ミカン科などの 鉢植え
       return (
         <group position={p}>
-          <Mesh color="#b8643a" surface={{ roughness: 0.9, bumpMap: grainBump(88, 64), bumpScale: 2 }} geometry={GEO.cylinder()} position={[0, 0.2, 0]} scale={[0.3, 0.4, 0.3]} />
+          <Mesh color="#b8643a" surface={{ roughness: 0.9, bumpMap: grainBump(88, 64), bumpScale: 2 }} geometry={GEO.pot()} position={[0, 0.2, 0]} scale={[0.3, 0.4, 0.3]} />
           <Mesh color="#4a3426" geometry={GEO.cylinder()} position={[0, 0.41, 0]} scale={[0.27, 0.02, 0.27]} />
           <Mesh color="#ffffff" surface={bark()} geometry={GEO.cylinder()} position={[0, 0.8, 0]} scale={[0.025, 0.8, 0.025]} />
           {[0, 1, 2, 3, 4, 5, 6].map((i) => (

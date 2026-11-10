@@ -37,8 +37,10 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **時間**: 通常は遊んでいる間だけ進む。たまご〜さなぎは データの `playMinutes` の 2 倍速（ユーザー要望。`GROWTH_SPEED`・`stageMinutes()`）、成虫の期間は データどおり。設定の「リアルタイムモード」でのみ離席中も進む（追いつき計算は上限つき）。
 - **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
 - **見た目は図鑑のような写実**（ユーザー判断で トゥーン調から変更）: 物理ベース材質 `mat()`／`SURF`（`src/three/materials.ts`）、AgX トーンマッピング、やわらかい影。テクスチャは `src/three/textures.ts` で Canvas から生成（外部画像なし）。虫の目はデフォルメせず複眼（`CompoundEye`、個眼の 法線マップ）。脚は 基節・腿節・脛節（歯と 距）・ふ節・かぎづめ（`Leg` + `LegSpec`）、触角は種類別（`AntennaKind`）。
-- **写実造形の 作り方**（カブトムシ・オオクワガタの 成虫が お手本。ほかの 種も 順に この 方式へ 置きかえる）:
+- **写実造形の 作り方**（カブトムシ・オオクワガタの 成虫が お手本。飼育種は 全種 この 方式。おきゃくさんは 腹・脚・目・材質まで。頭や 胸は まだ 球の ものが ある）:
   - 体は 球の 寄せ集めではなく `loft()`（`src/creatures/geom.ts`）で つくる。体の 軸（+Z）に そって 断面（半分の はば・上下の 高さ・角ばり `nt`/`nb`）を 並べ、`displace` で 合わせ目の みぞ・肩の こぶ・ふちどりを 足す。前ばね・前胸は `arc: 'top'` の から、下がわは 別の ロフト。寸法は 実物の 比率（体長に 対する はば・高さ・各部の 長さ）から 決める。
+  - よく 使う 形は 短く 書ける: `bodyGeo()`（胴体。`segs` で 節の くびれ）、`shellGeo()`（前ばね・前胸の から）、`yBody()`／`abdomenY()`／`abdomenZ()`（既存の カプセル・球と 同じ 寸法で 差しかえる 節つきの はら）、`segmentGeo()`（幼虫の 節）、`plateGeo()`（ムカデ・サソリの 背板）、`pupaGeo()`。はねの 模様は 形の 座標で 描く（`agehaWing`・`mothWing` の `wingPainter`）。体の 帯は `bandTexture`、前ばねの 模様は `paint`。
+  - 小物は `GEO.bark()`（丸太）・`GEO.rock()`（石）・`GEO.pot()`（鉢）・`GEO.chunk()`（土の つぶ）。
   - 角・大あごは `shapedTube()`（断面が だ円で 太さが 変わる チューブ）を `mergedGeo()` で 1 ジオメトリに まとめる。
   - 表面は 法線マップ: `punctureNormal`（点刻）、`granuleNormal`（顆粒）、`striaeNormal`（前ばねの 条溝。ロフトの UV 用）、`facetNormal`（個眼）、`skinNormal`（幼虫の しわ）。色むらは `elytraShade`。`SURF.chitin()`／`granular()`／`matteChitin()` には 既定で 入っている。
   - 反射に 映る 環境は 屋外（`gardenEnvironment()`：青空・地平線・地面・太陽の 面）。空の 明るさを 上げると 黒い 虫が 灰色に 見えるので 注意。

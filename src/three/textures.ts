@@ -794,3 +794,18 @@ export function bandTexture(key: string, base: string, bands: Array<[number, num
     }
   });
 }
+
+/** 樹皮の 凹凸：たてに 走る 深い われめ と、ざらざら */
+export function barkNormal(strength = 3) {
+  return normalFromHeight(`bark:${strength}`, 256, [1, 1], (h, s) => {
+    const n = fbm(501);
+    const f = valueNoise(502, 48);
+    for (let y = 0; y < s; y++)
+      for (let x = 0; x < s; x++) {
+        const u = x / s;
+        const v = y / s;
+        const ridge = Math.abs(Math.sin(u * Math.PI * 10 + n(u, v) * 6));
+        h[y * s + x] = ridge ** 0.6 * 0.9 + f(u, v) * 0.3;
+      }
+  }, strength);
+}

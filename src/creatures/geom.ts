@@ -375,3 +375,13 @@ export function pupaGeo(): THREE.BufferGeometry {
     { segs: [-0.95, 0.05, 5, 0.07], rings: 40 },
   );
 }
+
+/** 節の ある 細長い はら（半径 0.5・Y 軸。GEO.capsule の 置きかえ：トンボ・バッタ・チョウ） */
+export function abdomenY(n = 8): THREE.BufferGeometry {
+  return yBody(`abdomenY${n}`, [[-1, 0, 0, 0], [-0.95, 0.25, 0.25, -0.25], [-0.5, 0.42, 0.42, -0.42], [0.5, 0.5, 0.5, -0.5], [1, 0.4, 0.4, -0.4]], { segs: [-0.97, 0.95, n, 0.07], rings: n * 7 });
+}
+
+/** 節の ある ずんぐりした はら（半径 1・Z 軸。GEO.sphere の 置きかえ：セミ・コオロギ・アリ） */
+export function abdomenZ(n = 6): THREE.BufferGeometry {
+  return bodyGeo(`abdomenZ${n}`, [[-1, 0, 0, 0], [-0.93, 0.35, 0.35, -0.35], [-0.5, 0.85, 0.85, -0.85], [0.1, 1, 1, -1], [0.7, 0.8, 0.8, -0.8], [1, 0.3, 0.3, -0.3]], { segs: [-0.95, 0.6, n, 0.06], rings: n * 7 });
+}

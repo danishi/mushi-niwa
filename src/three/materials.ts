@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { granuleNormal, punctureNormal, skinNormal } from './textures';
 
 /**
@@ -156,9 +157,50 @@ export function sharedGeo<T extends THREE.BufferGeometry>(k: string, make: () =>
 export const GEO = {
   sphere: () => sharedGeo('sphere', () => new THREE.SphereGeometry(1, 28, 20)),
   sphereLo: () => sharedGeo('sphereLo', () => new THREE.SphereGeometry(1, 10, 8)),
-  cylinder: () => sharedGeo('cyl', () => new THREE.CylinderGeometry(1, 1, 1, 14, 1)),
+  cylinder: () => sharedGeo('cyl', () => new THREE.CylinderGeometry(1, 1, 1, 32, 1)),
   cone: () => sharedGeo('cone', () => new THREE.ConeGeometry(1, 1, 12, 1)),
   box: () => sharedGeo('box', () => new THREE.BoxGeometry(1, 1, 1)),
+  /** 樹皮の ある 丸太（GEO.cylinder と 同じ 寸法）：断面が いびつで、たての うねが ある */
+  bark: () =>
+    sharedGeo('barkCyl', () => {
+      const g = new THREE.CylinderGeometry(1, 1, 1, 40, 14);
+      const p = g.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i);
+        const y = p.getY(i);
+        const z = p.getZ(i);
+        const r = Math.hypot(x, z);
+        if (r < 0.99) continue;
+        const th = Math.atan2(z, x);
+        const k = 1 + 0.06 * Math.sin(th * 2 + y * 2.2 + 1) + 0.035 * Math.sin(th * 5 - y * 3) + 0.045 * Math.abs(Math.sin(th * 9 + Math.sin(y * 7) * 1.4)) - 0.03;
+        p.setXYZ(i, x * k, y, z * k);
+      }
+      g.computeVertexNormals();
+      return g;
+    }),
+  /** 石：なめらかに でこぼこした かたまり（半径 1） */
+  rock: () =>
+    sharedGeo('rock', () => {
+      const g = mergeVertices(new THREE.IcosahedronGeometry(1, 3));
+      const p = g.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i);
+        const y = p.getY(i);
+        const z = p.getZ(i);
+        const k = 1 + 0.14 * Math.sin(x * 2.3 + 1) * Math.sin(z * 2.9) + 0.09 * Math.sin(y * 4.1 + x * 3.3) + 0.05 * Math.sin(z * 7.3 + y * 5.1);
+        p.setXYZ(i, x * k, y * k, z * k);
+      }
+      g.computeVertexNormals();
+      return g;
+    }),
+  /** 植木鉢（GEO.cylinder と 同じ 寸法）：上へ ひらき、ふちに 厚みが ある */
+  pot: () =>
+    sharedGeo('pot', () =>
+      new THREE.LatheGeometry(
+        [[0, -0.5], [0.7, -0.5], [0.74, -0.47], [0.93, 0.3], [1.02, 0.31], [1.03, 0.47], [1, 0.5], [0.9, 0.5], [0.88, 0.42], [0, 0.42]].map(([x, y]) => new THREE.Vector2(x, y)),
+        36,
+      ),
+    ),
   /** 土の つぶ・木くず・小石：角ばった いびつな かたまり */
   chunk: () =>
     sharedGeo('chunk', () => {

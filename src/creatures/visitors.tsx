@@ -5,7 +5,7 @@ import { GEO, mat, SURF } from '../three/materials';
 import { grainBump, monshiroWing, veinWing } from '../three/textures';
 import type { CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
-import { domeGeo, shapeGeo, taperedTube } from './geom';
+import { domeGeo, shapeGeo, taperedTube, abdomenY, abdomenZ } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 
 /**
@@ -58,7 +58,7 @@ export function Shiokara({ anim }: { anim: AnimRef }) {
       {/* 胸 */}
       <Part geometry={GEO.sphere()} color="#8e979c" surface={powder} position={[0, 0.05, 0.07]} scale={[0.045, 0.05, 0.075]} castShadow />
       {/* 腹：しろい 粉を ふいた みずいろ、先は 黒い */}
-      <Part geometry={GEO.capsule()} color="#b9c4ca" surface={powder} position={[0, 0.05, -0.17]} rotation={[Math.PI / 2, 0, 0]} scale={[0.026, 0.3, 0.026]} castShadow />
+      <Part geometry={abdomenY(9)} color="#b9c4ca" surface={powder} position={[0, 0.05, -0.17]} rotation={[Math.PI / 2, 0, 0]} scale={[0.026, 0.3, 0.026]} castShadow />
       <M geo={GEO.capsule()} color="#1c1d1f" position={[0, 0.05, -0.36]} rotation={[Math.PI / 2, 0, 0]} scale={[0.022, 0.08, 0.022]} />
       {/* 腹の 先の 白い 尾毛 */}
       {[1, -1].map((s) => (
@@ -117,7 +117,7 @@ export function Monshiro({ anim }: { anim: AnimRef }) {
   return (
     <group ref={body}>
       <Part geometry={GEO.sphere()} color="#2b2a28" surface={fur} position={[0, 0.04, 0.06]} scale={[0.035, 0.035, 0.06]} castShadow />
-      <Part geometry={GEO.capsule()} color="#3a3834" surface={fur} position={[0, 0.03, -0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.03, 0.12, 0.03]} />
+      <Part geometry={abdomenY(7)} color="#3a3834" surface={fur} position={[0, 0.03, -0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.03, 0.12, 0.03]} />
       <M color="#2b2a28" surface={fur} position={[0, 0.045, 0.13]} scale={0.026} />
       <CompoundEye position={[0.018, 0.05, 0.14]} size={0.014} color="#5b5a3a" />
       <CompoundEye position={[-0.018, 0.05, 0.14]} size={0.014} color="#5b5a3a" />
@@ -149,7 +149,7 @@ export function Tonosama({ anim }: { anim: AnimRef }) {
       <CompoundEye position={[-0.04, 0.1, 0.21]} size={[0.018, 0.026, 0.022]} color="#6b5b3a" />
       <Part geometry={GEO.sphere()} color="#7b9442" surface={skin} position={[0, 0.09, 0.11]} scale={[0.055, 0.06, 0.07]} castShadow />
       {/* 腹と、たたんだ はね（茶色の まだら） */}
-      <Part geometry={GEO.capsule()} color="#8a8a4a" surface={skin} position={[0, 0.06, -0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.05, 0.22, 0.05]} />
+      <Part geometry={abdomenY(8)} color="#8a8a4a" surface={skin} position={[0, 0.06, -0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.05, 0.22, 0.05]} />
       <M geo={GEO.sphere()} color="#8f8650" surface={skin} position={[0, 0.1, -0.09]} scale={[0.05, 0.022, 0.2]} castShadow />
       <Antenna position={[0.015, 0.12, 0.24]} side={1} length={0.14} thick={0.006} kind="filiform" color="#6a5a35" anim={anim} rotation={[0.3, 0.2, 0]} />
       <Antenna position={[-0.015, 0.12, 0.24]} side={-1} length={0.14} thick={0.006} kind="filiform" color="#6a5a35" anim={anim} rotation={[0.3, 0.2, 0]} />
@@ -264,7 +264,7 @@ export function Aburazemi({ anim }: { anim: AnimRef }) {
       <Part geometry={GEO.sphere()} color="#2a2420" surface={SURF.chitin(0.6)} position={[0, 0.055, 0.07]} scale={[0.055, 0.04, 0.065]} castShadow />
       <M geo={GEO.sphere()} color="#6b4a2a" position={[0, 0.088, 0.07]} scale={[0.03, 0.01, 0.04]} />
       {/* 腹 */}
-      <Part geometry={GEO.sphere()} color="#2f2924" surface={SURF.chitin(0.5)} position={[0, 0.045, -0.06]} scale={[0.048, 0.04, 0.09]} />
+      <Part geometry={abdomenZ(6)} color="#2f2924" surface={SURF.chitin(0.5)} position={[0, 0.045, -0.06]} scale={[0.048, 0.04, 0.09]} />
       <group ref={wings} position={[0, 0.09, 0.09]}>
         {[1, -1].map((s) => (
           <group key={s} scale={[s, 1, 1]}>
@@ -296,7 +296,7 @@ export function Akiakane({ anim }: { anim: AnimRef }) {
         <M key={s} geo={GEO.box()} color="#2a1a12" position={[s * 0.04, 0.05, 0.07]} rotation={[0.5, 0, 0]} scale={[0.004, 0.06, 0.008]} />
       ))}
       {/* 腹：まっかで 細く、先が すこし ふくらむ */}
-      <Part geometry={GEO.capsule()} color="#c8321e" surface={skin} position={[0, 0.05, -0.18]} rotation={[Math.PI / 2, 0, 0]} scale={[0.02, 0.33, 0.022]} castShadow />
+      <Part geometry={abdomenY(9)} color="#c8321e" surface={skin} position={[0, 0.05, -0.18]} rotation={[Math.PI / 2, 0, 0]} scale={[0.02, 0.33, 0.022]} castShadow />
       <M geo={GEO.capsule()} color="#b52a18" surface={skin} position={[0, 0.05, -0.37]} rotation={[Math.PI / 2, 0, 0]} scale={[0.023, 0.06, 0.024]} />
       {[1, -1].map((s) => (
         <group key={s}>
@@ -387,7 +387,7 @@ export function Enmakorogi({ anim }: { anim: AnimRef }) {
       <group ref={wing} position={[0, 0.1, 0.05]}>
         <Part geometry={GEO.sphere()} color="#5a3c22" surface={shell} position={[0, 0, -0.1]} scale={[0.06, 0.016, 0.12]} castShadow />
       </group>
-      <Part geometry={GEO.sphere()} color="#231710" surface={shell} position={[0, 0.06, -0.07]} scale={[0.055, 0.042, 0.13]} />
+      <Part geometry={abdomenZ(7)} color="#231710" surface={shell} position={[0, 0.06, -0.07]} scale={[0.055, 0.042, 0.13]} />
       {/* おしりの 2 本の 毛（尾毛） */}
       {[1, -1].map((s) => (
         <M key={s} geo={GEO.cylinder()} color="#3a2a1a" position={[s * 0.02, 0.07, -0.24]} rotation={[Math.PI / 2 - 0.2, 0, s * 0.2]} scale={[0.004, 0.08, 0.004]} />
@@ -626,7 +626,7 @@ export function Kurooari({ anim }: { anim: AnimRef }) {
       <Antenna position={[-0.015, 0.08, 0.15]} side={-1} length={0.12} thick={0.004} kind="clavate" color="#1a1616" anim={anim} rotation={[0.6, 0.5, 0]} />
       <Part geometry={GEO.capsule()} color="#1c1818" surface={shell} position={[0, 0.06, 0.04]} rotation={[Math.PI / 2 - 0.25, 0, 0]} scale={[0.022, 0.06, 0.022]} />
       <M color="#1c1818" surface={shell} position={[0, 0.055, -0.02]} scale={[0.014, 0.018, 0.012]} />
-      <Part geometry={GEO.sphere()} color="#191515" surface={shell} position={[0, 0.06, -0.08]} scale={[0.045, 0.04, 0.055]} castShadow />
+      <Part geometry={abdomenZ(4)} color="#191515" surface={shell} position={[0, 0.06, -0.08]} scale={[0.045, 0.04, 0.055]} castShadow />
       {[0, 1, 2].map((p) =>
         [1, -1].map((s) => (
           <Leg key={`${p}${s}`} position={[s * 0.015, 0.05, 0.07 - p * 0.03]} side={s as 1 | -1} pair={p} spec={ANT_LEG} color="#1a1616" anim={anim} spread={0.2} />
@@ -659,7 +659,7 @@ export function Shouryou({ anim }: { anim: AnimRef }) {
       ))}
       <Part geometry={GEO.capsule()} color="#86b552" surface={skin} position={[0, 0.06, 0.14]} rotation={[Math.PI / 2, 0, 0]} scale={[0.03, 0.08, 0.03]} />
       {/* ほそながい はらと はね */}
-      <Part geometry={GEO.capsule()} color="#7aa848" surface={skin} position={[0, 0.06, -0.07]} rotation={[Math.PI / 2, 0, 0]} scale={[0.028, 0.32, 0.028]} castShadow />
+      <Part geometry={abdomenY(8)} color="#7aa848" surface={skin} position={[0, 0.06, -0.07]} rotation={[Math.PI / 2, 0, 0]} scale={[0.028, 0.32, 0.028]} castShadow />
       <M color="#90b860" surface={skin} position={[0, 0.088, -0.07]} scale={[0.026, 0.012, 0.22]} />
       {[0, 1].map((p) => (
         <group key={p} position={[0, 0.04, 0.16 - p * 0.05]}>
