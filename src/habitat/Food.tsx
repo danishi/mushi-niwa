@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { petalGeo } from '../creatures/geom';
 import type { FoodId } from '../sim/types';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, type MatOpts } from '../three/materials';
@@ -59,7 +60,7 @@ export function FoodModel({ food }: { food: FoodId }) {
         <group>
           <Mesh color="#4f7f2a" geometry={GEO.cylinder()} position={[0, 0.35, 0]} scale={[0.02, 0.7, 0.02]} />
           {[0, 1, 2, 3, 4].map((i) => (
-            <Mesh key={i} color="#f29bb5" surface={{ roughness: 0.6, sheen: 0.7 }} geometry={GEO.sphere()} position={[Math.cos(i * 1.26) * 0.1, 0.72, Math.sin(i * 1.26) * 0.1]} scale={[0.085, 0.02, 0.085]} />
+            <Mesh key={i} color="#f29bb5" surface={{ roughness: 0.6, sheen: 0.7, side: THREE.DoubleSide }} geometry={petalGeo()} position={[Math.cos(i * 1.26) * 0.05500000000000001, 0.72, Math.sin(i * 1.26) * 0.05500000000000001]} rotation={[0, Math.PI / 2 - i * 1.26, 0]} scale={[0.062, 0.05, 0.095]} />
           ))}
           <Mesh color="#f2c14e" geometry={GEO.sphere()} position={[0, 0.74, 0]} scale={0.045} />
         </group>

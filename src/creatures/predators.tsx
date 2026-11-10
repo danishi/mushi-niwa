@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { GEO, mat, sharedGeo, SURF } from '../three/materials';
 import { barkTexture, gomadaraElytra, grainBump, mottledTexture, wrinkleBump } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube, bodyGeo, shellGeo, yBody, plateGeo, segmentGeo } from './geom';
+import { cachedTube, bodyGeo, shellGeo, yBody, plateGeo, segmentGeo, spindleY } from './geom';
 import { Antenna, CompoundEye, Leg, LiteContext, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -33,15 +33,15 @@ function RaptorialLeg({ side, color, anim }: { side: 1 | -1; color: string; anim
   return (
     <group position={[side * 0.05, 0, 0]}>
       {/* 基節（下へ 長く のびる） */}
-      <Part geometry={GEO.capsule()} color={color} surface={surf} position={[0, -0.09, 0.03]} rotation={[0.3, 0, 0]} scale={[0.028, 0.16, 0.028]} part="raptorial" />
+      <Part geometry={spindleY()} color={color} surface={surf} position={[0, -0.09, 0.03]} rotation={[0.3, 0, 0]} scale={[0.028, 0.16, 0.028]} part="raptorial" />
       <group ref={femur} position={[0, -0.18, 0.06]}>
-        <Part geometry={GEO.capsule()} color={color} surface={surf} position={[0, 0.11, 0]} scale={[0.026, 0.18, 0.032]} castShadow part="raptorial" />
+        <Part geometry={spindleY()} color={color} surface={surf} position={[0, 0.11, 0]} scale={[0.026, 0.18, 0.032]} castShadow part="raptorial" />
         {/* 腿節の 内側の とげ */}
         {[0.05, 0.1, 0.15, 0.2].map((y) => (
           <mesh key={y} geometry={GEO.cone()} material={spine} position={[0, y, -0.03]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.007, 0.03, 0.007]} />
         ))}
         <group ref={tibia} position={[0, 0.22, 0]}>
-          <Part geometry={GEO.capsule()} color={color} surface={surf} position={[0, 0.08, 0]} scale={[0.018, 0.12, 0.02]} part="raptorial" />
+          <Part geometry={spindleY()} color={color} surface={surf} position={[0, 0.08, 0]} scale={[0.018, 0.12, 0.02]} part="raptorial" />
           <mesh geometry={GEO.cone()} material={spine} position={[0, 0.18, 0]} scale={[0.008, 0.04, 0.008]} />
         </group>
       </group>
@@ -311,9 +311,9 @@ function Scorpion({ anim, molts, young }: ModelProps & { young: boolean }) {
         <group ref={claws} position={[0, 0.055, 0.17]}>
           {[1, -1].map((s) => (
             <group key={s} position={[s * 0.04, 0, 0]} rotation={[0, s * 0.5, 0]}>
-              <Part geometry={GEO.capsule()} color={color} surface={shell} position={[s * 0.04, 0, 0.03]} rotation={[Math.PI / 2, 0, s * 0.8]} scale={[0.014, 0.1, 0.014]} part="pedipalps" />
+              <Part geometry={spindleY()} color={color} surface={shell} position={[s * 0.04, 0, 0.03]} rotation={[Math.PI / 2, 0, s * 0.8]} scale={[0.014, 0.1, 0.014]} part="pedipalps" />
               <group position={[s * 0.09, 0, 0.09]} rotation={[0, -s * 1.1, 0]}>
-                <Part geometry={GEO.capsule()} color={color} surface={shell} position={[0, 0, 0.05]} rotation={[Math.PI / 2, 0, 0]} scale={[0.016, 0.1, 0.016]} part="pedipalps" />
+                <Part geometry={spindleY()} color={color} surface={shell} position={[0, 0, 0.05]} rotation={[Math.PI / 2, 0, 0]} scale={[0.016, 0.1, 0.016]} part="pedipalps" />
                 {/* ハサミ（細長い 2 本の 指） */}
                 <Part geometry={GEO.capsule()} color={color} surface={shell} position={[0.008, 0, 0.13]} rotation={[Math.PI / 2, 0, 0]} scale={[0.008, 0.08, 0.008]} part="pedipalps" />
                 <Part geometry={GEO.capsule()} color="#3a2a1a" surface={shell} position={[-0.008, 0, 0.13]} rotation={[Math.PI / 2, 0, 0]} scale={[0.007, 0.08, 0.007]} part="pedipalps" />
@@ -351,7 +351,7 @@ function TailChain({ refs, color, surface }: { refs: { current: Array<THREE.Grou
           refs.current[i] = g;
         }}
       >
-        <Part geometry={GEO.capsule()} color={color} surface={surface} position={[0, 0, -L / 2]} rotation={[Math.PI / 2, 0, 0]} scale={[0.02 - i * 0.001, L * 0.9, 0.018 - i * 0.001]} castShadow={i === 2} part="stinger" />
+        <Part geometry={spindleY()} color={color} surface={surface} position={[0, 0, -L / 2]} rotation={[Math.PI / 2, 0, 0]} scale={[0.02 - i * 0.001, L * 0.9, 0.018 - i * 0.001]} castShadow={i === 2} part="stinger" />
         <group position={[0, 0, -L]}>{build(i + 1)}</group>
       </group>
     );

@@ -2,10 +2,10 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { GEO, mat, SURF } from '../three/materials';
-import { grainBump, monshiroWing, veinWing } from '../three/textures';
+import { grainBump, monshiroWing, veinWing, paint, striaeNormal } from '../three/textures';
 import type { CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
-import { domeGeo, shapeGeo, taperedTube, abdomenY, abdomenZ } from './geom';
+import { shapeGeo, taperedTube, abdomenY, abdomenZ, archGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 
 /**
@@ -147,7 +147,7 @@ export function Tonosama({ anim }: { anim: AnimRef }) {
       <Part geometry={GEO.sphere()} color="#6f8a3a" surface={skin} position={[0, 0.08, 0.2]} scale={[0.05, 0.065, 0.055]} castShadow />
       <CompoundEye position={[0.04, 0.1, 0.21]} size={[0.018, 0.026, 0.022]} color="#6b5b3a" />
       <CompoundEye position={[-0.04, 0.1, 0.21]} size={[0.018, 0.026, 0.022]} color="#6b5b3a" />
-      <Part geometry={GEO.sphere()} color="#7b9442" surface={skin} position={[0, 0.09, 0.11]} scale={[0.055, 0.06, 0.07]} castShadow />
+      <Part geometry={saddleGeo()} color="#7b9442" surface={skin} position={[0, 0.09, 0.11]} scale={[0.055, 0.06, 0.07]} castShadow />
       {/* 腹と、たたんだ はね（茶色の まだら） */}
       <Part geometry={abdomenY(8)} color="#8a8a4a" surface={skin} position={[0, 0.06, -0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.05, 0.22, 0.05]} />
       <M geo={GEO.sphere()} color="#8f8650" surface={skin} position={[0, 0.1, -0.09]} scale={[0.05, 0.022, 0.2]} castShadow />
@@ -209,7 +209,7 @@ export function Dangomushi({ anim }: { anim: AnimRef }) {
           const u = (i - 4) / 4;
           const w = 0.085 * Math.sqrt(1 - u * u * 0.55);
           return (
-            <mesh key={i} geometry={GEO.sphere()} material={mat(i === 8 ? '#3a3936' : '#4a4945', shell)} scale={[w, 0.045, 0.03]} castShadow={i === 4} />
+            <mesh key={i} geometry={archGeo()} material={mat(i === 8 ? '#3a3936' : '#4a4945', shell)} scale={[w, 0.05, 0.03]} castShadow={i === 4} />
           );
         })}
       </group>
@@ -261,7 +261,7 @@ export function Aburazemi({ anim }: { anim: AnimRef }) {
       <CompoundEye position={[0.055, 0.06, 0.15]} size={0.018} color="#5a4a32" />
       <CompoundEye position={[-0.055, 0.06, 0.15]} size={0.018} color="#5a4a32" />
       {/* 胸：黒地に 褐色の もよう */}
-      <Part geometry={GEO.sphere()} color="#2a2420" surface={SURF.chitin(0.6)} position={[0, 0.055, 0.07]} scale={[0.055, 0.04, 0.065]} castShadow />
+      <Part geometry={shieldGeo()} color="#2a2420" surface={SURF.chitin(0.6)} position={[0, 0.055, 0.07]} scale={[0.055, 0.04, 0.065]} castShadow />
       <M geo={GEO.sphere()} color="#6b4a2a" position={[0, 0.088, 0.07]} scale={[0.03, 0.01, 0.04]} />
       {/* 腹 */}
       <Part geometry={abdomenZ(6)} color="#2f2924" surface={SURF.chitin(0.5)} position={[0, 0.045, -0.06]} scale={[0.048, 0.04, 0.09]} />
@@ -335,7 +335,7 @@ export function Hotaru({ anim }: { anim: AnimRef }) {
   return (
     <group ref={body}>
       {/* 前胸：ももいろで まんなかに 黒い 十字 */}
-      <Part geometry={GEO.sphere()} color="#e58a8a" surface={SURF.matteChitin()} position={[0, 0.04, 0.09]} scale={[0.04, 0.018, 0.035]} castShadow />
+      <Part geometry={shieldGeo()} color="#e58a8a" surface={SURF.matteChitin()} position={[0, 0.04, 0.09]} scale={[0.04, 0.018, 0.035]} castShadow />
       <M geo={GEO.box()} color="#1a1414" position={[0, 0.058, 0.09]} scale={[0.012, 0.004, 0.05]} />
       <M geo={GEO.box()} color="#1a1414" position={[0, 0.058, 0.095]} scale={[0.04, 0.004, 0.01]} />
       <M color="#1a1414" position={[0, 0.03, 0.125]} scale={[0.022, 0.02, 0.02]} />
@@ -347,7 +347,7 @@ export function Hotaru({ anim }: { anim: AnimRef }) {
       <group ref={wings} position={[0, 0.04, 0.06]}>
         {[1, -1].map((s) => (
           <group key={s} scale={[s, 1, 1]}>
-            <M color="#151313" surface={SURF.matteChitin()} position={[0.018, 0.004, -0.07]} scale={[0.02, 0.012, 0.075]} castShadow />
+            <M geo={elytronHalf()} color="#151313" surface={SURF.matteChitin()} position={[0, -0.006, -0.07]} scale={[0.04, 0.022, 0.075]} castShadow />
           </group>
         ))}
       </group>
@@ -382,7 +382,7 @@ export function Enmakorogi({ anim }: { anim: AnimRef }) {
       <CompoundEye position={[-0.045, 0.085, 0.17]} size={0.016} color="#3a2a1a" />
       <Antenna position={[0.02, 0.09, 0.19]} side={1} length={0.42} thick={0.004} kind="filiform" color="#3a2a1a" anim={anim} rotation={[0.1, 0.4, 0]} />
       <Antenna position={[-0.02, 0.09, 0.19]} side={-1} length={0.42} thick={0.004} kind="filiform" color="#3a2a1a" anim={anim} rotation={[0.1, 0.4, 0]} />
-      <Part geometry={GEO.sphere()} color="#2f2017" surface={shell} position={[0, 0.07, 0.08]} scale={[0.058, 0.045, 0.045]} />
+      <Part geometry={saddleGeo(0)} color="#2f2017" surface={shell} position={[0, 0.07, 0.08]} scale={[0.058, 0.045, 0.045]} />
       {/* はねは ちゃいろ */}
       <group ref={wing} position={[0, 0.1, 0.05]}>
         <Part geometry={GEO.sphere()} color="#5a3c22" surface={shell} position={[0, 0, -0.1]} scale={[0.06, 0.016, 0.12]} castShadow />
@@ -472,7 +472,35 @@ function webTexture() {
 
 export function Jorougumo({ anim }: { anim: AnimRef }) {
   const legs = useRef<THREE.Group>(null);
-  const band = useMemo(() => mat('#d8b83a', { roughness: 0.5 }), []);
+  // あしは きいろと くろの しま、はらは きいろに あおぐろの よこじま
+  const band = useMemo(
+    () =>
+      mat('#ffffff', {
+        roughness: 0.5,
+        map: paint('joroLeg', 64, (g, s) => {
+          for (let i = 0; i < 8; i++) {
+            g.fillStyle = i % 2 ? '#d8b83a' : '#1e1e1a';
+            g.fillRect(0, (i / 8) * s, s, s / 8 + 1);
+          }
+        }),
+      }),
+    [],
+  );
+  const abdomen = useMemo(
+    () => ({
+      ...SURF.chitin(0.4),
+      map: paint('joroAbdomen', 128, (g, s) => {
+        g.fillStyle = '#e6c53a';
+        g.fillRect(0, 0, s, s);
+        g.fillStyle = '#2a3446';
+        for (const v of [0.2, 0.42, 0.64, 0.84]) g.fillRect(s * 0.2, s * v, s * 0.6, s * 0.09);
+        g.fillStyle = '#c8322a';
+        g.fillRect(0, s * 0.55, s * 0.12, s * 0.4);
+        g.fillRect(s * 0.88, s * 0.55, s * 0.12, s * 0.4);
+      }),
+    }),
+    [],
+  );
   useFrame(() => {
     const a = anim.current;
     if (!legs.current) return;
@@ -487,10 +515,7 @@ export function Jorougumo({ anim }: { anim: AnimRef }) {
   return (
     <group>
       {/* はら：きいろと あおぐろの しま、よこに 赤い もよう */}
-      <Part geometry={GEO.sphere()} color="#e6c53a" surface={SURF.chitin(0.4)} position={[0, 0.05, -0.1]} scale={[0.06, 0.05, 0.12]} castShadow />
-      {[-0.04, -0.1, -0.16].map((z) => (
-        <M key={z} geo={GEO.sphere()} color="#2a3446" position={[0, 0.072, z]} scale={[0.055, 0.03, 0.014]} />
-      ))}
+      <Part geometry={spiderAbdomen()} color="#ffffff" surface={abdomen} position={[0, 0.05, -0.1]} scale={[0.06, 0.05, 0.12]} castShadow />
       <M color="#c8322a" position={[0, 0.03, -0.2]} scale={[0.03, 0.025, 0.03]} />
       {/* あたまむね */}
       <Part geometry={GEO.sphere()} color="#3a3a2e" surface={SURF.matteChitin()} position={[0, 0.04, 0.04]} scale={[0.035, 0.022, 0.045]} />
@@ -500,9 +525,7 @@ export function Jorougumo({ anim }: { anim: AnimRef }) {
         {[1, -1].flatMap((s) =>
           legAngles.map((ang, i) => (
             <group key={`${s}${i}`} rotation={[0, s * ang, 0]} userData={{ base: s * ang }}>
-              <mesh geometry={GEO.cylinder()} material={band} position={[0, 0, legLen[i]! / 2]} rotation={[Math.PI / 2, 0, 0]} scale={[0.005, legLen[i]!, 0.005]} />
-              <M geo={GEO.cylinder()} color="#1e1e1a" position={[0, 0, legLen[i]! * 0.35]} rotation={[Math.PI / 2, 0, 0]} scale={[0.006, legLen[i]! * 0.12, 0.006]} />
-              <M geo={GEO.cylinder()} color="#1e1e1a" position={[0, 0, legLen[i]! * 0.75]} rotation={[Math.PI / 2, 0, 0]} scale={[0.006, legLen[i]! * 0.12, 0.006]} />
+              <mesh geometry={spiderLeg()} material={band} scale={legLen[i]!} />
             </group>
           )),
         )}
@@ -573,7 +596,7 @@ export function Kanabun({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 0.6);
   const wings = useRef<THREE.Group>(null);
   // 金属のような つや（あかがね〜みどり）
-  const shell = useMemo(() => ({ roughness: 0.25, metalness: 0.55, clearcoat: 1, clearcoatRoughness: 0.08 }), []);
+  const shell = useMemo(() => ({ roughness: 0.25, metalness: 0.55, clearcoat: 1, clearcoatRoughness: 0.08, iridescence: 0.5, normalMap: striaeNormal(3, 0.5), normalScale: 0.5 }), []);
   useFrame(() => {
     const a = anim.current;
     if (wings.current) {
@@ -588,11 +611,11 @@ export function Kanabun({ anim }: { anim: AnimRef }) {
       <group ref={wings} position={[0, 0.06, -0.05]}>
         {[1, -1].map((s) => (
           <group key={s} scale={[s, 1, 1]}>
-            <Part geometry={domeGeo()} color="#5f6b2a" surface={shell} position={[0.048, -0.03, 0]} scale={[0.05, 0.045, 0.13]} castShadow />
+            <Part geometry={elytronHalf()} color="#5f6b2a" surface={shell} position={[0, -0.03, 0]} scale={[0.098, 0.05, 0.13]} castShadow />
           </group>
         ))}
       </group>
-      <Part geometry={GEO.sphere()} color="#6a5a26" surface={shell} position={[0, 0.06, 0.1]} scale={[0.09, 0.045, 0.06]} castShadow />
+      <Part geometry={shieldGeo()} color="#6a5a26" surface={shell} position={[0, 0.06, 0.1]} scale={[0.09, 0.045, 0.06]} castShadow />
       <M color="#4a4020" surface={shell} position={[0, 0.045, 0.165]} scale={[0.045, 0.028, 0.04]} />
       <CompoundEye position={[0.04, 0.045, 0.165]} size={0.012} />
       <CompoundEye position={[-0.04, 0.045, 0.165]} size={0.012} />

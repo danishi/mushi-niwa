@@ -385,3 +385,71 @@ export function abdomenY(n = 8): THREE.BufferGeometry {
 export function abdomenZ(n = 6): THREE.BufferGeometry {
   return bodyGeo(`abdomenZ${n}`, [[-1, 0, 0, 0], [-0.93, 0.35, 0.35, -0.35], [-0.5, 0.85, 0.85, -0.85], [0.1, 1, 1, -1], [0.7, 0.8, 0.8, -0.8], [1, 0.3, 0.3, -0.3]], { segs: [-0.95, 0.6, n, 0.06], rings: n * 7 });
 }
+
+/* ── 球・カプセルと 同じ 寸法で 差しかえる 部品（半径 1、または カプセルは 半径 0.5・長さ ±1） ── */
+
+/** ダンゴムシの 背板：アーチ形で、下は 平ら */
+export function archGeo(): THREE.BufferGeometry {
+  return bodyGeo('arch', [[-1, 0.55, 0.3, -0.25], [-0.8, 0.9, 0.8, -0.25], [-0.4, 0.99, 0.97, -0.25], [0.3, 1, 1, -0.25], [0.8, 0.92, 0.85, -0.25], [1, 0.6, 0.4, -0.25]], { nt: 2.2, nb: 5, mid: 0.1, rings: 10, radial: 24 });
+}
+
+/** バッタ・コオロギの 前胸：くらの ような 背板。keel で 背中の まん中に すじ */
+export function saddleGeo(keel = 0.05): THREE.BufferGeometry {
+  return bodyGeo(`saddle${keel}`, [[-1, 0.72, 0.82, -0.7], [-0.55, 0.96, 1, -0.9], [0.3, 0.92, 0.94, -0.9], [0.85, 0.74, 0.78, -0.72], [1, 0.5, 0.55, -0.5]], {
+    nt: 2.6,
+    extra: (p) => {
+      if (p.y > 0) p.y += keel * gaussian(p.x, 0.14);
+    },
+  });
+}
+
+/** 甲虫の 前胸（後ろが 広く 前へ すぼまる たて） */
+export function shieldGeo(): THREE.BufferGeometry {
+  return bodyGeo('shield', [[-1, 0.82, 0.6, -0.6], [-0.7, 1, 0.95, -0.9], [0, 0.95, 1, -1], [0.6, 0.7, 0.8, -0.8], [1, 0.35, 0.4, -0.4]], { nt: 2.3, nb: 3 });
+}
+
+/** 前ばね 1 枚（右がわ。x は 0..1、合わせ目が x = 0）。左は scale x = -1 */
+export function elytronHalf(): THREE.BufferGeometry {
+  return shellGeo('elytronHalf', [[-1, 0, 0.15], [-0.94, 0.42, 0.5], [-0.6, 0.9, 0.9], [0, 1, 1], [0.7, 0.96, 0.92], [1, 0.8, 0.7]], { base: 0, nt: 2.4, half: true, rim: 0.03 });
+}
+
+/** まん中が ふくらむ 節（半径 0.5・Y 軸。カマ・ハサミ・尾の 節） */
+export function spindleY(): THREE.BufferGeometry {
+  return yBody('spindle', [[-1, 0.22, 0.22, -0.22], [-0.55, 0.48, 0.5, -0.46], [0.25, 0.44, 0.46, -0.42], [0.8, 0.3, 0.3, -0.3], [1, 0.18, 0.18, -0.18]], { nt: 2.3, rings: 16, radial: 14 });
+}
+
+/** まゆ（半径 0.5・Y 軸）：まん中が 少し くびれた たわら形 */
+export function cocoonGeo(): THREE.BufferGeometry {
+  return yBody('cocoon', [[-1, 0, 0, 0], [-0.93, 0.28, 0.28, -0.28], [-0.6, 0.5, 0.5, -0.5], [0, 0.45, 0.45, -0.45], [0.6, 0.5, 0.5, -0.5], [0.93, 0.28, 0.28, -0.28], [1, 0, 0, 0]], { rings: 32 });
+}
+
+/** クモの はら（半径 1・Z 軸）：後ろが 長い つつ形 */
+export function spiderAbdomen(): THREE.BufferGeometry {
+  return bodyGeo('spiderAbdomen', [[-1, 0, 0, 0], [-0.9, 0.5, 0.5, -0.5], [-0.4, 0.95, 0.95, -0.95], [0.3, 1, 1, -1], [0.8, 0.8, 0.85, -0.8], [1, 0.3, 0.4, -0.3]], { rings: 30 });
+}
+
+/** クモの あし（長さ 1・Z 向き）：ひざで 高く もち上がり、先が 下りる。節ごとに 太さが かわる */
+export function spiderLeg(): THREE.BufferGeometry {
+  return sharedGeo('spiderLeg', () =>
+    shapedTube(
+      [[0, 0, 0], [0, 0.16, 0.2], [0, 0.2, 0.42], [0, 0.06, 0.72], [0, -0.12, 1]],
+      (t) => {
+        const r = 0.022 * (1 - t * 0.7) * (1 + 0.25 * Math.abs(Math.sin(t * Math.PI * 4)));
+        return [r, r];
+      },
+      28,
+      7,
+    ),
+  );
+}
+
+/** 花びら（半径 1・先が +Z）：つけねが 細く、先が まるい、少し くぼんだ 皿 */
+export function petalGeo(): THREE.BufferGeometry {
+  return bodyGeo('petal', [[-1, 0.08, 0.06, -0.06], [-0.5, 0.55, 0.1, -0.06], [0.2, 1, 0.22, 0.0], [0.75, 0.8, 0.36, 0.14], [1, 0, 0.42, 0.42]], {
+    rings: 16,
+    radial: 16,
+    extra: (p) => {
+      p.y -= 0.18 * gaussian(p.x, 0.5);
+    },
+  });
+}

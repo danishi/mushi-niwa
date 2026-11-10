@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { cachedTube } from '../creatures/geom';
+import { cachedTube, petalGeo } from '../creatures/geom';
 import type { DecorId } from '../sim/types';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, type MatOpts } from '../three/materials';
@@ -72,7 +72,7 @@ export function Decor({ id, top, index, at }: { id: DecorId; top: number; index:
         <group position={p}>
           <Mesh color="#5d8a2f" geometry={GEO.cylinder()} position={[0, 0.5, 0]} scale={[0.025, 1, 0.025]} />
           {[0, 1, 2, 3, 4].map((i) => (
-            <Mesh key={i} color="#f29bb5" surface={{ roughness: 0.6, sheen: 0.6 }} geometry={GEO.sphere()} position={[Math.cos(i * 1.26) * 0.11, 1.02, Math.sin(i * 1.26) * 0.11]} scale={[0.09, 0.02, 0.09]} />
+            <Mesh key={i} color="#f29bb5" surface={{ roughness: 0.6, sheen: 0.7, side: THREE.DoubleSide }} geometry={petalGeo()} position={[Math.cos(i * 1.26) * 0.060500000000000005, 1.02, Math.sin(i * 1.26) * 0.060500000000000005]} rotation={[0, Math.PI / 2 - i * 1.26, 0]} scale={[0.068, 0.055, 0.104]} />
           ))}
           <Mesh color="#f2c14e" geometry={GEO.sphere()} position={[0, 1.04, 0]} scale={0.05} />
         </group>

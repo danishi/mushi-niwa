@@ -5,7 +5,7 @@ import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, SURF } from '../three/materials';
 import { fuzzTexture, grainBump, leafTexture, mothWing, paint, striaeNormal, wrinkleBump } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { bodyGeo, segmentGeo, shapeGeo, shellGeo } from './geom';
+import { bodyGeo, segmentGeo, shapeGeo, shellGeo, cocoonGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -324,7 +324,7 @@ export function KaikoCocoon({ anim }: ModelProps) {
       {/* まぶし（紙の しきり） */}
       <M geo={GEO.box()} color="#d9cbb0" surface={{ roughness: 0.95 }} position={[0, 0.25, -0.25]} scale={[0.9, 0.5, 0.02]} />
       <M geo={GEO.box()} color="#d9cbb0" surface={{ roughness: 0.95 }} position={[-0.45, 0.25, 0]} scale={[0.02, 0.5, 0.5]} />
-      <Part geometry={GEO.capsule()} color="#f7f3ea" surface={silk} position={[0, 0.18, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.26, 0.28, 0.26]} castShadow part="cocoon" />
+      <Part geometry={cocoonGeo()} color="#f7f3ea" surface={silk} position={[0, 0.18, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.26, 0.28, 0.26]} castShadow part="cocoon" />
       {/* まわりの けば（糸の もや） */}
       <mesh position={[0, 0.18, 0]} scale={[0.42, 0.24, 0.26]} userData={{ part: 'cocoon' }}>
         <sphereGeometry args={[1, 16, 12]} />

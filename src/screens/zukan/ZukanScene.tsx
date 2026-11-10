@@ -35,7 +35,16 @@ export function SpecimenView({ species, stage }: { species: SpeciesId; stage: nu
   const z = { species, stage };
   const tier = useTier();
   const spin = useRef<THREE.Group>(null);
+  const fit = useRef<THREE.Group>(null);
+  const inner = useRef<THREE.Group>(null);
   const anim = useRef(newAnim());
+  const frames = useRef(0);
+  const st = SPECIES[z.species].stages[z.stage];
+  const entry = st ? modelFor(st.model) : null;
+  const flier = entry?.locomotion === 'flutter';
+  useLayoutEffect(() => {
+    frames.current = 0;
+  }, [species, stage]);
   useFrame((_, dt) => {
     const a = anim.current;
     a.t += dt;
@@ -45,16 +54,36 @@ export function SpecimenView({ species, stage }: { species: SpeciesId; stage: nu
     a.flap = 0;
     a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
     if (spin.current) spin.current.rotation.y += dt * 0.5;
+    // モデルの 大きさは 種と 段階で ちがうので、外接箱から 台に おさまる 大きさに そろえる。
+    // 幼虫の 節などは 最初の フレームで 位置が 決まるので、少し 待ってから 測る
+    const n = ++frames.current;
+    const f = fit.current;
+    const g = inner.current;
+    const sp = spin.current;
+    if ((n === 2 || n === 12) && f && g && sp) {
+      const ry = sp.rotation.y;
+      sp.rotation.y = 0;
+      f.scale.setScalar(1);
+      g.position.set(0, 0, 0);
+      sp.updateMatrixWorld(true);
+      // 台座の 座標で 測る（クイズ画面など、親が 動いて いても ずれない）
+      const box = new THREE.Box3().setFromObject(g).applyMatrix4(new THREE.Matrix4().copy(sp.matrixWorld).invert());
+      const size = box.getSize(new THREE.Vector3());
+      const c = box.getCenter(new THREE.Vector3());
+      const k = Math.min(1.35 / Math.max(0.05, size.x, size.z), 0.8 / Math.max(0.05, size.y));
+      g.position.set(-c.x, -box.min.y + (flier ? 0.08 / k : 0), -c.z);
+      f.scale.setScalar(k);
+      sp.rotation.y = ry;
+    }
   });
-  const st = SPECIES[z.species].stages[z.stage];
-  if (!st) return null;
-  const entry = modelFor(st.model);
+  if (!st || !entry) return null;
   const Model = entry.C;
-  const k = 1.2 / Math.max(0.6, entry.length);
   return (
-    <group ref={spin} position={[0, 0.62, 0]} scale={k} onPointerDown={() => (anim.current.bounce = 1)}>
-      <group position={[0, entry.locomotion === 'flutter' ? -0.2 : 0, 0]}>
-        <Model key={`${z.species}-${z.stage}`} anim={anim} sex="male" molts={st.molts ?? 0} outlines={QUALITY[tier].outlines} />
+    <group ref={spin} position={[0, 0.62, 0]} onPointerDown={() => (anim.current.bounce = 1)}>
+      <group ref={fit} scale={1.2 / Math.max(0.6, entry.length)}>
+        <group ref={inner}>
+          <Model key={`${z.species}-${z.stage}`} anim={anim} sex="male" molts={st.molts ?? 0} outlines={QUALITY[tier].outlines} />
+        </group>
       </group>
     </group>
   );
