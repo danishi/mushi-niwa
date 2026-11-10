@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import * as THREE from 'three';
 import { cachedTube, petalGeo } from '../creatures/geom';
 import type { DecorId } from '../sim/types';
@@ -27,7 +27,7 @@ const bark = (): MatOpts => ({ map: barkTexture(), roughness: 0.95, normalMap: b
 const leaf = (c = '#4f7f2a'): MatOpts => ({ map: leafTexture(c), roughness: 0.6, side: THREE.DoubleSide });
 
 /** 飼育ケースの飾り（とまり木・枝・石・樹皮・葉・鉢植え など） */
-export function Decor({ id, top, index, at }: { id: DecorId; top: number; index: number; at?: V3 }) {
+function DecorImpl({ id, top, index, at }: { id: DecorId; top: number; index: number; at?: V3 }) {
   const spot = at ?? (index >= 9 ? HOUSE_SPOT : SPOTS[index % SPOTS.length]!);
   const p: V3 = [spot[0], top, spot[2]];
   switch (id) {
@@ -103,3 +103,6 @@ export function foodSpot(slot: number): V3 {
   void slot;
   return [-0.6, 0, 0.35];
 }
+
+/** 親が 毎秒 描きなおされても（シミュレーションの 1 秒ごとの 更新）、中身が 同じなら 作りなおさない */
+export const Decor = memo(DecorImpl);

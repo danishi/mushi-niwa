@@ -7,7 +7,7 @@
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア）と `window.__r3f`（three のシーン）。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる） |
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる） |
 | `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
 | `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
 | `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要 |
@@ -36,7 +36,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **罰を与えない**: 虫は死なない。お世話不足は「げんきがない」（成長が一時停止）になるだけ。寿命を終えた成虫は送り出し演出 → ずかんに思い出カード。
 - **時間**: 通常は遊んでいる間だけ進む。たまご〜さなぎは データの `playMinutes` の 2 倍速（ユーザー要望。`GROWTH_SPEED`・`stageMinutes()`）、成虫の期間は データどおり。設定の「リアルタイムモード」でのみ離席中も進む（追いつき計算は上限つき）。
 - **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
-- **見た目は図鑑のような写実**（ユーザー判断で トゥーン調から変更）: 物理ベース材質 `mat()`／`SURF`（`src/three/materials.ts`）、AgX トーンマッピング、やわらかい影。テクスチャは `src/three/textures.ts` で Canvas から生成（外部画像なし）。虫の目はデフォルメせず複眼（`CompoundEye`、個眼の 法線マップ）。脚は 基節・腿節・脛節（歯と 距）・ふ節・かぎづめ（`Leg` + `LegSpec`）、触角は種類別（`AntennaKind`）。
+- **見た目は図鑑のような写実**（ユーザー判断で トゥーン調から変更）: 物理ベース材質 `mat()`／`SURF`（`src/three/materials.ts`）、Neutral トーンマッピング（`TONE_MAPPING`。後処理あり・なしの 両方で 同じものを かける。そろえないと 画質が 変わる たびに 空や 草の 色が 切りかわる）、やわらかい影。テクスチャは `src/three/textures.ts` で Canvas から生成（外部画像なし）。虫の目はデフォルメせず複眼（`CompoundEye`、個眼の 法線マップ）。脚は 基節・腿節・脛節（歯と 距）・ふ節・かぎづめ（`Leg` + `LegSpec`）、触角は種類別（`AntennaKind`）。
 - **写実造形の 作り方**（カブトムシ・オオクワガタの 成虫が お手本。飼育種も おきゃくさんも この 方式。頭は 球の ままの 種が 多い。たまご と カタツムリは 元の 形の まま）:
   - 体は 球の 寄せ集めではなく `loft()`（`src/creatures/geom.ts`）で つくる。体の 軸（+Z）に そって 断面（半分の はば・上下の 高さ・角ばり `nt`/`nb`）を 並べ、`displace` で 合わせ目の みぞ・肩の こぶ・ふちどりを 足す。前ばね・前胸は `arc: 'top'` の から、下がわは 別の ロフト。寸法は 実物の 比率（体長に 対する はば・高さ・各部の 長さ）から 決める。
   - よく 使う 形は 短く 書ける: `bodyGeo()`（胴体。`segs` で 節の くびれ）、`shellGeo()`（前ばね・前胸の から）、`yBody()`／`abdomenY()`／`abdomenZ()`（既存の カプセル・球と 同じ 寸法で 差しかえる 節つきの はら）、`segmentGeo()`（幼虫の 節）、`plateGeo()`（ムカデ・サソリの 背板）、`pupaGeo()`。はねの 模様は 形の 座標で 描く（`agehaWing`・`mothWing` の `wingPainter`）。体の 帯は `bandTexture`、前ばねの 模様は `paint`。
@@ -50,7 +50,10 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
   - 部位の 位置（`part`、脚の つけね、頭の 関節）は 変えない。かんさつ・むしずもう・カメラが 参照している。
 - **3〜5 歳でも遊べる操作**: 道具はタップだけ（`toolAction` → `AutoTool` が 3D で飛んでいって自動で使う。ドラッグなし）。お世話パラメータの数値・ゲージは出さず、虫の頭上の吹き出し（`WantBubble`、`wantOf()`）と、対応する道具ボタンの点滅で「してほしいこと」を伝える。画面のボタンは最小限：昼夜は空の太陽／月（`SkyToggle`）、かんさつは虫をタップ、ずかん・むしずもうは棚の前の 3D の本・切り株から入る。棚の前の入口（本・クイズの立てふだ・切り株）は 下の段のケースや「あたらしい むし」ボタンと重ならないよう、画面の縦横比で置き場所を変える（`portalLayout`）。当たり判定も見た目の大きさに合わせる。
 - **横長画面の ずかん・クイズ**: 説明・選択肢は 右の 列に 出し、標本は 左半分に 見せる。カメラは `CameraShot.wide`（アスペクト比 1.2 超で 上書き）と `shiftX`（`setViewOffset` で 見た目だけ ずらすので 回転の 中心は 標本のまま）。CSS の `@media (min-aspect-ratio: 6/5)` と 対に なっている。
-- **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。`PerformanceMonitor` で FPS が落ちたら下げる。DPR 上限 2。影・後処理は high のみ、草の本数も画質で変える。
+- **アダプティブ画質**: `src/three/quality.ts` の high / mid / low。DPR 上限 2。影・後処理は high のみ、草の本数も画質で変える。FPS を 0.5 秒ごとに 計り（`Governor`、純ロジック）、画質を 変えるのは **画面を 切りかえる ときだけ**（遊んでいる 最中に 影や 解像度が 切りかわると チラついて 見える。とても 重い ときだけ すぐ 下げる）。一度 下げた 画質には その回は もどらない。落ちついた 画質は 端末に おぼえて、次回は そこから 始める。画面切りかえ・復帰の 直後（シェーダの コンパイル中）は 計測に 入れない。
+- **最初の フレームの 前に 決めるもの**: 環境マップ（`Lights`）と ソフトウェア描画の 判定（`QualityManager`）は `useLayoutEffect` で 入れる。描いた あとに 入れると 全シェーダの 作りなおしと 見た目の 切りかわりが 起きる。空の 球は カメラに ついて 動かす（縦長画面で カメラが 下がると 描画範囲の 外に 出て 欠ける）。
+- **起動画面**: `index.html` の `#root` に 起動画面と 同じ 見た目の うすい 丸を 先に 置き、スクリプトが 届いたら 本物（`Boot`）に 入れかわる。押すと フェードして タイトルへ（その 下で 3D は 先に 描きはじめている）。
+- **毎秒の 再描画を 軽く**: シミュレーションは 1 秒ごとに `creatures` を 作りなおすので、にわ・お世話の シーンは 毎秒 描きなおされる。部品の 多い もの（虫の モデル `MODELS[*].C`、`Decor`、`Meadow`、`GardenVisitors`）は `memo` で 包んである。新しく 足す 重い 部品も 同じに する。
 - **遠目の表示は軽量版**: 棚のミニケースは `LiteContext` で脚の先を省略。脚・触角・ケースの角はそれぞれ 1 ジオメトリに結合。影は主要パーツ（`castShadow` 指定）だけが落とす。
 - **ドローコール削減**: マテリアルは `mat()`、ジオメトリは `GEO.*` / `sharedGeo()` でキャッシュ共有。同じ小物が多いものは `InstancedMesh`（`Scatter`）。
 - **`useBodyMotion` の group には position を付けない**（毎フレーム上書きされる）。持ち上げたいときは外側に group を重ねる。
@@ -60,7 +63,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
   - しゃしん: カメラボタン（`src/ui/CameraButton.tsx`）は お世話画面（道具の 演出中は かくす）と かんさつ画面の 右上。かんさつ画面だけだと 見つけにくかったので 両方に 置く。`src/three/snapshot.ts`（`addAfterEffect` で描画直後に読む。preserveDrawingBuffer は使わない）→ `src/state/photos.ts`（端末内、30 枚まで）。ずかんの「しゃしん」タブで見る。大人は設定で消せる。
   - むしクイズ: `src/sim/quiz.ts` が種データから 3 択を作る（手書きの問題を増やさない）。入口は にわの「？」立てふだ。画面は `quiz`。
   - ずかんは タブ（むし／おきゃくさん／シール／しゃしん）。おきゃくさんも むしと 同じく 台の 上の 3D（`GuestSpecimen`、外接箱で 大きさを そろえる）＋説明パネル（`ui.zukanGuest`）。説明パネル（`DetailSheet`）は 続きが あると 下に「↓」を 出す。
-- **リロードで最新版になる**（ユーザー要望）: Service Worker は index.html を 先に取りおかず、ページは NetworkFirst（`cache: 'no-cache'`、4 秒で オフライン用の 保存版に 切りかえ）。js/css は ハッシュ付きなので precache。新しい SW は skipWaiting / clientsClaim で すぐ入れかわるが、遊んでいる最中の 自動再読みこみは しない（タイトル画面のときだけ。`src/app/pwa.ts`）。アプリに もどったときにも 更新を確かめる。設定画面に 版（`__APP_VERSION__`、CI では コミットの 先頭 7 文字）を出す。
+- **リロードで最新版になる**（ユーザー要望）: Service Worker は index.html を 先に取りおかず、ページは NetworkFirst（`cache: 'no-cache'`、4 秒で オフライン用の 保存版に 切りかえ）。js/css は ハッシュ付きなので precache。新しい SW は skipWaiting / clientsClaim で すぐ入れかわるが、遊んでいる最中の 自動再読みこみは しない（タイトル画面で、しかも 開いている ページが 古い ときだけ。ページは ネット優先で もう 最新の ことが 多く、毎回 読みこみなおすと 公開の たびに 最初の 画面が チラつく。`src/app/pwa.ts`）。アプリに もどったときにも 更新を確かめる。設定画面に 版（`__APP_VERSION__`、CI では コミットの 先頭 7 文字）を出す。
 - **3D アセットは外部に頼らない**: 虫・ジオラマはプロシージャル生成のみ（ロフト曲面・チューブ・プリミティブ）。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。
 
 ## 規約

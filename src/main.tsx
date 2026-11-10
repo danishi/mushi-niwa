@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { registerPwa } from './app/pwa';
+import { FLAGS } from './state/flags';
 import './styles.css';
 
 // iOS Safari のピンチ・ダブルタップによるページズームを止める（3D 内のピンチはカメラ側で制限付きで扱う）
@@ -18,7 +19,7 @@ createRoot(document.getElementById('root')!).render(
 registerPwa();
 
 // E2E テスト用のフック（?e2e のときだけ）
-if (new URLSearchParams(location.search).has('e2e')) {
+if (FLAGS.e2e) {
   void Promise.all([import('./state/game'), import('./state/ui'), import('./state/settings'), import('./state/progress'), import('./state/photos'), import('./app/SimDriver')]).then(([g, u, st, pr, ph, sd]) => {
     // night: { value: true } で 夜に できる（おきゃくさんの 夜の 出かたの 確認用）
     (window as unknown as Record<string, unknown>).__mushi = { game: g.useGame, ui: u.useUi, settings: st.useSettings, progress: pr.useProgress, photos: ph.usePhotos, night: sd.nightOverride };

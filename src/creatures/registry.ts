@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import { memo, type ComponentType } from 'react';
 import type { CreatureAnim } from './anim';
 import { AgehaAdult, AgehaEgg, AgehaLarva, AgehaPupa } from './ageha';
 import { KabutoAdult, KabutoLarva, KabutoPupa } from './kabuto';
@@ -63,6 +63,10 @@ export const MODELS: Record<string, ModelEntry> = {
   'kuwa-adult': { C: KuwaAdult, locomotion: 'crawl', length: 1.25, speed: 0.3 },
   'gomadara-adult': { C: GomadaraAdult, locomotion: 'crawl', length: 1.1, speed: 0.3 },
 };
+
+// モデルは 部品が 多い。親（Actor）は シミュレーションの 更新で 毎秒 描きなおされるので、
+// 見た目に かかわる 値（性別・脱皮回数）が 同じ 間は 作りなおさない
+for (const entry of Object.values(MODELS)) entry.C = memo(entry.C);
 
 export function modelFor(key: string): ModelEntry {
   return MODELS[key] ?? MODELS['kabuto-adult']!;

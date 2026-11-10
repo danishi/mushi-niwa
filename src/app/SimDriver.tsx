@@ -2,18 +2,13 @@ import { useEffect } from 'react';
 import { audio } from '../audio/audio';
 import { dayPhase, nightFromPhase, playSecondsFor } from '../sim/simulate';
 import { env } from '../state/env';
+import { FLAGS } from '../state/flags';
 import { useGame } from '../state/game';
 import { useSettings } from '../state/settings';
 import { useUi } from '../state/ui';
 
 /** 夜ボタンで一時的に夜にできる（スズムシの声やカブトムシの活動を見るため） */
 export const nightOverride = { value: null as boolean | null };
-
-function debugSpeed(): number {
-  const q = new URLSearchParams(location.search).get('speed');
-  const n = q ? Number(q) : 1;
-  return Number.isFinite(n) && n > 0 ? n : 1;
-}
 
 /**
  * シミュレーションを 1 秒ごとに進める。
@@ -24,7 +19,7 @@ export function SimDriver() {
   const hydrated = useGame((s) => s.hydrated);
   useEffect(() => {
     if (!hydrated) return;
-    const speed = debugSpeed();
+    const speed = FLAGS.speed;
     let last = Date.now();
     // リアルタイムモードなら、前回からの経過を最初に追いつき計算
     const { realtime } = useSettings.getState();

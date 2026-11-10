@@ -23,11 +23,12 @@ function make(key: string, size: number, draw: (g: CanvasRenderingContext2D, s: 
   return t;
 }
 
-/** 値ノイズ（なめらかな ゆらぎ） */
+/** 値ノイズ（なめらかな ゆらぎ）。テクスチャの 全画素で 呼ぶので、格子は 型つき配列で 持ち、添字は 先に 計算する */
 function valueNoise(seed: number, cells: number) {
   const r = rng(seed);
-  const grid = Array.from({ length: (cells + 1) * (cells + 1) }, () => r());
-  const at = (x: number, y: number) => grid[(y % cells) * (cells + 1) + (x % cells)]!;
+  const w = cells + 1;
+  const grid = new Float64Array(w * w);
+  for (let i = 0; i < grid.length; i++) grid[i] = r();
   return (u: number, v: number) => {
     const x = u * cells;
     const y = v * cells;
@@ -37,15 +38,24 @@ function valueNoise(seed: number, cells: number) {
     const fy = y - y0;
     const sx = fx * fx * (3 - 2 * fx);
     const sy = fy * fy * (3 - 2 * fy);
-    const a = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * sx;
-    const b = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * sx;
+    const xa = x0 % cells;
+    const xb = (x0 + 1) % cells;
+    const ra = (y0 % cells) * w;
+    const rb = ((y0 + 1) % cells) * w;
+    const g00 = grid[ra + xa]!;
+    const g01 = grid[rb + xa]!;
+    const a = g00 + (grid[ra + xb]! - g00) * sx;
+    const b = g01 + (grid[rb + xb]! - g01) * sx;
     return a + (b - a) * sy;
   };
 }
 
 function fbm(seed: number) {
-  const octaves = [valueNoise(seed, 4), valueNoise(seed + 1, 8), valueNoise(seed + 2, 16), valueNoise(seed + 3, 32)];
-  return (u: number, v: number) => octaves.reduce((s, n, i) => s + n(u, v) / 2 ** (i + 1), 0) / 0.9375;
+  const o0 = valueNoise(seed, 4);
+  const o1 = valueNoise(seed + 1, 8);
+  const o2 = valueNoise(seed + 2, 16);
+  const o3 = valueNoise(seed + 3, 32);
+  return (u: number, v: number) => (o0(u, v) / 2 + o1(u, v) / 4 + o2(u, v) / 8 + o3(u, v) / 16) / 0.9375;
 }
 
 /** 細かい凹凸（バンプ用のグレースケール） */
@@ -491,30 +501,45 @@ function normalFromHeight(key: string, size: number, repeat: [number, number], b
   const k = `nrm:${key}:${repeat[0]}:${repeat[1]}`;
   const hit = cache.get(k);
   if (hit) return hit;
-  const h = new Float32Array(size * size);
-  build(h, size);
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const g = c.getContext('2d')!;
-  const img = g.createImageData(size, size);
-  const at = (x: number, y: number) => h[((y + size) % size) * size + ((x + size) % size)]!;
-  for (let y = 0; y < size; y++)
-    for (let x = 0; x < size; x++) {
-      const dx = (at(x + 1, y) - at(x - 1, y)) * strength;
-      const dy = (at(x, y + 1) - at(x, y - 1)) * strength;
-      const l = 1 / Math.hypot(dx, dy, 1);
-      const i = (y * size + x) * 4;
-      img.data[i] = (-dx * l * 0.5 + 0.5) * 255;
-      // Canvas は 上が v = 1 なので、縦の かたむきは 逆に なる
-      img.data[i + 1] = (dy * l * 0.5 + 0.5) * 255;
-      img.data[i + 2] = (l * 0.5 + 0.5) * 255;
-      img.data[i + 3] = 255;
+  // 同じ 模様で くり返しの 数だけ ちがう ものは、画像を 作りなおさず 共有する（GPU への 転送も 1 回）
+  const baseKey = `nrm:${key}`;
+  let base = cache.get(baseKey);
+  if (!base) {
+    const h = new Float32Array(size * size);
+    build(h, size);
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d')!;
+    const img = g.createImageData(size, size);
+    const px = img.data;
+    for (let y = 0; y < size; y++) {
+      // はしは 反対がわへ 回りこむ（くり返しても つなぎ目が 出ない）
+      const row = y * size;
+      const up = ((y + size - 1) % size) * size;
+      const down = ((y + 1) % size) * size;
+      for (let x = 0; x < size; x++) {
+        const left = (x + size - 1) % size;
+        const right = (x + 1) % size;
+        const dx = (h[row + right]! - h[row + left]!) * strength;
+        const dy = (h[down + x]! - h[up + x]!) * strength;
+        const l = 1 / Math.sqrt(dx * dx + dy * dy + 1);
+        const i = (row + x) * 4;
+        px[i] = (-dx * l * 0.5 + 0.5) * 255;
+        // Canvas は 上が v = 1 なので、縦の かたむきは 逆に なる
+        px[i + 1] = (dy * l * 0.5 + 0.5) * 255;
+        px[i + 2] = (l * 0.5 + 0.5) * 255;
+        px[i + 3] = 255;
+      }
     }
-  g.putImageData(img, 0, 0);
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    g.putImageData(img, 0, 0);
+    base = new THREE.CanvasTexture(c);
+    base.wrapS = base.wrapT = THREE.RepeatWrapping;
+    base.anisotropy = 4;
+    cache.set(baseKey, base);
+  }
+  const t = base.clone();
   t.repeat.set(repeat[0], repeat[1]);
-  t.anisotropy = 4;
+  t.needsUpdate = true;
   cache.set(k, t);
   return t;
 }

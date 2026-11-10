@@ -72,11 +72,14 @@ export function Particles() {
   );
   const tmp = useMemo(() => ({ m: new THREE.Matrix4(), c: new THREE.Color(), s: new THREE.Vector3(), q: new THREE.Quaternion() }), []);
   const cursor = useRef(0);
+  const active = useRef(false);
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
     const mesh = ref.current;
     if (!mesh) return;
+    // 何も 出ていない 間は 何も しない（400 個ぶんの 行列を 毎フレーム 送らない）
+    if (!queue.length && !active.current) return;
     while (queue.length) {
       const e = queue.shift()!;
       const spec = SPECS[e.kind];
@@ -122,7 +125,8 @@ export function Particles() {
     }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.visible = any;
+    active.current = any;
   });
 
-  return <instancedMesh ref={ref} args={[GEO.sphereLo(), material, MAX]} frustumCulled={false} renderOrder={10} />;
+  return <instancedMesh ref={ref} args={[GEO.sphereLo(), material, MAX]} frustumCulled={false} renderOrder={10} visible={false} />;
 }

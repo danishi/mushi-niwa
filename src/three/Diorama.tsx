@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useTier } from './QualityManager';
 import { GEO, mat, sharedGeo } from './materials';
@@ -122,7 +122,7 @@ const LEAVES = ['#b07a3e', '#c48a48', '#8f6a3a', '#a8954a'];
 const PEBBLES = ['#b9b0a4', '#a39a8e', '#cfc6ba', '#8e857a'];
 
 /** 原っぱ（草地の 地面・草・落ち葉・小石）。画質に合わせて 草の量を変える */
-export function Meadow({ radius = 7 }: { radius?: number }) {
+function MeadowImpl({ radius = 7 }: { radius?: number }) {
   const tier = useTier();
   const ground = useMemo(() => mat('#ffffff', { map: grassTexture(), roughness: 0.95, bumpMap: grainBump(70, 96), bumpScale: 2 }), []);
   const soil = useMemo(() => mat('#5e4634', { roughness: 1, bumpMap: grainBump(71, 64), bumpScale: 3 }), []);
@@ -140,3 +140,6 @@ export function Meadow({ radius = 7 }: { radius?: number }) {
     </group>
   );
 }
+
+/** 親が 毎秒 描きなおされても（シミュレーションの 1 秒ごとの 更新）、中身が 同じなら 作りなおさない */
+export const Meadow = memo(MeadowImpl);

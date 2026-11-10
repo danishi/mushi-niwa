@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { audio } from '../../audio/audio';
 import { newAnim } from '../../creatures/anim';
@@ -7,6 +7,7 @@ import { JoroWeb, VISITOR_MODELS } from '../../creatures/visitors';
 import { VISITORS, visitorsAt, type VisitorId } from '../../data/visitors';
 import { FIRST_VISIT_AFTER, nextGap, pickSpot, pickVisitor, STAY_SECONDS } from '../../sim/visitors';
 import { env } from '../../state/env';
+import { FLAGS } from '../../state/flags';
 import { useProgress } from '../../state/progress';
 import { useUi } from '../../state/ui';
 import { emitParticles } from '../../three/Particles';
@@ -213,12 +214,11 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
 }
 
 /** にわの おきゃくさんを ときどき 呼ぶ（1 ぴきずつ） */
-export function GardenVisitors({ shelfWidth, shelfFront }: { shelfWidth: number; shelfFront: number }) {
+function GardenVisitorsImpl({ shelfWidth, shelfFront }: { shelfWidth: number; shelfFront: number }) {
   const spots = useMemo(() => visitorSpots(shelfWidth, shelfFront), [shelfWidth, shelfFront]);
   const [visit, setVisit] = useState<{ id: VisitorId; at: V3; key: number } | null>(null);
-  const e2e = useMemo(() => new URLSearchParams(location.search).has('e2e'), []);
   // テストでは すぐ 来る
-  const timer = useRef(e2e ? 0.5 : FIRST_VISIT_AFTER);
+  const timer = useRef(FLAGS.e2e ? 0.5 : FIRST_VISIT_AFTER);
   const last = useRef<VisitorId | null>(null);
   const counter = useRef(0);
   useFrame((_, dt) => {
@@ -227,14 +227,14 @@ export function GardenVisitors({ shelfWidth, shelfFront }: { shelfWidth: number;
     if (timer.current > 0) return;
     // 夜は 夜に うごく 子（ホタル・コオロギ・ダンゴムシ など）だけ
     const ids = visitorsAt(env.night > 0.5);
-    const forced = e2e ? ((window as unknown as Record<string, unknown>).__forceVisitor as VisitorId | undefined) : undefined;
+    const forced = FLAGS.e2e ? ((window as unknown as Record<string, unknown>).__forceVisitor as VisitorId | undefined) : undefined;
     const id = forced ?? (pickVisitor(ids, useProgress.getState().visitors, last.current, Math.random) as VisitorId);
     const list = spots[VISITORS[id].where];
     const at = list[pickSpot(list.length, Math.random)]!;
     last.current = id;
     counter.current++;
     setVisit({ id, at, key: counter.current });
-    if (e2e) (window as unknown as Record<string, unknown>).__visitor = { id, at };
+    if (FLAGS.e2e) (window as unknown as Record<string, unknown>).__visitor = { id, at };
   });
   if (!visit) return null;
   return (
@@ -245,8 +245,11 @@ export function GardenVisitors({ shelfWidth, shelfFront }: { shelfWidth: number;
       onGone={() => {
         timer.current = nextGap(Math.random);
         setVisit(null);
-        if (e2e) (window as unknown as Record<string, unknown>).__visitor = null;
+        if (FLAGS.e2e) (window as unknown as Record<string, unknown>).__visitor = null;
       }}
     />
   );
 }
+
+/** 親が 毎秒 描きなおされても（シミュレーションの 1 秒ごとの 更新）、中身が 同じなら 作りなおさない */
+export const GardenVisitors = memo(GardenVisitorsImpl);
