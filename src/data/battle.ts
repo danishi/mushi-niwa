@@ -140,6 +140,61 @@ export const BATTLE: Record<SpeciesId, BattleDef> = {
       sfx: 'bounce',
     },
   },
+  nokogiri: {
+    power: 1.15,
+    special: {
+      label: 'たちあがり {大|おお}あご',
+      effect: 'push',
+      strength: 0.4,
+      seconds: 0,
+      fact: 'ケンカの まえには 大あごを ひらいて、からだを ぐっと おこして かまえるよ',
+      sfx: 'bounce',
+    },
+  },
+  oomurasaki: {
+    power: 0.85,
+    special: {
+      label: 'ちからづよく とぶ',
+      effect: 'guard',
+      strength: 0,
+      seconds: 2.5,
+      fact: 'おおきな はねで、ちからづよく とぶよ',
+      sfx: 'flap',
+    },
+  },
+  nanafushi: {
+    power: 0.75,
+    special: {
+      label: 'かちこち えだ',
+      effect: 'guard',
+      strength: 0,
+      seconds: 3,
+      fact: 'びっくりすると、かちんと かたまって しんだ ふりを するよ。えだに なりきって じっと しているよ',
+      sfx: 'whoosh',
+    },
+  },
+  usubakagerou: {
+    power: 0.8,
+    special: {
+      label: 'すなかけ ぴっ',
+      effect: 'stun',
+      strength: 0.1,
+      seconds: 2.0,
+      fact: 'ようちゅうの アリジゴクは、すなを ぴっと はねて、えものの あしもとを くずすよ',
+      sfx: 'puff',
+    },
+  },
+  gengorou: {
+    power: 1.05,
+    special: {
+      label: 'オール キック',
+      effect: 'push',
+      strength: 0.35,
+      seconds: 0,
+      fact: 'けの はえた ひらたい うしろあしで みずを かいて、すばやく およぐよ',
+      sfx: 'whoosh',
+    },
+  },
   miidera: {
     power: 1.0,
     special: {

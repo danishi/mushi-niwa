@@ -3,11 +3,11 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { audio } from '../../audio/audio';
 import { actors } from '../../creatures/Actor';
-import { CASE } from '../../habitat/case';
+import { CASE, WATER_LEVEL } from '../../habitat/case';
 import { Decor } from '../../habitat/Decor';
 import { FoodModel } from '../../habitat/Food';
 import { houseFor } from '../../habitat/Terrarium';
-import { stageOf } from '../../sim/simulate';
+import { isAquatic, stageOf } from '../../sim/simulate';
 import type { Creature, SpeciesDef, ToolId } from '../../sim/types';
 import { foodPositions, toolAction } from '../../state/drag';
 import { playEvents } from '../../state/events';
@@ -40,6 +40,19 @@ function Scoop() {
   );
 }
 
+/** みずさし（水そうの みずかえ） */
+function Pitcher() {
+  const body = useMemo(() => mat('#9fd3e6', { roughness: 0.1, opacity: 0.6, clearcoat: 1 }), []);
+  const water = useMemo(() => mat('#5fb3d9', { roughness: 0.05, opacity: 0.7, clearcoat: 1 }), []);
+  return (
+    <group rotation={[0, 0, 0.9]}>
+      <mesh geometry={GEO.cylinder()} material={body} scale={[0.22, 0.4, 0.22]} castShadow />
+      <mesh geometry={GEO.cylinder()} material={water} position={[0, -0.04, 0]} scale={[0.2, 0.3, 0.2]} />
+      <mesh geometry={GEO.cone()} material={body} position={[0.2, 0.17, 0]} rotation={[0, 0, -1.2]} scale={[0.06, 0.16, 0.06]} />
+    </group>
+  );
+}
+
 const FLY_IN = 0.55;
 const ACT_END = 1.8;
 const DONE = 2.3;
@@ -53,6 +66,10 @@ const ACTION_TEXT: Record<ToolId, string> = {
   food: 'ごはんを おくよ',
   house: 'おうちを おくよ',
 };
+
+/** 水そうでは スコップの かわりに みずかえ */
+const WATER_ACTION = 'みずを とりかえるよ';
+const WATER_REACTION = 'すっきり！ きれいな みず';
 
 /** つかった あとの 虫の よろこび */
 export const REACTION_TEXT: Record<ToolId, string> = {
@@ -78,6 +95,9 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
   const spot = useMemo(() => new THREE.Vector3(), []);
   const state = useRef({ tool: null as ToolId | null, pulses: 0, placed: false, ok: 0 });
   const stage = stageOf(creature);
+  const aquatic = isAquatic(sp, creature.stage);
+  const actionText = (t: ToolId) => (aquatic && t === 'scoop' ? WATER_ACTION : ACTION_TEXT[t]);
+  const reactionText = (t: ToolId) => (aquatic && t === 'scoop' ? WATER_REACTION : REACTION_TEXT[t]);
   useUi((s) => s.dragging); // 道具の見た目を切り替えるため
 
   useFrame((_, rawDt) => {
@@ -106,12 +126,13 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
       const ox = cx > 0 ? -0.7 : 0.7;
       spot.set(THREE.MathUtils.clamp(cx + ox, -CASE.w / 2 + 0.5, CASE.w / 2 - 0.5), top, THREE.MathUtils.clamp(cz + 0.2, -CASE.d / 2 + 0.5, CASE.d / 2 - 0.5));
       if (tool === 'mist') goal.set(cx + 0.35, top + 1.1, cz);
+      else if (tool === 'scoop' && aquatic) goal.set(-CASE.w / 2 + 0.8, WATER_LEVEL + 0.7, -0.2);
       else if (tool === 'scoop') goal.set(-CASE.w / 2 + 0.7, top + 0.15, 0.3);
       else goal.set(spot.x, top + 0.6, spot.z);
       // カメラを 使う場所に 寄せて、何が起きるか よく見せる
-      const focus: [number, number, number] = tool === 'scoop' ? [0, top, 0.3] : tool === 'mist' ? [cx, top, cz] : [spot.x, top, spot.z];
-      useUi.getState().setCinematic({ kind: 'tool', target: focus, label: ACTION_TEXT[tool], until: performance.now() + 3000 });
-      speak(ACTION_TEXT[tool]);
+      const focus: [number, number, number] = tool === 'scoop' && aquatic ? [-0.6, WATER_LEVEL - 0.6, 0] : tool === 'scoop' ? [0, top, 0.3] : tool === 'mist' ? [cx, top, cz] : [spot.x, top, spot.z];
+      useUi.getState().setCinematic({ kind: 'tool', target: focus, label: actionText(tool), until: performance.now() + 3000 });
+      speak(actionText(tool));
     }
     toolAction.t += Math.min(rawDt, 0.25);
     const t = toolAction.t;
@@ -122,7 +143,10 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
       g.position.y += Math.sin((t / FLY_IN) * Math.PI) * 0.6;
     } else if (t < ACT_END) {
       const k = (t - FLY_IN) / (ACT_END - FLY_IN);
-      if (tool === 'scoop') {
+      if (tool === 'scoop' && aquatic) {
+        g.position.copy(goal);
+        g.position.x += Math.sin(k * 6) * 0.08;
+      } else if (tool === 'scoop') {
         g.position.set(THREE.MathUtils.lerp(-CASE.w / 2 + 0.7, CASE.w / 2 - 0.7, k), top + 0.15 + Math.abs(Math.sin(k * 12)) * 0.08, 0.3);
       } else if (tool === 'mist') {
         g.position.copy(goal);
@@ -135,7 +159,11 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
         st.pulses++;
         if (game.useTool(creature.id, tool, 0.6)) {
           st.ok++;
-          if (tool === 'mist') {
+          if (tool === 'scoop' && aquatic) {
+            audio.play('mist');
+            emitParticles('mist', [g.position.x + 0.35, g.position.y - 0.1, g.position.z], 30, new THREE.Vector3(0.2, -2.4, 0));
+            emitParticles('sparkle', [g.position.x + 0.4, WATER_LEVEL, g.position.z], 6);
+          } else if (tool === 'mist') {
             audio.play('mist');
             emitParticles('mist', [g.position.x + 0.25, g.position.y + 0.1, g.position.z], 24, new THREE.Vector3(0.3, -1.6, 0));
           } else {
@@ -167,8 +195,8 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
           h.anim.bounce = 1;
           if (h.group) emitParticles('heart', [h.group.position.x, h.group.position.y + 0.8, h.group.position.z], 8);
         }
-        useUi.getState().setReaction({ text: REACTION_TEXT[tool], until: performance.now() + 3000 });
-        speak(REACTION_TEXT[tool], true);
+        useUi.getState().setReaction({ text: reactionText(tool), until: performance.now() + 3000 });
+        speak(reactionText(tool), true);
       }
       const cine = useUi.getState().cinematic;
       if (cine?.kind === 'tool') useUi.getState().setCinematic(null);
@@ -184,11 +212,11 @@ export function AutoTool({ creature, sp, top }: { creature: Creature; sp: Specie
   return (
     <group ref={group} visible={false}>
       {tool === 'mist' ? <MistBottle /> : null}
-      {tool === 'scoop' ? <Scoop /> : null}
+      {tool === 'scoop' ? aquatic ? <Pitcher /> : <Scoop /> : null}
       {tool === 'food' ? <FoodModel food={stage.food} /> : null}
       {tool === 'house' ? (
         <group scale={0.5}>
-          <Decor id={houseFor(sp.id)} top={0} index={99} at={[0, 0, 0]} />
+          <Decor id={houseFor(sp.id, creature.stage)} top={0} index={99} at={[0, 0, 0]} />
         </group>
       ) : null}
     </group>

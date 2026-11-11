@@ -36,7 +36,9 @@ export type IconName =
   | 'star'
   | 'question'
   | 'next'
-  | 'down';
+  | 'down'
+  | 'fish'
+  | 'weed';
 
 const S = { stroke: '#4a3b2a', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
@@ -210,6 +212,20 @@ const PATHS: Record<IconName, ReactElement> = {
       <rect x="18" y="38" width="64" height="28" rx="14" fill="#8d6e63" />
       <ellipse cx="74" cy="52" rx="10" ry="14" fill="#d7b98a" />
       <ellipse cx="74" cy="52" rx="4" ry="6" fill="none" strokeWidth={3} />
+    </g>
+  ),
+  fish: (
+    <g {...S}>
+      <path d="M20 50 C34 30 62 30 74 50 C62 70 34 70 20 50 Z" fill="#b0bec5" />
+      <path d="M74 50 L88 36 V64 Z" fill="#90a4ae" />
+      <circle cx="34" cy="47" r="3.5" fill="#263238" stroke="none" />
+    </g>
+  ),
+  weed: (
+    <g {...S}>
+      <path d="M50 86 C40 66 60 50 48 30 C44 22 48 16 52 12" fill="none" stroke="#4f9a3e" strokeWidth={7} />
+      <path d="M34 86 C28 70 40 60 34 44" fill="none" stroke="#5aa846" strokeWidth={6} />
+      <path d="M66 86 C72 70 60 58 68 42" fill="none" stroke="#5aa846" strokeWidth={6} />
     </g>
   ),
   aphid: (

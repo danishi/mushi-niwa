@@ -61,6 +61,10 @@ export const FOOD_GROUP: Record<FoodId, string> = {
   aphid: 'aphid',
   smallInsect: 'smallInsect',
   wood: 'wood',
+  enokiLeaf: 'leaf',
+  sakuraLeaf: 'leaf',
+  waterBug: 'smallInsect',
+  fish: 'fish',
   none: 'none',
 };
 
@@ -131,6 +135,10 @@ export const FOOD_WORD: Record<FoodId, string> = {
   smallInsect: 'ちいさな むし',
   wood: 'きの なか',
   twig: 'わかい えだの かわ',
+  enokiLeaf: 'エノキの は',
+  sakuraLeaf: 'サクラや クヌギの は',
+  waterBug: 'みずの なかの ちいさな いきもの',
+  fish: 'しんだ さかなや にぼし',
   none: '',
 };
 

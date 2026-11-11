@@ -2,7 +2,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { audio } from '../audio/audio';
-import { CASE } from '../habitat/case';
+import { CASE, WATER_LEVEL } from '../habitat/case';
 import { conditionOf, stageOf } from '../sim/simulate';
 import type { Creature, SpeciesDef } from '../sim/types';
 import { env } from '../state/env';
@@ -95,6 +95,7 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
       return;
     }
     if (loco === 'burrow') s.pos.set(0, 0.04, burrowZ);
+    else if (loco === 'swim') s.pos.set(0, top + (WATER_LEVEL - top) * 0.5, 0.3);
     else if (loco === 'still') s.pos.set(0.6, stage.underground ? 0.02 : top, stage.underground ? burrowZ : 0.2);
     else s.pos.set(0, top, 0.3);
     s.target.copy(s.pos);
@@ -136,15 +137,17 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
     const hungry = c.food > 0.02 && c.needs.hunger < 0.95 && st.food !== 'none';
 
     const flyer = loco === 'flutter';
-    // 食べ物の場所（花は上にとまる）
-    eatSpot.set(foodPos[0] + (flyer ? 0 : 0.25), flyer ? top + 0.78 : top, foodPos[2] + (flyer ? 0 : 0.35));
+    const swimmer = loco === 'swim';
+    // 食べ物の場所（花は上にとまる。水の中では 底の ごはんの そば）
+    eatSpot.set(foodPos[0] + (flyer ? 0 : 0.25), flyer ? top + 0.78 : swimmer ? top + 0.12 : top, foodPos[2] + (flyer ? 0 : 0.35));
 
     if (freeze || loco === 'still' || speed < 0.01) {
       a.walk = THREE.MathUtils.damp(a.walk, 0, 6, dt);
       a.eat = THREE.MathUtils.damp(a.eat, 0, 4, dt);
       a.flap = THREE.MathUtils.damp(a.flap, 0, 4, dt);
-      // 眠っている飛ぶ虫は地面へおりる
+      // 眠っている飛ぶ虫は地面へおりる。およぐ虫は 水くさの 根もとで じっと する
       if (flyer && !freeze) s.pos.y = THREE.MathUtils.damp(s.pos.y, top, 2, dt);
+      if (swimmer && !freeze) s.pos.y = THREE.MathUtils.damp(s.pos.y, top + 0.12, 1, dt);
     } else {
       // 次の目的地を選ぶ
       s.wait -= dt;
@@ -153,6 +156,14 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
           s.target.copy(eatSpot);
         } else if (loco === 'burrow') {
           s.target.set((Math.random() - 0.5) * 2 * (CASE.w / 2 - 0.7), 0.02 + Math.random() * Math.max(0, top - 1.05), burrowZ);
+        } else if (swimmer) {
+          // ときどき 水面へ 行って おしりの 先から 空気を とりいれる
+          const breathe = Math.random() < 0.35;
+          s.target.set(
+            (Math.random() - 0.5) * 2 * bounds.x,
+            breathe ? WATER_LEVEL - 0.1 : top + 0.2 + Math.random() * (WATER_LEVEL - top - 0.5),
+            (Math.random() - 0.5) * 2 * bounds.z,
+          );
         } else if (flyer) {
           const perch = Math.random() < 0.35;
           s.target.set(
@@ -173,7 +184,7 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
           s.mode = atFood || (loco === 'burrow' && hungry) ? 'eat' : 'idle';
           s.wait = s.mode === 'eat' ? 4 + Math.random() * 3 : 1.5 + (Math.random() * 3.5) / a.energy;
         } else {
-          const step = Math.min(dist, speed * (flyer ? 2.2 : 1) * dt);
+          const step = Math.min(dist, speed * (flyer ? 2.2 : swimmer ? 1.6 : 1) * dt);
           tmp.normalize();
           s.pos.addScaledVector(tmp, step);
           a.gait += (step / Math.max(0.1, entry.length)) * 9;
@@ -184,7 +195,8 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
         }
       }
       const moving = s.mode === 'walk';
-      a.walk = THREE.MathUtils.damp(a.walk, moving && !flyer ? 1 : 0, 6, dt);
+      // およぐ虫は 水面で 息を するあいだも ゆっくり あしを うごかす
+      a.walk = THREE.MathUtils.damp(a.walk, moving && !flyer ? 1 : swimmer ? 0.25 : 0, 6, dt);
       a.flap = THREE.MathUtils.damp(a.flap, flyer && (moving || s.pos.y > top + 0.05) ? 1 : 0, 6, dt);
       a.eat = THREE.MathUtils.damp(a.eat, s.mode === 'eat' ? 1 : 0, 4, dt);
       // 食べているあいだは もぐもぐ（音と かけら）
@@ -216,6 +228,14 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
     hop.copy(s.pos);
     if (loco === 'hop') hop.y += Math.abs(Math.sin(a.gait * 0.35)) * 0.22 * a.walk;
     if (flyer) hop.y += Math.sin(a.t * 3) * 0.04 * a.flap;
+    if (swimmer) hop.y += Math.sin(a.t * 1.7) * 0.02;
+    // およぐ虫の かたむき：のぼる・くだるときは 頭を 上下に、水面では おしりを 上に
+    let pitch = 0;
+    if (swimmer) {
+      const atSurface = s.pos.y > WATER_LEVEL - 0.25;
+      const climb = s.mode === 'walk' ? THREE.MathUtils.clamp((s.target.y - s.pos.y) * 1.2, -0.6, 0.6) : 0;
+      pitch = atSurface && s.mode !== 'walk' ? 0.45 : -climb;
+    }
 
     // 送り出し：ふわっと浮かんで 小さくなり、もりへ かえっていく
     const ui = useUi.getState();
@@ -230,7 +250,9 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
     }
     g.scale.setScalar(1 - s.leave * 0.7);
     g.position.copy(hop);
+    g.rotation.order = 'YXZ';
     g.rotation.y = s.heading;
+    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, pitch, 3, dt);
     if (shadowRef.current) shadowRef.current.position.y = top - hop.y + 0.012;
     const h = actors.get(c.id);
     if (h) h.group = g;
@@ -257,7 +279,7 @@ export function Actor({ creature, top, foodPos, outlines, onTap, freeze, sound =
       }
     >
       <Model anim={anim} sex={creature.sex} molts={creature.moltsDone} outlines={outlines} />
-      {!stage.underground ? (
+      {!stage.underground && loco !== 'swim' ? (
         <mesh ref={shadowRef} material={shadowMat} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} scale={entry.length * 0.9}>
           <planeGeometry args={[1, 1.2]} />
         </mesh>

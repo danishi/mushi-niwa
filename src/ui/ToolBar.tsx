@@ -1,6 +1,6 @@
 import { audio } from '../audio/audio';
 import { SPECIES } from '../data/species';
-import { canUseTool, stageOf } from '../sim/simulate';
+import { canUseTool, isAquatic, stageOf } from '../sim/simulate';
 import type { Creature, FoodId, ToolId } from '../sim/types';
 import { toolAction } from '../state/drag';
 import { useSettings } from '../state/settings';
@@ -19,6 +19,10 @@ export const FOOD_ICON: Record<FoodId, IconName> = {
   smallInsect: 'bug',
   wood: 'log',
   twig: 'leaf',
+  enokiLeaf: 'leaf',
+  sakuraLeaf: 'leaf',
+  waterBug: 'bug',
+  fish: 'fish',
   none: 'food',
 };
 
@@ -33,6 +37,10 @@ export const FOOD_LABEL: Record<FoodId, string> = {
   smallInsect: 'ちいさな むし',
   wood: 'きの えだ',
   twig: 'わかい えだ',
+  enokiLeaf: 'エノキの は',
+  sakuraLeaf: 'サクラの は',
+  waterBug: 'みずの なかの むし',
+  fish: 'にぼし',
   none: '',
 };
 
@@ -42,8 +50,9 @@ export function toolInfo(c: Creature, tool: ToolId): { icon: IconName; label: st
     case 'mist':
       return { icon: 'mist', label: 'きりふき' };
     case 'scoop':
-      return { icon: 'scoop', label: 'おそうじ' };
+      return isAquatic(SPECIES[c.species], c.stage) ? { icon: 'drop', label: 'みずかえ' } : { icon: 'scoop', label: 'おそうじ' };
     case 'house':
+      if (isAquatic(SPECIES[c.species], c.stage)) return { icon: 'weed', label: 'みずくさ' };
       return { icon: 'house', label: SPECIES[c.species].id === 'kabutomushi' ? 'とまりぎ' : 'おうち' };
     case 'food':
       return { icon: FOOD_ICON[st.food], label: FOOD_LABEL[st.food] };

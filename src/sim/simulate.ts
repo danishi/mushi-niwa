@@ -32,6 +32,16 @@ export function stageOf(c: Creature): StageDef {
   return sp.stages[Math.min(c.stage, sp.stages.length - 1)]!;
 }
 
+/** その段階の すみか（段階ごとの ちがいを 上書き） */
+export function habitatOf(sp: SpeciesDef, stageIdx: number): SpeciesDef['habitat'] {
+  return { ...sp.habitat, ...sp.stages[Math.min(stageIdx, sp.stages.length - 1)]?.habitat };
+}
+
+/** 水の中で くらす 段階か */
+export function isAquatic(sp: SpeciesDef, stageIdx: number): boolean {
+  return habitatOf(sp, stageIdx).substrate === 'water';
+}
+
 export function isFinalStage(c: Creature): boolean {
   return c.stage >= SPECIES[c.species].stages.length - 1;
 }
@@ -84,7 +94,7 @@ export function adopt(state: GameState, species: SpeciesId, slot: number, now: n
     progress: 0,
     // 迎えたばかりの虫は 少し おなかが すいている（最初の お世話で 遊びかたが わかるように）
     needs: { ...fullNeeds(), hunger: (SPECIES[species].stages[0]!.decay.hunger ?? 0) > 0 ? 0.4 : 1 },
-    sex: rand() < 0.5 ? 'male' : 'female',
+    sex: SPECIES[species].femaleOnly ? 'female' : rand() < 0.5 ? 'male' : 'female',
     food: 0,
     house: false,
     moltsDone: 0,

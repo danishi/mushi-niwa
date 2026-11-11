@@ -26,7 +26,7 @@ export function CaseView({
   sound?: boolean;
 }) {
   const sp = SPECIES[creature.species];
-  const top = soilTop(sp);
+  const top = soilTop(sp, creature.stage);
   const stage = stageOf(creature);
   const fp = foodPositions.get(creature.id) ?? foodSpot(creature.slot);
   const foodPos: [number, number, number] = [fp[0], top, fp[2]];

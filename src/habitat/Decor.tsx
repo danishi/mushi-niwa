@@ -89,6 +89,34 @@ function DecorImpl({ id, top, index, at }: { id: DecorId; top: number; index: nu
           ))}
         </group>
       );
+    case 'waterweed':
+      // みずくさ（オオカナダモの ような、細い 葉が わの ように つく 茎）
+      return (
+        <group position={p}>
+          {[0, 1, 2, 3].map((i) => (
+            <group key={i} position={[(i - 1.5) * 0.12, 0, (i % 2) * 0.1]} rotation={[0, i * 1.3, 0]}>
+              <Mesh
+                color="#3f7a34"
+                surface={{ roughness: 0.6 }}
+                geometry={cachedTube(`weed${i}`, [[0, 0, 0], [0.05, 0.4, 0.03], [-0.04, 0.85, 0], [0.06, 1.3 + i * 0.08, -0.02], [0.0, 1.55 + i * 0.08, 0.03]], 0.02, 0.012)}
+              />
+              {[0.25, 0.5, 0.75, 1.0, 1.25].map((y, j) => (
+                <Mesh key={y} color="#ffffff" surface={leaf(j % 2 ? '#4f9a3e' : '#5aa846')} geometry={leafGeometry()} position={[Math.sin(y * 5) * 0.04, y, 0]} rotation={[0.9, j * 1.7, 0]} scale={0.16} />
+              ))}
+            </group>
+          ))}
+        </group>
+      );
+    case 'enokiTwig':
+      // エノキの 枝（はばの ひろい 葉。ふちに 細かい ぎざぎざ）
+      return (
+        <group position={p}>
+          <Mesh color="#ffffff" surface={bark()} geometry={cachedTube('enokiTwig', [[0, 0, 0], [0.1, 0.7, 0.05], [0.0, 1.4, 0.2], [0.25, 1.9, 0.3]], 0.06, 0.025)} />
+          {[0.6, 0.9, 1.2, 1.5, 1.8].map((y, i) => (
+            <Mesh key={y} color="#ffffff" surface={leaf(i % 2 ? '#4c7d2c' : '#56893a')} geometry={leafGeometry()} position={[0.05 + (i % 2 ? 0.12 : -0.1), y, 0.1 + i * 0.03]} rotation={[0.8, i * 2.2, 0.2]} scale={0.42} />
+          ))}
+        </group>
+      );
     case 'mulberryTwig':
       return (
         <group position={p} rotation={[0, 0.3, 0]}>

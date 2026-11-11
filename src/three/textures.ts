@@ -834,3 +834,102 @@ export function barkNormal(strength = 3) {
       }
   }, strength);
 }
+
+/** さらさらの すな（アリジゴク）：明るい 灰茶色に 細かい 粒 */
+export function sandTexture() {
+  return make('sand', 256, (g, s) => {
+    const r = rng(41);
+    const n = fbm(41);
+    const img = g.createImageData(s, s);
+    for (let y = 0; y < s; y++)
+      for (let x = 0; x < s; x++) {
+        const v = n(x / s, y / s) * 0.6 + r() * 0.4;
+        const i = (y * s + x) * 4;
+        img.data[i] = 176 + v * 44;
+        img.data[i + 1] = 156 + v * 40;
+        img.data[i + 2] = 124 + v * 34;
+        img.data[i + 3] = 255;
+      }
+    g.putImageData(img, 0, 0);
+    for (let i = 0; i < 500; i++) {
+      const c = r() < 0.5 ? 90 + r() * 50 : 210 + r() * 40;
+      g.fillStyle = `rgba(${c},${c * 0.93},${c * 0.82},0.7)`;
+      g.fillRect(r() * s, r() * s, 1 + r(), 1 + r());
+    }
+  }, { repeat: 3 });
+}
+
+/** 水そうの 底の 小石（ゲンゴロウ） */
+export function gravelTexture() {
+  return make('gravel', 256, (g, s) => {
+    const r = rng(53);
+    g.fillStyle = '#6d6455';
+    g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 700; i++) {
+      const c = 70 + r() * 110;
+      const tint = r();
+      g.fillStyle = `rgb(${c + tint * 20},${c * 0.95 + tint * 10},${c * 0.85})`;
+      g.beginPath();
+      g.ellipse(r() * s, r() * s, 2 + r() * 5, 1.5 + r() * 4, r() * 3, 0, Math.PI * 2);
+      g.fill();
+    }
+    // 小石の かげ
+    g.fillStyle = 'rgba(20,16,12,0.25)';
+    for (let i = 0; i < 200; i++) g.fillRect(r() * s, r() * s, 2, 1);
+  }, { repeat: 3 });
+}
+
+/**
+ * オオムラサキの はね。こげ茶の 地に 白い 斑と 黄色い 斑、後ろばねの 内がわに 赤い 斑。
+ * オスは 前ばねと 後ろばねの 付け根がわが 青むらさきに 光る（構造色。メスには ない）。
+ */
+export function oomurasakiWing(which: 'fore' | 'hind', male: boolean) {
+  return make(`oomurasaki:${which}:${male ? 'm' : 'f'}`, 256, (g, s) => {
+    g.fillStyle = male ? '#2b2018' : '#3d2e22';
+    g.fillRect(0, 0, s, s);
+    if (male) {
+      // 付け根がわの むらさき（u = 付け根から 外へ）
+      const grad = g.createLinearGradient(0, 0, s * (which === 'fore' ? 0.6 : 0.3), 0);
+      grad.addColorStop(0, '#3e2a86');
+      grad.addColorStop(0.6, '#4a32a0');
+      grad.addColorStop(1, 'rgba(43,32,24,0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, s * 0.6, s);
+    }
+    const spot = (x: number, y: number, rx: number, ry: number, c: string) => {
+      g.fillStyle = c;
+      g.beginPath();
+      g.ellipse(x * s, y * s, rx, ry, 0, 0, Math.PI * 2);
+      g.fill();
+    };
+    if (which === 'fore') {
+      // 白い 斑（中ほどに ならぶ）と 外がわの 黄色い 斑
+      [
+        [0.5, 0.25],
+        [0.58, 0.4],
+        [0.62, 0.55],
+        [0.45, 0.6],
+        [0.7, 0.18],
+      ].forEach(([x, y]) => spot(x!, y!, 9, 7, '#efe9d8'));
+      for (let i = 0; i < 6; i++) spot(0.86, 0.12 + i * 0.14, 6, 5, '#e2c35a');
+    } else {
+      [
+        [0.4, 0.3],
+        [0.5, 0.45],
+        [0.42, 0.6],
+      ].forEach(([x, y]) => spot(x!, y!, 10, 8, '#efe9d8'));
+      for (let i = 0; i < 6; i++) spot(0.8, 0.12 + i * 0.14, 7, 6, '#e2c35a');
+      // 後ろばねの 内がわ（しりの ほう）の 赤い 斑
+      spot(0.62, 0.9, 9, 7, '#c8402e');
+    }
+    // 翅脈
+    g.strokeStyle = 'rgba(15,10,8,0.55)';
+    g.lineWidth = 1.2;
+    for (let i = 0; i < 8; i++) {
+      g.beginPath();
+      g.moveTo(0, s * (0.1 + i * 0.1));
+      g.lineTo(s, s * (0.02 + i * 0.13));
+      g.stroke();
+    }
+  });
+}

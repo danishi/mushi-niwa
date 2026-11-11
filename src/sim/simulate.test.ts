@@ -6,6 +6,8 @@ import {
   conditionOf,
   dayPhase,
   farewell,
+  habitatOf,
+  isAquatic,
   newGame,
   nightFromPhase,
   playSecondsFor,
@@ -38,6 +40,29 @@ describe('species data', () => {
         if (st.food === 'none') expect(st.tools).not.toContain('food');
       }
       expect(sp.sources.length).toBeGreaterThan(0);
+    }
+  });
+  it('keeps the diving beetle in water except while it pupates in the soil', () => {
+    const sp = SPECIES.gengorou;
+    const ids = sp.stages.map((s) => s.id);
+    expect(ids).toContain('pupa');
+    sp.stages.forEach((st, i) => {
+      expect(isAquatic(sp, i)).toBe(st.id !== 'pupa');
+      // 水の 中では きりふきを 使わない
+      if (isAquatic(sp, i)) expect(st.tools).not.toContain('mist');
+    });
+    const pupa = ids.indexOf('pupa');
+    expect(habitatOf(sp, pupa).substrate).not.toBe('water');
+    expect(sp.stages[pupa]!.underground).toBe(true);
+  });
+  it('has no pupa for the stick insect (incomplete metamorphosis)', () => {
+    expect(SPECIES.nanafushi.stages.map((s) => s.id)).not.toContain('pupa');
+  });
+  it('lets only the antlion larva dig a pit', () => {
+    for (const id of SPECIES_ORDER) {
+      SPECIES[id].stages.forEach((st) => {
+        if (st.pit) expect(`${id}:${st.id}`).toBe('usubakagerou:larva');
+      });
     }
   });
   it('raises Pheropsophus only as an adult', () => {

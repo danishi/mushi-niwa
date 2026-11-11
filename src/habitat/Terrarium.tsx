@@ -2,11 +2,13 @@ import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { SPECIES } from '../data/species';
+import { habitatOf } from '../sim/simulate';
 import type { Creature, DecorId, SpeciesDef, SubstrateId } from '../sim/types';
 import { rng, Scatter } from '../three/Diorama';
 import { GEO, mat, sharedGeo } from '../three/materials';
-import { grainBump, leafLitterTexture, lidTexture, matTexture, paperTexture, soilTexture, woodCrossTexture } from '../three/textures';
-import { CASE } from './case';
+import { grainBump, gravelTexture, leafLitterTexture, lidTexture, matTexture, paperTexture, sandTexture, soilTexture, woodCrossTexture } from '../three/textures';
+import { CASE, PIT, WATER_LEVEL } from './case';
 import { Decor } from './Decor';
 
 export { CASE };
@@ -27,6 +29,10 @@ function substrateMap(id: SubstrateId) {
       return paperTexture();
     case 'wood':
       return woodCrossTexture();
+    case 'sand':
+      return sandTexture();
+    case 'water':
+      return gravelTexture();
   }
 }
 
@@ -37,10 +43,92 @@ const CRUMBS: Record<SubstrateId, string[]> = {
   leafbed: ['#8a6a3c', '#a07a48', '#6f8a3a'],
   paper: [],
   wood: ['#c9a06a', '#b08850'],
+  sand: ['#b9a688', '#d8c8a8', '#8f8068'],
+  water: ['#8a8070', '#a59a88', '#5f584c'],
 };
 
-export function soilTop(sp: SpeciesDef): number {
-  return Math.max(0.06, CASE.h * sp.habitat.soilDepth);
+/** 土（床材・水そうの 底）の 上面の 高さ。段階で すみかが かわる 種が あるので 段階も 見る */
+export function soilTop(sp: SpeciesDef, stageIdx = 0): number {
+  return Math.max(0.06, CASE.h * habitatOf(sp, stageIdx).soilDepth);
+}
+
+/**
+ * すりばちの ある すなの かたまり。上の 面だけ へこませて、横と 底は 平らな 板で ふさぐ。
+ */
+function sandPitGeometry(top: number): THREE.BufferGeometry {
+  return sharedGeo(`sandPit:${top.toFixed(3)}`, () => {
+    const { w, d } = CASE;
+    const W = w - 0.02;
+    const D = d - 0.02;
+    const surface = new THREE.PlaneGeometry(W, D, 64, 40);
+    surface.rotateX(-Math.PI / 2);
+    const pos = surface.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      const r = Math.hypot(x - PIT.x, z - PIT.z) / PIT.r;
+      // すりばちの 斜面（まん中が いちばん ふかい）と、まわりの すこし もりあがった ふち
+      const dip = r < 1 ? -PIT.depth * Math.pow(1 - r, 1.15) : 0;
+      const rim = 0.035 * Math.exp(-(((r - 1.02) / 0.14) ** 2));
+      pos.setY(i, top + dip + rim);
+    }
+    surface.computeVertexNormals();
+    const side = (sx: number, sz: number, len: number, ry: number) => {
+      const g = new THREE.PlaneGeometry(len, top);
+      g.rotateY(ry);
+      g.translate(sx, top / 2, sz);
+      g.deleteAttribute('normal');
+      g.computeVertexNormals();
+      return g;
+    };
+    const parts = [
+      surface,
+      side(0, D / 2, W, 0),
+      side(0, -D / 2, W, Math.PI),
+      side(W / 2, 0, D, Math.PI / 2),
+      side(-W / 2, 0, D, -Math.PI / 2),
+    ];
+    return mergeGeometries(parts.map((g) => g.toNonIndexed()))!;
+  });
+}
+
+/** 水そうの 水。よごれると みどりがかって にごる（みずかえで すきとおる） */
+function Water({ clean, top }: { clean: number; top: number }) {
+  const { w, d } = CASE;
+  const body = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: '#b8dfe0',
+        roughness: 0.05,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+  const surface = useMemo(
+    () => new THREE.MeshPhysicalMaterial({ color: '#d9f1f2', roughness: 0.02, clearcoat: 1, transparent: true, opacity: 0.35, depthWrite: false }),
+    [],
+  );
+  const clear = useMemo(() => new THREE.Color('#b8dfe0'), []);
+  const murky = useMemo(() => new THREE.Color('#8a9a4e'), []);
+  const ripple = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    const dirt = THREE.MathUtils.clamp(1 - clean, 0, 1);
+    body.color.copy(clear).lerp(murky, dirt);
+    body.opacity = 0.2 + dirt * 0.3;
+    if (ripple.current) ripple.current.position.y = WATER_LEVEL + Math.sin(clock.elapsedTime * 1.3) * 0.006;
+  });
+  const h = WATER_LEVEL - top;
+  return (
+    <group>
+      <mesh material={body} geometry={GEO.box()} position={[0, top + h / 2, 0]} scale={[w - 0.04, h, d - 0.04]} renderOrder={3} />
+      <mesh ref={ripple} material={surface} rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_LEVEL, 0]} renderOrder={4}>
+        <planeGeometry args={[w - 0.04, d - 0.04]} />
+      </mesh>
+    </group>
+  );
 }
 
 /** 壁に付く水滴の数で しめりけを見せる */
@@ -102,8 +190,10 @@ interface Props {
 
 /** 本物の プラケースに 近い飼育ケース（透明の壁・通気スリットのある ふた・土・飾り・水滴・ふん） */
 export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
-  const top = soilTop(sp);
-  const sub = sp.habitat.substrate;
+  const top = soilTop(sp, creature.stage);
+  const hab = habitatOf(sp, creature.stage);
+  const sub = hab.substrate;
+  const pit = !!sp.stages[creature.stage]?.pit;
   const map = substrateMap(sub);
   // 土の色は しめりけで変わる（ケースごとに専用のマテリアル）
   const soilMat = useMemo(() => new THREE.MeshStandardMaterial({ map, roughness: 0.95, bumpMap: grainBump(3, 96), bumpScale: 2 }), [map]);
@@ -135,18 +225,21 @@ export function Terrarium({ sp, creature, detail, droplets = true }: Props) {
           <mesh material={soilMat} geometry={GEO.box()} position={[0, 0.01, d / 2 - CAVITY / 2]} scale={[w - 0.02, 0.02, CAVITY - 0.02]} receiveShadow />
           <mesh material={cavityMat} geometry={GEO.box()} position={[0, top / 2, d / 2 - CAVITY + 0.005]} scale={[w - 0.04, top - 0.14, 0.01]} receiveShadow />
         </>
+      ) : pit ? (
+        <mesh material={soilMat} geometry={sandPitGeometry(top)} receiveShadow />
       ) : (
         <mesh material={soilMat} geometry={GEO.box()} position={[0, top / 2, 0]} scale={[w - 0.02, top, d - 0.02]} receiveShadow />
       )}
-      {detail && CRUMBS[sub].length ? (
+      {sub === 'water' ? <Water clean={creature.needs.clean} top={top} /> : null}
+      {detail && CRUMBS[sub].length && !pit ? (
         <Scatter count={320} radius={0} rect={[w - 0.2, d - 0.2]} seed={creature.slot * 7 + 1} geometry={GEO.chunk()} colors={CRUMBS[sub]} scale={[0.008, 0.03]} stretchY={0.7} y={top + 0.003} />
       ) : null}
       {detail && droplets ? <Droplets moisture={usesMoisture ? moisture : 0} /> : null}
       <Droppings clean={creature.needs.clean} top={top} seed={creature.slot + 3} />
-      {sp.habitat.decor.map((id, i) => (
+      {hab.decor.map((id, i) => (
         <Decor key={id} id={id} top={top} index={i} />
       ))}
-      {creature.house ? <Decor id={houseFor(sp.id)} top={top} index={9} /> : null}
+      {creature.house ? <Decor id={houseFor(sp.id, creature.stage)} top={top} index={9} /> : null}
       {/* 透明な プラスチックの 壁と、少し くもった 角 */}
       <mesh material={wall} geometry={GEO.box()} position={[0, h / 2, 0]} scale={[w, h, d]} renderOrder={5} />
       <mesh material={edge} geometry={edgeGeometry()} renderOrder={6} />
@@ -176,7 +269,9 @@ function edgeGeometry(): THREE.BufferGeometry {
   });
 }
 
-export function houseFor(id: SpeciesDef['id']) {
+export function houseFor(id: SpeciesDef['id'], stageIdx = 0) {
+  // 水の 中では みずくさが かくれが
+  if (habitatOf(SPECIES[id], stageIdx).substrate === 'water') return 'waterweed';
   const map: Record<SpeciesDef['id'], DecorId> = {
     kabutomushi: 'log',
     namiageha: 'branch',
@@ -189,6 +284,11 @@ export function houseFor(id: SpeciesDef['id']) {
     madarasasori: 'bark',
     gomadara: 'branch',
     ookuwagata: 'log',
+    nokogiri: 'log',
+    oomurasaki: 'enokiTwig',
+    nanafushi: 'branch',
+    usubakagerou: 'branch',
+    gengorou: 'waterweed',
   };
   return map[id];
 }

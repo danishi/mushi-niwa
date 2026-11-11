@@ -180,6 +180,79 @@ const DRAW: Record<SpeciesId, ReactElement> = {
       <Eyes y={23} dx={5} r={3} />
     </g>
   ),
+  nokogiri: (
+    <g>
+      {[50, 64, 78].map((y) => (
+        <path key={y} d={`M32 ${y} L16 ${y + 8} M68 ${y} L84 ${y + 8}`} {...S} />
+      ))}
+      <rect x="31" y="52" width="38" height="40" rx="16" fill="#6b2e18" {...S} />
+      <path d="M50 54 V90" stroke="#3a180c" strokeWidth={2} />
+      <rect x="32" y="42" width="36" height="13" rx="6" fill="#6b2e18" {...S} />
+      <rect x="30" y="30" width="40" height="14" rx="6" fill="#6b2e18" {...S} />
+      <path d="M38 32 C24 24 28 8 44 4 M62 32 C76 24 72 8 56 4" fill="none" stroke="#6b2e18" strokeWidth={7} strokeLinecap="round" />
+      <path d="M38 32 C24 24 28 8 44 4 M62 32 C76 24 72 8 56 4" fill="none" {...S} strokeWidth={2} />
+      <path d="M31 20 l5 1 M30 14 l5 2 M69 20 l-5 1 M70 14 l-5 2" {...S} strokeWidth={3} />
+      <Eyes y={36} dx={14} r={3.5} />
+    </g>
+  ),
+  oomurasaki: (
+    <g>
+      <path d="M50 42 C30 8 4 18 10 44 C14 58 34 58 50 52 Z" fill="#5b46b0" {...S} />
+      <path d="M50 42 C70 8 96 18 90 44 C86 58 66 58 50 52 Z" fill="#3d2e22" {...S} />
+      <path d="M50 52 C34 58 24 80 38 88 C46 92 50 72 50 62 Z" fill="#5b46b0" {...S} />
+      <path d="M50 52 C66 58 76 80 62 88 C54 92 50 72 50 62 Z" fill="#3d2e22" {...S} />
+      {[
+        [28, 34],
+        [36, 42],
+        [72, 34],
+        [64, 42],
+        [40, 72],
+        [60, 72],
+      ].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="3.5" fill="#f2ecd8" />
+      ))}
+      <circle cx="18" cy="40" r="2.5" fill="#e2c35a" />
+      <circle cx="82" cy="40" r="2.5" fill="#e2c35a" />
+      <ellipse cx="50" cy="58" rx="5" ry="22" fill="#2b2118" />
+      <path d="M48 38 Q42 24 36 20 M52 38 Q58 24 64 20" fill="none" {...S} strokeWidth={2} />
+      <Eyes y={38} dx={4} r={3} />
+    </g>
+  ),
+  nanafushi: (
+    <g>
+      <path d="M50 30 L22 6 M50 30 L78 6" {...S} strokeWidth={3} />
+      <path d="M50 46 L24 54 L14 70 M50 46 L76 54 L86 70 M50 62 L28 74 L22 92 M50 62 L72 74 L78 92" fill="none" {...S} strokeWidth={3} />
+      <rect x="45" y="22" width="10" height="74" rx="5" fill="#7c9a4c" {...S} />
+      <path d="M45 46 H55 M45 62 H55 M45 78 H55" stroke="#4a3b2a" strokeWidth={2} />
+      <path d="M48 22 L46 14 M52 22 L54 14" {...S} strokeWidth={2} />
+      <Eyes y={27} dx={6} r={2.5} />
+    </g>
+  ),
+  usubakagerou: (
+    <g>
+      <path d="M50 34 C30 26 8 28 4 34 C8 40 30 40 50 38 Z" fill="#e8f0f2" {...S} strokeWidth={2.5} />
+      <path d="M50 34 C70 26 92 28 96 34 C92 40 70 40 50 38 Z" fill="#e8f0f2" {...S} strokeWidth={2.5} />
+      <path d="M50 42 C30 40 10 46 8 52 C14 56 32 52 50 46 Z" fill="#e8f0f2" {...S} strokeWidth={2.5} />
+      <path d="M50 42 C70 40 90 46 92 52 C86 56 68 52 50 46 Z" fill="#e8f0f2" {...S} strokeWidth={2.5} />
+      <rect x="46" y="26" width="8" height="70" rx="4" fill="#3a342c" {...S} strokeWidth={2.5} />
+      <path d="M47 22 Q40 12 36 12 M53 22 Q60 12 64 12" fill="none" {...S} strokeWidth={2} />
+      <circle cx="36" cy="12" r="3" fill="#3a342c" />
+      <circle cx="64" cy="12" r="3" fill="#3a342c" />
+      <Eyes y={24} dx={6} r={4} />
+    </g>
+  ),
+  gengorou: (
+    <g>
+      <path d="M30 70 L8 58 L4 78 M70 70 L92 58 L96 78" fill="none" {...S} strokeWidth={5} />
+      <path d="M34 46 L18 40 M66 46 L82 40" {...S} strokeWidth={3} />
+      <ellipse cx="50" cy="60" rx="26" ry="32" fill="#c9b23c" {...S} />
+      <ellipse cx="50" cy="61" rx="21" ry="28" fill="#1f2a1a" />
+      <path d="M50 40 V90" stroke="#4a5a3a" strokeWidth={2} />
+      <ellipse cx="50" cy="30" rx="15" ry="9" fill="#1f2a1a" {...S} />
+      <path d="M44 24 Q36 12 30 10 M56 24 Q64 12 70 10" fill="none" {...S} strokeWidth={2} />
+      <Eyes y={29} dx={9} r={3.5} />
+    </g>
+  ),
 };
 
 /** 種ごとの手描き風アイコン（棚・ずかん・種えらびで使う） */

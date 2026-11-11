@@ -88,7 +88,7 @@ export function CareScene({ freeze = false }: { freeze?: boolean }) {
   useGrowthCinematic(id);
   if (!creature) return <Meadow radius={8} />;
   const sp = SPECIES[creature.species];
-  const top = soilTop(sp);
+  const top = soilTop(sp, creature.stage);
   return (
     <group>
       <group position={[0, -0.02, 0]}>

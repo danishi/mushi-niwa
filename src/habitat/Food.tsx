@@ -35,6 +35,48 @@ export function FoodModel({ food }: { food: FoodId }) {
           <Mesh color="#ffffff" surface={{ map: matTexture(), roughness: 1, bumpMap: grainBump(9, 64), bumpScale: 3 }} geometry={GEO.sphere()} position={[0, 0.02, 0]} scale={[0.5, 0.14, 0.4]} />
         </group>
       );
+    case 'enokiLeaf':
+    case 'sakuraLeaf':
+      // エノキ／サクラの 葉の 枝（ふちに ぎざぎざの ある 葉）
+      return (
+        <group>
+          <Mesh color="#ffffff" surface={{ map: barkTexture(), roughness: 0.9 }} geometry={GEO.cylinder()} position={[0, 0.05, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.022, 0.8, 0.022]} />
+          {[-0.3, -0.1, 0.1, 0.3].map((x, i) => (
+            <Mesh
+              key={x}
+              color="#ffffff"
+              surface={leafSurf(food === 'enokiLeaf' ? '#4f7d2e' : '#5a8a34')}
+              geometry={leafGeometry()}
+              position={[x, 0.06, 0]}
+              rotation={[0.15, i % 2 ? 0.6 : -0.6 + Math.PI, 0]}
+              scale={0.5}
+            />
+          ))}
+        </group>
+      );
+    case 'waterBug':
+      // 小皿に のせた 水の 中の 小さな 生きもの（赤い アカムシ）
+      return (
+        <group>
+          <Mesh color="#e8e2d0" surface={{ roughness: 0.3, clearcoat: 0.6 }} geometry={GEO.cylinder()} position={[0, 0.02, 0]} scale={[0.22, 0.04, 0.22]} />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Mesh key={i} color="#b3262a" surface={{ roughness: 0.3, clearcoat: 0.8 }} geometry={GEO.capsule()} position={[-0.1 + i * 0.05, 0.05, ((i * 7) % 3) * 0.04 - 0.04]} rotation={[Math.PI / 2, 0, i * 1.1]} scale={[0.012, 0.09, 0.012]} />
+          ))}
+        </group>
+      );
+    case 'fish':
+      // 小皿に のせた にぼし（ぎんいろの 小魚）
+      return (
+        <group>
+          <Mesh color="#e8e2d0" surface={{ roughness: 0.3, clearcoat: 0.6 }} geometry={GEO.cylinder()} position={[0, 0.02, 0]} scale={[0.24, 0.04, 0.24]} />
+          {[0, 1, 2].map((i) => (
+            <group key={i} position={[-0.08 + i * 0.08, 0.06, (i - 1) * 0.05]} rotation={[0, i * 0.9, 0]}>
+              <Mesh color="#b9bcbd" surface={{ roughness: 0.25, metalness: 0.5, clearcoat: 0.8 }} geometry={GEO.sphere()} scale={[0.03, 0.025, 0.11]} />
+              <Mesh color="#9a9d9e" surface={{ roughness: 0.4 }} geometry={GEO.cone()} position={[0, 0, -0.12]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.025, 0.04, 0.01]} />
+            </group>
+          ))}
+        </group>
+      );
     case 'citrusLeaf':
     case 'mulberry':
       // ミカン（サンショウ）／クワの葉の 枝

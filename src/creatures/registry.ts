@@ -2,7 +2,11 @@ import { memo, type ComponentType } from 'react';
 import type { CreatureAnim } from './anim';
 import { AgehaAdult, AgehaEgg, AgehaLarva, AgehaPupa } from './ageha';
 import { KabutoAdult, KabutoLarva, KabutoPupa } from './kabuto';
-import { KuwaAdult, KuwaPupa } from './kuwagata';
+import { GengoAdult, GengoLarva, GengoPupa } from './gengorou';
+import { KuwaAdult, KuwaPupa, NokoAdult } from './kuwagata';
+import { NanafushiAdult, NanafushiEgg, NanafushiNymph } from './nanafushi';
+import { OomurasakiAdult, OomurasakiEgg, OomurasakiLarva, OomurasakiPupa } from './oomurasaki';
+import { AntlionCocoon, AntlionLarva, UsubaAdult } from './usubakagerou';
 import { KaikoAdult, KaikoCocoon, KaikoEgg, KaikoLarva, MiideraAdult, TentouAdult, TentouEgg, TentouLarva, TentouPupa } from './others';
 import { CentipedeAdult, CentipedeYoung, GomadaraAdult, GomadaraLarva, GomadaraPupa, MantisAdult, MantisNymph, MantisOotheca, ScorpionAdult, ScorpionYoung } from './predators';
 import { SuzuAdult, SuzuNymph } from './suzumushi';
@@ -16,9 +20,9 @@ export interface ModelProps {
 }
 
 /**
- * crawl: 地面を歩く / burrow: 土の中（前のガラス沿い）/ flutter: 飛ぶ / still: 動かない / hop: 跳ねる
+ * crawl: 地面を歩く / burrow: 土の中（前のガラス沿い）/ flutter: 飛ぶ / still: 動かない / hop: 跳ねる / swim: 水の中を およぐ
  */
-export type Locomotion = 'crawl' | 'burrow' | 'flutter' | 'still' | 'hop';
+export type Locomotion = 'crawl' | 'burrow' | 'flutter' | 'still' | 'hop' | 'swim';
 
 export interface ModelEntry {
   C: ComponentType<ModelProps>;
@@ -62,6 +66,22 @@ export const MODELS: Record<string, ModelEntry> = {
   'kuwa-pupa': { C: KuwaPupa, locomotion: 'still', length: 1.15, speed: 0 },
   'kuwa-adult': { C: KuwaAdult, locomotion: 'crawl', length: 1.25, speed: 0.3 },
   'gomadara-adult': { C: GomadaraAdult, locomotion: 'crawl', length: 1.1, speed: 0.3 },
+  'noko-larva': { C: KabutoLarva, locomotion: 'burrow', length: 1.1, speed: 0.1 },
+  'noko-pupa': { C: KuwaPupa, locomotion: 'still', length: 1.05, speed: 0 },
+  'noko-adult': { C: NokoAdult, locomotion: 'crawl', length: 1.25, speed: 0.32 },
+  'oomurasaki-egg': { C: OomurasakiEgg, locomotion: 'still', length: 0.6, speed: 0 },
+  'oomurasaki-larva': { C: OomurasakiLarva, locomotion: 'crawl', length: 0.9, speed: 0.08 },
+  'oomurasaki-pupa': { C: OomurasakiPupa, locomotion: 'still', length: 0.6, speed: 0 },
+  'oomurasaki-adult': { C: OomurasakiAdult, locomotion: 'flutter', length: 1.4, speed: 0.5 },
+  'nanafushi-egg': { C: NanafushiEgg, locomotion: 'still', length: 0.5, speed: 0 },
+  'nanafushi-nymph': { C: NanafushiNymph, locomotion: 'crawl', length: 0.9, speed: 0.07 },
+  'nanafushi-adult': { C: NanafushiAdult, locomotion: 'crawl', length: 1.7, speed: 0.08 },
+  'antlion-larva': { C: AntlionLarva, locomotion: 'still', length: 0.6, speed: 0 },
+  'antlion-cocoon': { C: AntlionCocoon, locomotion: 'still', length: 0.5, speed: 0 },
+  'usuba-adult': { C: UsubaAdult, locomotion: 'flutter', length: 1.0, speed: 0.3 },
+  'gengo-larva': { C: GengoLarva, locomotion: 'swim', length: 1.1, speed: 0.25 },
+  'gengo-pupa': { C: GengoPupa, locomotion: 'still', length: 0.8, speed: 0 },
+  'gengo-adult': { C: GengoAdult, locomotion: 'swim', length: 1.0, speed: 0.35 },
 };
 
 // モデルは 部品が 多い。親（Actor）は シミュレーションの 更新で 毎秒 描きなおされるので、

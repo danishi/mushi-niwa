@@ -13,7 +13,12 @@ export type SpeciesId =
   | 'tobizumukade'
   | 'madarasasori'
   | 'gomadara'
-  | 'ookuwagata';
+  | 'ookuwagata'
+  | 'nokogiri'
+  | 'oomurasaki'
+  | 'nanafushi'
+  | 'usubakagerou'
+  | 'gengorou';
 
 export type NeedKey = 'hunger' | 'moisture' | 'clean' | 'mood';
 /** 0..1。1 が「満たされている」 */
@@ -42,11 +47,15 @@ export type FoodId =
   | 'smallInsect' // 小さな虫・ミミズなど
   | 'wood' // 木の中（カミキリムシの幼虫は 生きた木、クワガタの幼虫は くち木）
   | 'twig' // 若い枝（カミキリムシの成虫は 樹皮を かじる）
+  | 'enokiLeaf' // エノキの葉（オオムラサキの幼虫）
+  | 'sakuraLeaf' // サクラなどの葉（ナナフシモドキ）
+  | 'waterBug' // 水の中の 小さな 生きもの（ゲンゴロウの幼虫）
+  | 'fish' // にぼし・小魚（ゲンゴロウの成虫）
   | 'none';
 
-export type SubstrateId = 'mat' | 'soil' | 'leafbed' | 'paper' | 'moistSoil' | 'wood';
+export type SubstrateId = 'mat' | 'soil' | 'leafbed' | 'paper' | 'moistSoil' | 'wood' | 'sand' | 'water';
 
-export type DecorId = 'log' | 'leaf' | 'branch' | 'stone' | 'bark' | 'flower' | 'potPlant' | 'mulberryTwig';
+export type DecorId = 'log' | 'leaf' | 'branch' | 'stone' | 'bark' | 'flower' | 'potPlant' | 'mulberryTwig' | 'waterweed' | 'enokiTwig';
 
 export interface ObservePart {
   /** モデル側の部位 ID（userData.part と一致させる） */
@@ -81,6 +90,10 @@ export interface StageDef {
   parts: ObservePart[];
   /** この段階で土の中にいる（カブトムシ幼虫・さなぎ） */
   underground?: boolean;
+  /** すなに すりばちの わなを つくる（アリジゴク） */
+  pit?: boolean;
+  /** この段階だけ すみかが ちがう（ゲンゴロウの さなぎは 水から あがって 土の中） */
+  habitat?: Partial<SpeciesDef['habitat']>;
 }
 
 export interface SpeciesDef {
@@ -107,6 +120,8 @@ export interface SpeciesDef {
   };
   /** オスだけ鳴く・角があるなど */
   dimorphism?: string;
+  /** メスしか いない（ナナフシモドキは メスだけで ふえる） */
+  femaleOnly?: boolean;
   /** ずかんの豆知識（ルビ記法） */
   facts: string[];
   /** 何度も さわると する いかく（安全学習。罰は ない） */

@@ -56,6 +56,10 @@ test('mushi quiz can be finished and gives a perfect score sticker', async ({ pa
 });
 
 test('a garden visitor can be found and appears in the zukan', async ({ page }) => {
+  // にわは 最初から 開いていて すぐ おきゃくさんが 来るので、読みこむ 前に 種類を 決めておく
+  await page.addInitScript(() => {
+    (window as unknown as { __forceVisitor?: string }).__forceVisitor = 'dangomushi';
+  });
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
   await page.evaluate(() => {

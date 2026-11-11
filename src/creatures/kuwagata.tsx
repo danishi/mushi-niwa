@@ -8,10 +8,9 @@ import { cachedTube, loft, mergedGeo, shapedTube, pupaGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
-/* 出典: docs/species-research-3.md §A（オオクワガタ）。形は 図鑑の 記載と 一般的な 形態に もとづく */
+/* 出典: docs/species-research-3.md §A（オオクワガタ）、docs/species-research-4.md §A（ノコギリクワガタ）。形は 図鑑の 記載と 一般的な 形態に もとづく */
 
-const BLACK = '#17120f';
-const LEG = '#120d0b';
+type StagKind = 'oo' | 'noko';
 
 const FRONT: LegSpec = { femur: 0.24, tibia: 0.26, tarsus: 0.3, thick: 0.026, tarsi: 5, teeth: 3 };
 const MID: LegSpec = { femur: 0.24, tibia: 0.24, tarsus: 0.28, thick: 0.026, tarsi: 5, teeth: 1 };
@@ -48,7 +47,32 @@ const mandibleGeo = (male: boolean) =>
     ];
   });
 
-function Mandible({ male, side, anim, x }: { male: boolean; side: 1 | -1; anim: ModelProps['anim']; x: number }) {
+/**
+ * ノコギリクワガタの 大あご：おおきい オスは 長く 弓なりに 曲がり（うしの つのの よう）、
+ * 内がわに 小さな 歯が ならぶ。メスは 短く 小さい。
+ */
+const nokoMandibleGeo = (male: boolean) =>
+  mergedGeo(`nokoMand:${male}`, () => {
+    if (!male)
+      return [shapedTube([[0, 0, 0], [0.034, 0.004, 0.045], [0.032, 0.008, 0.09], [0.008, 0.008, 0.12]], (t) => [0.018 - 0.01 * t, 0.026 - 0.018 * t], 12, 8, [0, 1, 0])];
+    const teeth = [0.14, 0.2, 0.26, 0.31, 0.36].map((z, i) => {
+      const x = 0.075 + Math.sin((z / 0.45) * Math.PI) * 0.02 - z * 0.08;
+      const len = i === 1 ? 0.035 : 0.02;
+      return shapedTube([[x, 0.03 + z * 0.08, z], [x - len, 0.035 + z * 0.08, z + 0.01]], (t) => [0.007 * (1 - t * 0.7), 0.009 * (1 - t * 0.7)], 3, 6, [0, 1, 0]);
+    });
+    return [
+      shapedTube(
+        [[0, 0, 0], [0.065, 0.025, 0.11], [0.095, 0.05, 0.24], [0.08, 0.07, 0.36], [0.025, 0.075, 0.44]],
+        (t) => [THREE.MathUtils.lerp(0.026, 0.009, t ** 1.3), THREE.MathUtils.lerp(0.038, 0.011, t ** 1.2)],
+        28,
+        12,
+        [0, 1, 0],
+      ),
+      ...teeth,
+    ];
+  });
+
+function Mandible({ male, side, anim, x, kind, color }: { male: boolean; side: 1 | -1; anim: ModelProps['anim']; x: number; kind: StagKind; color: string }) {
   const ref = useRef<THREE.Group>(null);
   const shell = useMemo(() => SURF.chitin(1), []);
   useFrame(() => {
@@ -61,7 +85,7 @@ function Mandible({ male, side, anim, x }: { male: boolean; side: 1 | -1; anim: 
   return (
     <group position={[side * x, -0.01, 0.13]} scale={[side, 1, 1]}>
       <group ref={ref}>
-        <Part geometry={mandibleGeo(male)} color={BLACK} surface={shell} castShadow part="mandibles" />
+        <Part geometry={kind === 'noko' ? nokoMandibleGeo(male) : mandibleGeo(male)} color={color} surface={shell} castShadow part="mandibles" />
       </group>
     </group>
   );
@@ -165,14 +189,34 @@ const headGeo = (male: boolean) => {
  * 成虫：からだは 平たく 黒い。前ばねは つやが あり、メスは たての すじ（点刻の 列）が はっきり。
  * 頭は 大きく 平ら、オスは 頭が とくに はばひろい。触角は「く」の 字に まがり、先が くしの よう。
  */
-export function KuwaAdult({ anim, sex }: ModelProps) {
+export function KuwaAdult(p: ModelProps) {
+  return <Stag {...p} kind="oo" />;
+}
+
+/**
+ * ノコギリクワガタ：赤みの ある 茶色（メスは 黒っぽい）。オスは 頭が 大きく、
+ * 大あごが 長く 曲がって 内がわに 小さな 歯が ならぶ。
+ */
+export function NokoAdult(p: ModelProps) {
+  return <Stag {...p} kind="noko" />;
+}
+
+function Stag({ anim, sex, kind }: ModelProps & { kind: StagKind }) {
   const body = useBodyMotion(anim);
   const headRef = useRef<THREE.Group>(null);
   const brush = useRef<THREE.Mesh>(null);
   const male = sex === 'male';
+  const noko = kind === 'noko';
+  const BLACK = noko ? (male ? '#5b2614' : '#2a1610') : '#17120f';
+  const LEG = noko ? (male ? '#4a1e10' : '#22120c') : '#120d0b';
   const shell = useMemo(
-    () => (male ? { ...SURF.chitin(1), normalMap: striaeNormal(7, 0.3), normalScale: 0.4 } : { ...SURF.chitin(0.7), normalMap: striaeNormal(7, 1), normalScale: 1 }),
-    [male],
+    () =>
+      noko
+        ? { ...SURF.chitin(male ? 0.9 : 1), normalMap: striaeNormal(7, 0.3), normalScale: 0.3 }
+        : male
+          ? { ...SURF.chitin(1), normalMap: striaeNormal(7, 0.3), normalScale: 0.4 }
+          : { ...SURF.chitin(0.7), normalMap: striaeNormal(7, 1), normalScale: 1 },
+    [male, noko],
   );
   const dark = useMemo(() => SURF.chitin(0.85), []);
   const under = useMemo(() => SURF.matteChitin(), []);
@@ -186,7 +230,7 @@ export function KuwaAdult({ anim, sex }: ModelProps) {
   return (
     <group ref={body}>
       <Part geometry={elytraGeo()} color={BLACK} surface={shell} castShadow part="elytra" />
-      <M geo={undersideGeo()} color="#0e0a08" surface={under} />
+      <M geo={undersideGeo()} color={noko ? '#1a0c07' : '#0e0a08'} surface={under} />
       <Part geometry={pronotumGeo()} color={BLACK} surface={dark} castShadow part="elytra" />
       {/* 頭 */}
       <group ref={headRef} position={[0, 0.19, 0.285]}>
@@ -200,8 +244,8 @@ export function KuwaAdult({ anim, sex }: ModelProps) {
         {/* 触角：「く」の 字（長い つけね ＋ 先の くし） */}
         <Antenna position={[hw * 0.78, -0.02, 0.12]} side={1} length={0.13} thick={0.008} kind="lamellate" color="#2a1a10" anim={anim} rotation={[0.1, 1.0, 0]} part="antenna" />
         <Antenna position={[-hw * 0.78, -0.02, 0.12]} side={-1} length={0.13} thick={0.008} kind="lamellate" color="#2a1a10" anim={anim} rotation={[0.1, 1.0, 0]} part="antenna" />
-        <Mandible male={male} side={1} anim={anim} x={hw * 0.42} />
-        <Mandible male={male} side={-1} anim={anim} x={hw * 0.42} />
+        <Mandible male={male} side={1} anim={anim} x={hw * 0.42} kind={kind} color={BLACK} />
+        <Mandible male={male} side={-1} anim={anim} x={hw * 0.42} kind={kind} color={BLACK} />
       </group>
       {/* あし（前あしの すねに ギザギザ） */}
       <Leg position={[0.13, 0.11, 0.2]} side={1} pair={0} spec={FRONT} color={LEG} anim={anim} part="legs" />
