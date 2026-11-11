@@ -10,6 +10,7 @@ import { Lights } from '../three/Lights';
 import { Particles } from '../three/Particles';
 import { QualityManager, useTier } from '../three/QualityManager';
 import { effectiveDpr, QUALITY, useQuality } from '../three/quality';
+import { SceneWarmup } from '../three/SceneWarmup';
 import { registerSnapshotCanvas } from '../three/snapshot';
 import { sceneFor } from './scenes';
 
@@ -55,13 +56,15 @@ export function World() {
   const visible = usePageVisible();
   // 大人向けの パネルで 画面が おおわれている間は 描画を 止める（入力の 反応と 電池のため）
   const covered = useUi((s) => s.overlays > 0 || s.settingsOpen);
+  // 新しい シーンの シェーダを 用意している 間も 止める（`SceneWarmup`）
+  const compiling = useUi((s) => s.compiling);
   const [initialTier] = useState(() => useQuality.getState().autoTier);
   const dpr = effectiveDpr(tier, typeof window === 'undefined' ? 1 : window.devicePixelRatio);
   return (
     <Canvas
       dpr={dpr}
       shadows={{ type: THREE.PCFSoftShadowMap }}
-      frameloop={visible && !covered ? 'always' : 'never'}
+      frameloop={visible && !covered && !compiling ? 'always' : 'never'}
       gl={{ antialias: QUALITY[initialTier].antialias, powerPreference: 'high-performance', alpha: false, toneMapping: TONE_MAPPING }}
       camera={{ fov: 40, near: 0.05, far: 80, position: [0, 4, 12] }}
       data-testid="world-canvas"
@@ -79,6 +82,8 @@ export function World() {
       <ScreenContent />
       <Particles />
       <Effects />
+      {/* 最後に 置く（ほかの 部品の 準備が 済んでから シェーダを 用意する） */}
+      <SceneWarmup />
     </Canvas>
   );
 }

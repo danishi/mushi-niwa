@@ -1,4 +1,4 @@
-import { useMemo, type ComponentType } from 'react';
+import { useEffect, useMemo, type ComponentType } from 'react';
 import { SettingsPanel } from '../screens/settings/SettingsPanel';
 import { BattleHud } from '../screens/battle/BattleHud';
 import { CareHud } from '../screens/care/CareHud';
@@ -11,6 +11,7 @@ import { FLAGS } from '../state/flags';
 import { useSettings } from '../state/settings';
 import { useUi, type Screen } from '../state/ui';
 import { FpsMeter } from '../ui/FpsMeter';
+import { LoadingVeil } from '../ui/LoadingVeil';
 import { StickerToast } from '../ui/Sticker';
 import { Boot } from './Boot';
 import { SimDriver } from './SimDriver';
@@ -32,6 +33,13 @@ export function App() {
   const settingsOpen = useUi((s) => s.settingsOpen);
   const showFps = useSettings((s) => s.showFps);
   const webgl = useMemo(hasWebGL, []);
+  // 3D が ない 環境では シーンの 用意を 待たない
+  useEffect(() => {
+    if (!webgl) {
+      useUi.getState().sceneReady();
+      useUi.getState().sceneShown();
+    }
+  }, [webgl]);
   const Hud = HUDS[screen];
 
   return (
@@ -48,6 +56,7 @@ export function App() {
       </div>
       {Hud ? <Hud /> : null}
       <StickerToast />
+      <LoadingVeil />
       <Boot />
       {settingsOpen ? <SettingsPanel /> : null}
       {showFps || FLAGS.fps ? <FpsMeter /> : null}

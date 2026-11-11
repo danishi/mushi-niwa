@@ -8,6 +8,8 @@ import { Icon } from '../ui/Icon';
 export function Boot() {
   const go = useUi((s) => s.go);
   const leaving = useUi((s) => s.screen !== 'boot');
+  // 最初の シーンが 描けるまでは 読みこみ中の 丸（押せない）。描けたら 再生ボタンに なる
+  const ready = useUi((s) => s.ready);
   const [gone, setGone] = useState(false);
   useEffect(() => {
     if (!leaving) return;
@@ -18,7 +20,8 @@ export function Boot() {
   return (
     <div className={leaving ? 'boot leaving' : 'boot'} data-testid="boot">
       <button
-        className="boot-tap"
+        className={ready ? 'boot-tap' : 'boot-tap boot-loading'}
+        disabled={!ready}
         aria-label="はじめる"
         data-testid="boot-tap"
         onClick={() => {
@@ -33,7 +36,7 @@ export function Boot() {
           go('title');
         }}
       >
-        <Icon name="play" />
+        {ready ? <Icon name="play" /> : <span className="spinner" />}
       </button>
     </div>
   );

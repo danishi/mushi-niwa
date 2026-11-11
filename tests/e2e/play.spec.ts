@@ -14,10 +14,14 @@ type W = Window & {
   __visitor?: unknown;
 };
 
+/** 画面の 切りかえ（ローディング）が 終わるのを 待つ。切りかえ中は タップを 受けない */
+const settled = (page: Page) => expect(page.getByTestId('loading')).toHaveCount(0, { timeout: 30000 });
+
 async function start(page: Page) {
   await page.goto('./?e2e');
   await page.getByTestId('boot-tap').tap();
   await page.getByTestId('start-button').tap();
+  await settled(page);
   await page.waitForFunction(() => '__mushi' in window);
   await page.evaluate(() => {
     const m = (window as unknown as W).__mushi;
@@ -29,8 +33,10 @@ async function start(page: Page) {
 test('a sticker is awarded and shown in the sticker book', async ({ page }) => {
   await start(page);
   await page.evaluate(() => (window as unknown as W).__mushi.ui.getState().go('garden', null));
+  await settled(page);
   await expect(page.getByTestId('sticker-toast')).toContainText('はじめての なかま');
   await page.evaluate(() => (window as unknown as W).__mushi.ui.getState().go('zukan'));
+  await settled(page);
   await page.getByTestId('tab-sticker').tap();
   await expect(page.getByTestId('sticker-book')).toContainText('はじめての なかま');
 });
@@ -38,6 +44,7 @@ test('a sticker is awarded and shown in the sticker book', async ({ page }) => {
 test('mushi quiz can be finished and gives a perfect score sticker', async ({ page }) => {
   await start(page);
   await page.evaluate(() => (window as unknown as W).__mushi.ui.getState().go('quiz'));
+  await settled(page);
   await expect(page.getByTestId('quiz-prompt')).toBeVisible();
   for (let i = 0; i < 5; i++) {
     await page.locator('[data-answer="yes"]').tap({ force: true });
@@ -55,6 +62,7 @@ test('a garden visitor can be found and appears in the zukan', async ({ page }) 
     (window as unknown as W).__forceVisitor = 'dangomushi';
     (window as unknown as W).__mushi.ui.getState().go('garden', null);
   });
+  await settled(page);
   await page.waitForFunction(() => (window as unknown as W).__visitor, null, { timeout: 30000 });
   await page.waitForTimeout(2000);
   // 着いて 止まるまで 何度か ねらって タップする
@@ -76,6 +84,7 @@ test('a garden visitor can be found and appears in the zukan', async ({ page }) 
   await expect(page.getByTestId('discovery')).toContainText('オカダンゴムシ');
   await expect(page.getByTestId('discovery')).toContainText('こんちゅうでは なくて');
   await page.evaluate(() => (window as unknown as W).__mushi.ui.getState().go('zukan'));
+  await settled(page);
   await page.getByTestId('tab-guest').tap();
   await expect(page.getByTestId('guest-dangomushi')).toContainText('オカダンゴムシ');
   await expect(page.getByTestId('guest-monshiro')).toContainText('？？？');
@@ -93,6 +102,7 @@ test('the camera button is on the care screen too', async ({ page }) => {
     const m = (window as unknown as W).__mushi;
     m.ui.getState().go('care', m.game.getState().creatures[0]!.id);
   });
+  await settled(page);
   await expect(page.getByTestId('care-hud').getByTestId('photo-btn')).toBeVisible();
   await page.getByTestId('photo-btn').tap();
   await expect(page.getByTestId('photo-thumb')).toBeVisible({ timeout: 15000 });
@@ -106,10 +116,12 @@ test('a photo can be taken in observe mode and seen in the album', async ({ page
     const m = (window as unknown as W).__mushi;
     m.ui.getState().go('observe', m.game.getState().creatures[0]!.id);
   });
+  await settled(page);
   await page.getByTestId('photo-btn').tap({ force: true });
   await expect(page.getByTestId('photo-thumb')).toBeVisible({ timeout: 15000 });
   await expect.poll(() => page.evaluate(() => (window as unknown as W).__mushi.photos.getState().photos.length)).toBe(1);
   await page.evaluate(() => (window as unknown as W).__mushi.ui.getState().go('zukan'));
+  await settled(page);
   await page.getByTestId('tab-photo').tap();
   await expect(page.getByTestId('album').locator('img')).toHaveCount(1);
   // ひらいた 写真と とじる ボタンが 画面から はみださない

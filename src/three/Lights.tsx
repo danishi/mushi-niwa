@@ -118,6 +118,8 @@ export function Lights({ night }: { night: { current: number } }) {
       (m.material as THREE.Material | undefined)?.dispose();
     });
     scene.environment = env;
+    // 霧も 先に 入れる（シェーダは 霧の あり・なしで 変わる。描きはじめてから 入れると 用意した ものが むだに なる）
+    scene.fog = fog.current;
     return () => {
       env.dispose();
       pmrem.dispose();
@@ -127,7 +129,6 @@ export function Lights({ night }: { night: { current: number } }) {
   useFrame(() => {
     const n = THREE.MathUtils.clamp(night.current, 0, 1);
     fog.current.color.copy(DAY.horizon).lerp(NIGHT.horizon, n);
-    scene.fog = fog.current;
     scene.environmentIntensity = THREE.MathUtils.lerp(0.62, 0.26, n);
     if (hemi.current) {
       hemi.current.color.copy(DAY.hemiSky).lerp(NIGHT.hemiSky, n);

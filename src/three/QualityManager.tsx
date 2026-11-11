@@ -11,6 +11,12 @@ export function useTier(): QualityTier {
   return setting === 'auto' ? auto : setting;
 }
 
+/** React の 外から 今の 画質を 読む */
+export function currentTier(): QualityTier {
+  const setting = useSettings.getState().quality;
+  return setting === 'auto' ? useQuality.getState().autoTier : setting;
+}
+
 /** これより 長く 止まった フレームは 計測に 入れない（タブ復帰・パネルを 閉じた 直後・コンパイルの 引っかかり） */
 const STALL_MS = 1000;
 

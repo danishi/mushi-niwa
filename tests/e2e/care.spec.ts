@@ -5,10 +5,14 @@ type Hooks = {
   ui: { getState: () => { go: (s: string, id?: string | null) => void } };
 };
 
+/** 画面の 切りかえ（ローディング）が 終わるのを 待つ。切りかえ中は タップを 受けない */
+const settled = (page: Page) => expect(page.getByTestId('loading')).toHaveCount(0, { timeout: 30000 });
+
 async function start(page: Page) {
   await page.goto('./?e2e');
   await page.getByTestId('boot-tap').tap();
   await page.getByTestId('start-button').tap();
+  await settled(page);
   await expect(page.getByTestId('garden-hud')).toBeVisible();
   await page.waitForFunction(() => '__mushi' in window);
 }
@@ -23,6 +27,7 @@ test('a beetle larva asks for moisture and the mist tool works with one tap', as
     m.game.setState({ creatures: [{ ...c, needs: { ...c.needs, moisture: 0.2 } }] });
     m.ui.getState().go('care', c.id);
   });
+  await settled(page);
   await expect(page.getByTestId('care-hud')).toBeVisible();
   await expect(page.getByTestId('stage-label')).toContainText('ようちゅう');
   // 虫の吹き出しが「しめりけ」を頼み、霧吹きの道具が光っている
@@ -50,6 +55,7 @@ test('first visit shows a guided tutorial that ends after using a tool', async (
     const c = m.game.getState().creatures[0]!;
     m.ui.getState().go('care', c.id);
   });
+  await settled(page);
   await expect(page.getByTestId('tutorial')).toContainText('ふきだし');
   await expect(page.getByTestId('tutorial')).toContainText('どうぐ', { timeout: 8000 });
   await page.getByTestId('tool-food').tap({ force: true });
@@ -81,7 +87,9 @@ test('observe mode explains body parts', async ({ page }) => {
     m.game.setState({ creatures: [{ ...c, stage: 2, sex: 'male' }] });
     m.ui.getState().go('care', c.id);
   });
+  await settled(page);
   await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('observe'));
+  await settled(page);
   await expect(page.getByTestId('observe-hud')).toBeVisible();
   await page.getByTestId('part-horn').tap();
   await expect(page.getByTestId('part-bubble')).toContainText('ふたまた');

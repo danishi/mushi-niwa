@@ -215,10 +215,63 @@ ruby rt {
   animation: pulse 1.6s ease-in-out infinite;
 }
 
-/* 読みこみ中（まだ 押せない）：同じ 場所に うすい 丸だけ 出す */
+/* 読みこみ中（まだ 押せない）：同じ 場所に うすい 丸と くるくる */
 .boot-loading {
-  opacity: 0.45;
+  background: #cfe3ad;
+  box-shadow: 0 10px 0 #b3cc8f;
   animation: none;
+  cursor: default;
+}
+
+/* くるくる 回る 輪。transform だけで 動かすので、読みこみで いそがしい 間も 止まらない */
+.spinner {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 9px solid rgba(255, 255, 255, 0.55);
+  border-top-color: #fff;
+  animation: spin 0.9s linear infinite;
+  will-change: transform;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 画面の 切りかえ中：すぐ 終わる ときは 見えない まま 消える。長びくと ふわっと 出る */
+.loading-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #fffbe8, var(--c-bg));
+  opacity: 0;
+  animation: veil-in 0.18s ease-out 0.22s forwards;
+  will-change: opacity;
+}
+
+.loading-veil .spinner {
+  width: 96px;
+  height: 96px;
+  border-width: 12px;
+  border-color: rgba(139, 195, 74, 0.3);
+  border-top-color: var(--c-leaf);
+}
+
+.loading-veil.leaving {
+  opacity: 1;
+  pointer-events: none;
+  animation: boot-out 0.22s ease-out forwards;
+}
+
+@keyframes veil-in {
+  to {
+    opacity: 1;
+  }
 }
 
 /* 押した あと：3D の タイトルへ ふわっと 切りかえる */

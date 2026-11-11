@@ -5,10 +5,14 @@ type Hooks = {
   ui: { getState: () => { go: (s: string, id?: string | null) => void } };
 };
 
+/** 画面の 切りかえ（ローディング）が 終わるのを 待つ。切りかえ中は タップを 受けない */
+const settled = (page: Page) => expect(page.getByTestId('loading')).toHaveCount(0, { timeout: 30000 });
+
 async function start(page: Page) {
   await page.goto('./?e2e');
   await page.getByTestId('boot-tap').tap();
   await page.getByTestId('start-button').tap();
+  await settled(page);
   await page.waitForFunction(() => '__mushi' in window);
   await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.game.getState().adopt('nanahoshi', 0));
 }
@@ -16,6 +20,7 @@ async function start(page: Page) {
 test('zukan shows met species with facts and hides unmet ones', async ({ page }) => {
   await start(page);
   await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('zukan'));
+  await settled(page);
   await expect(page.getByTestId('zukan-hud')).toBeVisible();
   await expect(page.getByTestId('zukan-kaiko')).toContainText('？？？');
   await page.getByTestId('zukan-nanahoshi').tap();
@@ -27,6 +32,7 @@ test('mushi-zumou can be played to a gentle result', async ({ page }) => {
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
   await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('battle'));
+  await settled(page);
   await expect(page.getByTestId('battle-select')).toContainText('たたかわない');
   await page.getByTestId('battle-pick-nanahoshi').tap();
   const push = page.getByTestId('battle-push');
@@ -64,6 +70,7 @@ test('zukan tells that centipedes are not insects', async ({ page }) => {
     m.game.getState().adopt('tobizumukade', 1);
     m.ui.getState().go('zukan');
   });
+  await settled(page);
   await page.getByTestId('zukan-tobizumukade').tap();
   await expect(page.getByTestId('not-insect')).toContainText('こんちゅうでは なく');
 });
