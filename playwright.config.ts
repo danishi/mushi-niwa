@@ -4,7 +4,8 @@ const port = 4173;
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  timeout: 60_000,
+  // CI は ソフトウェア描画で 3D が とても おそい（iPad 横の 広い 画面では 1 テストが 60 秒を こえる ことが ある）
+  timeout: process.env.CI ? 150_000 : 60_000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {

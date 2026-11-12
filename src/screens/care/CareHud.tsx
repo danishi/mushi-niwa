@@ -38,8 +38,10 @@ export function CareHud() {
   const setTutorial = useUi((s) => s.setTutorialStep);
   const hasTools = !!creature && stageOf(creature).tools.length > 0;
   const hasWant = !!creature && wantOf(creature) !== null;
+  // 画面の 切りかえ中（ローディングの 表示の 下）では 始めない。おそい 端末だと ① が 見えない うちに ② へ 進んで しまう
+  const loading = useUi((s) => s.loading);
   useEffect(() => {
-    if (useSettings.getState().tutorialDone || !hasTools) return;
+    if (useSettings.getState().tutorialDone || !hasTools || loading) return;
     let t2: number | undefined;
     const t1 = window.setTimeout(() => {
       if (hasWant) {
@@ -59,7 +61,7 @@ export function CareHud() {
       if (t2) window.clearTimeout(t2);
       setTutorial(0);
     };
-  }, [creature?.id, hasTools]); // hasWant は 開始時だけ 見る
+  }, [creature?.id, hasTools, loading]); // hasWant は 開始時だけ 見る
 
   if (memoryId) {
     return (
