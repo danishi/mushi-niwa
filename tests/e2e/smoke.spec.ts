@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { ROOT, WIDE } from './app';
 
-test('boots, unlocks audio by tap, shows title and opens garden', async ({ page }) => {
+test('boots, unlocks audio by tap, shows title and opens garden', WIDE, async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('./');
+  await page.goto(ROOT);
   await expect(page.getByTestId('boot-tap')).toBeVisible();
   // タップ領域は 56px 以上
   const box = await page.getByTestId('boot-tap').boundingBox();
@@ -17,7 +18,7 @@ test('boots, unlocks audio by tap, shows title and opens garden', async ({ page 
 });
 
 test('settings are guarded by a parental gate', async ({ page }) => {
-  await page.goto('./');
+  await page.goto(ROOT);
   await page.getByTestId('boot-tap').tap();
   const gate = page.getByTestId('settings-gate');
   // 短いタップでは開かない
@@ -37,7 +38,7 @@ test('settings are guarded by a parental gate', async ({ page }) => {
 });
 
 test('PWA manifest is linked', async ({ page }) => {
-  await page.goto('./');
+  await page.goto(ROOT);
   const href = await page.locator('link[rel="manifest"]').getAttribute('href');
   expect(href).toContain('manifest.webmanifest');
 });

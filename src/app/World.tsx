@@ -58,8 +58,9 @@ export function World() {
   const covered = useUi((s) => s.overlays > 0 || s.settingsOpen);
   // 新しい シーンの シェーダを 用意している 間も 止める（`SceneWarmup`）
   const compiling = useUi((s) => s.compiling);
-  const [initialTier] = useState(() => useQuality.getState().autoTier);
-  const dpr = effectiveDpr(tier, typeof window === 'undefined' ? 1 : window.devicePixelRatio);
+  const [initialTier] = useState(() => (FLAGS.lite ? 'low' : useQuality.getState().autoTier));
+  // `?lite`（CI の E2E）は 解像度を 半分に（ソフトウェア描画は 画素の 数に 比例して おそい）
+  const dpr = FLAGS.lite ? 0.5 : effectiveDpr(tier, typeof window === 'undefined' ? 1 : window.devicePixelRatio);
   return (
     <Canvas
       dpr={dpr}

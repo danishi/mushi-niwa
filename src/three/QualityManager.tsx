@@ -1,5 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { FLAGS } from '../state/flags';
 import { useSettings } from '../state/settings';
 import { useUi } from '../state/ui';
 import { createGovernor, GOVERNOR, governorApply, governorReset, governorSample, perfStats, saveTier, useQuality, type QualityTier } from './quality';
@@ -8,11 +9,13 @@ import { createGovernor, GOVERNOR, governorApply, governorReset, governorSample,
 export function useTier(): QualityTier {
   const setting = useSettings((s) => s.quality);
   const auto = useQuality((s) => s.autoTier);
+  if (FLAGS.lite) return 'low';
   return setting === 'auto' ? auto : setting;
 }
 
 /** React の 外から 今の 画質を 読む */
 export function currentTier(): QualityTier {
+  if (FLAGS.lite) return 'low';
   const setting = useSettings.getState().quality;
   return setting === 'auto' ? useQuality.getState().autoTier : setting;
 }

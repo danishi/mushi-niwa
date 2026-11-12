@@ -7,14 +7,16 @@
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる） |
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる。`?lite` は いちばん 軽い 描画（低画質・解像度 半分）に 固定） |
 | `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
 | `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
-| `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要 |
+| `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要。iPad 横は `@wide` を 付けた テスト（横長の レイアウトに かかわる もの）だけ |
 | `npm run icons` | PWA アイコン PNG を `scripts/gen-icons.mjs` から再生成 |
 
 見た目の確認は、`vite preview` を起動した状態で Playwright（WebKit・iPhone 16）からスクリーンショットを撮るのが確実（Claude の Browser ペインは非表示だと描画が止まる）。
 虫の 造形を 直した ときは `node scripts/specimen-shots.mjs <出力先> [種,種:段階,guest:id,guests]` で ずかんの 標本を まとめて 撮る（`BIG=1` で 1 枚ずつ 大きく、なしだと コンタクトシート。`npm run build` と `vite preview --port 4173` が 先。ソフトウェア描画なので 1 枚 数秒〜十数秒 かかる）。
+
+**CI の E2E は 軽く 保つ**（ユーザー要望。CI 時間の ほとんどは GPU の ない ランナーでの 3D の ソフトウェア描画）: CI では `tests/e2e/app.ts` の URL が `?lite` つきに なり（手元は ふつうの 画質。`E2E_LITE=1` で CI と 同じ）、iPad 横は `@wide` の テストだけ、ワーカーは 3。テストを 足す ときは URL を `APP`／`ROOT` から 取り、iPad 横でも 確かめたい ものだけ `WIDE` を 付ける。
 
 完了の条件（各フェーズ共通）: `npm run build`・`npm test`・`npm run e2e` がすべて通ること。
 

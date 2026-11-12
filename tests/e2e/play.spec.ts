@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { APP, WIDE } from './app';
 
 /* シール・おきゃくさん・しゃしん・むしクイズ */
 
@@ -18,7 +19,7 @@ type W = Window & {
 const settled = (page: Page) => expect(page.getByTestId('loading')).toHaveCount(0, { timeout: 30000 });
 
 async function start(page: Page) {
-  await page.goto('./?e2e');
+  await page.goto(APP);
   await page.getByTestId('boot-tap').tap();
   await page.getByTestId('start-button').tap();
   await settled(page);
@@ -55,7 +56,7 @@ test('mushi quiz can be finished and gives a perfect score sticker', async ({ pa
   await expect.poll(() => page.evaluate(() => (window as unknown as W).__mushi.progress.getState().stickers)).toContain('quiz-perfect');
 });
 
-test('a garden visitor can be found and appears in the zukan', async ({ page }) => {
+test('a garden visitor can be found and appears in the zukan', WIDE, async ({ page }) => {
   // にわは 最初から 開いていて すぐ おきゃくさんが 来るので、読みこむ 前に 種類を 決めておく
   await page.addInitScript(() => {
     (window as unknown as { __forceVisitor?: string }).__forceVisitor = 'dangomushi';
@@ -113,7 +114,7 @@ test('the camera button is on the care screen too', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => (window as unknown as W).__mushi.photos.getState().photos.length)).toBe(1);
 });
 
-test('a photo can be taken in observe mode and seen in the album', async ({ page }) => {
+test('a photo can be taken in observe mode and seen in the album', WIDE, async ({ page }) => {
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
   await page.evaluate(() => {

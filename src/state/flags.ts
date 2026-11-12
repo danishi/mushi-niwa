@@ -3,6 +3,7 @@
  * - `?e2e`: テスト用フック（`window.__mushi`・`window.__r3f`）。おきゃくさんが すぐ 来る
  * - `?fps`: FPS メーター
  * - `?speed=30`: 時間を 30 倍速
+ * - `?lite`: いちばん 軽い 描画（低画質・解像度 半分）に 固定。GPU の ない CI で E2E を 速く 回す ため
  */
 const query = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 
@@ -14,5 +15,6 @@ function positive(value: string | null, fallback: number): number {
 export const FLAGS = {
   e2e: query.has('e2e'),
   fps: query.has('fps'),
+  lite: query.has('lite'),
   speed: positive(query.get('speed'), 1),
 };

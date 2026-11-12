@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { APP, WIDE } from './app';
 
 type Hooks = {
   game: { getState: () => { adopt: (s: string, slot: number) => void } };
@@ -9,7 +10,7 @@ type Hooks = {
 const settled = (page: Page) => expect(page.getByTestId('loading')).toHaveCount(0, { timeout: 30000 });
 
 async function start(page: Page) {
-  await page.goto('./?e2e');
+  await page.goto(APP);
   await page.getByTestId('boot-tap').tap();
   await page.getByTestId('start-button').tap();
   await settled(page);
@@ -17,7 +18,7 @@ async function start(page: Page) {
   await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.game.getState().adopt('nanahoshi', 0));
 }
 
-test('zukan shows met species with facts and hides unmet ones', async ({ page }) => {
+test('zukan shows met species with facts and hides unmet ones', WIDE, async ({ page }) => {
   await start(page);
   await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('zukan'));
   await settled(page);
@@ -28,7 +29,7 @@ test('zukan shows met species with facts and hides unmet ones', async ({ page })
   await expect(page.getByTestId('zukan-detail')).toContainText('Coccinella septempunctata');
 });
 
-test('mushi-zumou can be played to a gentle result', async ({ page }) => {
+test('mushi-zumou can be played to a gentle result', WIDE, async ({ page }) => {
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
   await page.evaluate(() => (window as unknown as { __mushi: Hooks }).__mushi.ui.getState().go('battle'));

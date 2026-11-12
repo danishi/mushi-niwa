@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { APP, WIDE } from './app';
 
 type Hooks = {
   game: { getState: () => { adopt: (s: string, slot: number) => void; creatures: Array<{ id: string; needs: Record<string, number> }> }; setState: (p: unknown) => void };
@@ -9,7 +10,7 @@ type Hooks = {
 const settled = (page: Page) => expect(page.getByTestId('loading')).toHaveCount(0, { timeout: 30000 });
 
 async function start(page: Page) {
-  await page.goto('./?e2e');
+  await page.goto(APP);
   await page.getByTestId('boot-tap').tap();
   await page.getByTestId('start-button').tap();
   await settled(page);
@@ -17,7 +18,7 @@ async function start(page: Page) {
   await page.waitForFunction(() => '__mushi' in window);
 }
 
-test('a beetle larva asks for moisture and the mist tool works with one tap', async ({ page }) => {
+test('a beetle larva asks for moisture and the mist tool works with one tap', WIDE, async ({ page }) => {
   await start(page);
   test.skip(await page.getByTestId('no-webgl').isVisible(), 'WebGL is not available in this browser');
   await page.evaluate(() => {
