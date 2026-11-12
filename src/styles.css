@@ -241,16 +241,18 @@ ruby rt {
   }
 }
 
-/* 画面の 切りかえ中：すぐ 終わる ときは 見えない まま 消える。長びくと ふわっと 出る */
+/* 画面の 切りかえ中：すぐ 終わる ときは 見えない まま 消える。長びくと ふわっと 出る。
+   切りかえ中は 3D の 描画が 止まり、前の 画面の 絵が 残っているので、明るい 色で ぬりつぶさず
+   うすく 暗く するだけに する（白に 切りかわると 目が チカチカする） */
 .loading-veil {
   position: absolute;
   inset: 0;
   z-index: 20;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 50% 40%, #fffbe8, var(--c-bg));
+  background: rgba(24, 34, 20, 0.3);
   opacity: 0;
-  animation: veil-in 0.18s ease-out 0.22s forwards;
+  animation: veil-in 0.25s ease-out 0.22s forwards;
   will-change: opacity;
 }
 
@@ -258,8 +260,9 @@ ruby rt {
   width: 96px;
   height: 96px;
   border-width: 12px;
-  border-color: rgba(139, 195, 74, 0.3);
-  border-top-color: var(--c-leaf);
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 }
 
 .loading-veil.leaving {
