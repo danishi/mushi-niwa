@@ -5,7 +5,7 @@ import { GEO, mat, SURF } from '../three/materials';
 import { grainBump, monshiroWing, veinWing, paint, striaeNormal } from '../three/textures';
 import type { CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
-import { shapeGeo, taperedTube, abdomenY, abdomenZ, archGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
+import { shapeGeo, taperedTube, abdomenY, abdomenZ, archGeo, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 
 /**
@@ -23,12 +23,13 @@ const dragonWing = (s: THREE.Shape) => {
   s.bezierCurveTo(0.9, -0.06, 0.4, -0.08, 0, -0.03);
 };
 
-function DragonWing({ anim, side, front }: { anim: AnimRef; side: 1 | -1; front: boolean }) {
+/** k: はねの 大きさ、z: つけねの 前後（オニヤンマ用）、tint: はねの 地の 色 */
+function DragonWing({ anim, side, front, k = 1, z = 0, tint = '#e8f1f4' }: { anim: AnimRef; side: 1 | -1; front: boolean; k?: number; z?: number; tint?: string }) {
   const ref = useRef<THREE.Group>(null);
   const geo = shapeGeo('dragonWing', dragonWing);
   const material = useMemo(
-    () => mat('#ffffff', { map: veinWing('#e8f1f4', '#3c4448', 0.25), opacity: 0.95, side: THREE.DoubleSide, depthWrite: false, roughness: 0.1 }),
-    [],
+    () => mat('#ffffff', { map: veinWing(tint, '#3c4448', 0.25), opacity: 0.95, side: THREE.DoubleSide, depthWrite: false, roughness: 0.1 }),
+    [tint],
   );
   const seed = front ? 0 : 1.4;
   useFrame(() => {
@@ -36,9 +37,9 @@ function DragonWing({ anim, side, front }: { anim: AnimRef; side: 1 | -1; front:
     if (ref.current) ref.current.rotation.z = Math.sin(a.t * 60 + seed) * 0.5 * a.flap + 0.04;
   });
   return (
-    <group position={[side * 0.02, 0.05, front ? 0.07 : 0.0]} scale={[side, 1, 1]}>
+    <group position={[side * 0.02, 0.05, (front ? 0.07 : 0.0) + z]} scale={[side, 1, 1]}>
       <group ref={ref}>
-        <group rotation={[-Math.PI / 2, 0, front ? 0.12 : -0.12]} scale={[0.42, front ? 0.9 : 1.15, 1]}>
+        <group rotation={[-Math.PI / 2, 0, front ? 0.12 : -0.12]} scale={[0.42 * k, (front ? 0.9 : 1.15) * k, 1]}>
           <mesh geometry={geo} material={material} />
         </group>
       </group>
@@ -705,6 +706,332 @@ export function Shouryou({ anim }: { anim: AnimRef }) {
   );
 }
 
+/* ───────────── 体の 輪の もよう（ロフトの v 方向に 色を ぬる） ───────────── */
+
+/**
+ * bodyGeo の 軸（z0 → z1）に そって 輪の 色を ぬる。ロフトは 両はしほど 細かく 輪を 置く（v と z が 比例しない）ので、
+ * 行ごとに z を 計算して pick(z) の 色で ぬる。CanvasTexture は flipY なので、canvas の 上の 行が v = 1。
+ */
+function ringPaint(key: string, z0: number, z1: number, pick: (z: number) => string) {
+  return paint(`ring:${key}`, 256, (g, s) => {
+    for (let r = 0; r < s; r++) {
+      const v = 1 - (r + 0.5) / s;
+      const z = z0 + (z1 - z0) * (0.5 - 0.5 * Math.cos(Math.PI * v));
+      g.fillStyle = pick(z);
+      g.fillRect(0, r, s, 1);
+    }
+  });
+}
+
+/* ───────────── オニヤンマ（日本で いちばん 大きな トンボ） ───────────── */
+
+const ONI_ABD: [number, number] = [-0.66, 0.0];
+const ONI_SEGS: [number, number, number, number] = [-0.63, -0.03, 8, 0.07];
+
+export function Oniyanma({ anim }: { anim: AnimRef }) {
+  const body = useBodyMotion(anim, 0);
+  const abdomen = useMemo(
+    () => ({
+      roughness: 0.45,
+      clearcoat: 0.4,
+      clearcoatRoughness: 0.3,
+      // 黒い はらに、節ごとに 黄色い 輪（節の 前より）
+      map: ringPaint('oniyanma', ONI_ABD[0], ONI_ABD[1], (z) => {
+        const [a, b, n] = ONI_SEGS;
+        const t = ((z - a) / (b - a)) * n;
+        if (t < 0 || t > n) return '#16130f';
+        const f = t - Math.floor(t);
+        return f > 0.62 && f < 0.82 ? '#e2c23a' : '#16130f';
+      }),
+    }),
+    [],
+  );
+  const shell = useMemo(() => ({ roughness: 0.5, clearcoat: 0.3 }), []);
+  return (
+    <group ref={body}>
+      {/* 頭：エメラルド色の 大きな 複眼が、あたまの てっぺんで 1 点だけ くっつく。顔は 黄色 */}
+      <CompoundEye position={[0.033, 0.075, 0.175]} size={[0.042, 0.04, 0.04]} color="#2f9a5e" />
+      <CompoundEye position={[-0.033, 0.075, 0.175]} size={[0.042, 0.04, 0.04]} color="#2f9a5e" />
+      <M color="#e0c23a" surface={shell} position={[0, 0.045, 0.2]} scale={[0.036, 0.026, 0.02]} />
+      <M color="#1a1612" position={[0, 0.028, 0.205]} scale={[0.026, 0.012, 0.014]} />
+      {/* 胸：黒地に 黄色の ななめの すじ（よこに 2 本ずつ・前に 2 本） */}
+      <Part
+        geometry={bodyGeo('oniThorax', [[-0.03, 0.02, 0.03, -0.02], [0.0, 0.045, 0.055, -0.045], [0.07, 0.05, 0.06, -0.05], [0.13, 0.035, 0.045, -0.03], [0.15, 0.018, 0.02, -0.015]], { nt: 2.2 })}
+        color="#1d1915"
+        surface={shell}
+        position={[0, 0.05, 0]}
+        castShadow
+      />
+      {[1, -1].map((s) =>
+        [0.03, 0.085].map((z) => (
+          <M key={`${s}${z}`} geo={GEO.box()} color="#e2c23a" position={[s * 0.047, 0.05, z]} rotation={[0.55, 0, 0]} scale={[0.004, 0.085, 0.012]} />
+        )),
+      )}
+      {[1, -1].map((s) => (
+        <M key={s} geo={GEO.box()} color="#e2c23a" position={[s * 0.018, 0.1, 0.11]} rotation={[0.9, 0, 0]} scale={[0.008, 0.045, 0.004]} />
+      ))}
+      {/* はら：太くて 長い。黒に 黄色の 輪 */}
+      <Part
+        geometry={bodyGeo(
+          'oniAbdomen',
+          [[ONI_ABD[0], 0, 0.004, -0.004], [-0.64, 0.014, 0.016, -0.014], [-0.58, 0.026, 0.026, -0.024], [-0.4, 0.026, 0.026, -0.025], [-0.2, 0.027, 0.027, -0.026], [-0.11, 0.024, 0.025, -0.023], [-0.06, 0.034, 0.035, -0.033], [-0.02, 0.03, 0.03, -0.03], [ONI_ABD[1], 0.012, 0.012, -0.012]],
+          { segs: ONI_SEGS, rings: 64 },
+        )}
+        color="#ffffff"
+        surface={abdomen}
+        position={[0, 0.05, 0]}
+        castShadow
+      />
+      {/* はねは すきとおって、つけねが すこし きいろい */}
+      {[1, -1].map((s) => (
+        <group key={s}>
+          <DragonWing anim={anim} side={s as 1 | -1} front k={1.25} z={0.02} tint="#f1ecd6" />
+          <DragonWing anim={anim} side={s as 1 | -1} front={false} k={1.25} z={0.0} tint="#f1ecd6" />
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/* ───────────── ハキリアリ（はっぱを はこぶ はたらきアリ） ───────────── */
+
+const LEAFCUTTER_LEG: LegSpec = { femur: 0.085, tibia: 0.08, tarsus: 0.06, thick: 0.006, tarsi: 3 };
+
+const leafBit = (s: THREE.Shape) => {
+  // あごで くわえる ところが 原点。はっぱの きれはしは 上（+y）へ 立ち、すこし 後ろ（+x）へ ひろがる
+  s.moveTo(0, 0);
+  s.bezierCurveTo(-0.14, 0.3, -0.08, 0.76, 0.24, 0.96);
+  s.bezierCurveTo(0.55, 1.12, 0.8, 0.82, 0.74, 0.5);
+  s.bezierCurveTo(0.68, 0.24, 0.36, 0.04, 0, 0);
+};
+
+/** はっぱの きれはしの もよう（ShapeGeometry の UV は 形の 座標そのまま：0..1） */
+function leafTexture() {
+  return paint('leafBit', 128, (g, s) => {
+    g.fillStyle = '#5c9c38';
+    g.fillRect(0, 0, s, s);
+    const P = (u: number, v: number): [number, number] => [u * s, (1 - v) * s];
+    g.strokeStyle = '#9cc870';
+    g.lineCap = 'round';
+    g.lineWidth = s * 0.03;
+    g.beginPath();
+    g.moveTo(...P(0.05, 0.02));
+    g.lineTo(...P(0.5, 1));
+    g.stroke();
+    g.lineWidth = s * 0.012;
+    for (let i = 1; i <= 5; i++) {
+      const t = i / 6;
+      const [x, y] = [0.05 + 0.45 * t, 0.02 + 0.98 * t];
+      g.beginPath();
+      g.moveTo(...P(x, y));
+      g.lineTo(...P(x + 0.3, y + 0.08));
+      g.moveTo(...P(x, y));
+      g.lineTo(...P(x - 0.25, y + 0.12));
+      g.stroke();
+    }
+  });
+}
+
+function Spine({ position, rotation, len = 0.03, color }: { position: [number, number, number]; rotation: [number, number, number]; len?: number; color: string }) {
+  return <M geo={GEO.cone()} color={color} position={position} rotation={rotation} scale={[0.005, len, 0.005]} />;
+}
+
+export function Hakiriari({ anim }: { anim: AnimRef }) {
+  const body = useBodyMotion(anim, 1);
+  const leaf = useRef<THREE.Group>(null);
+  const shell = useMemo(() => ({ ...SURF.granular(), roughness: 0.6 }), []);
+  const leafMat = useMemo(() => mat('#ffffff', { map: leafTexture(), roughness: 0.55, side: THREE.DoubleSide, translucent: true }), []);
+  const leafGeo = shapeGeo('leafBit', leafBit);
+  const C = '#8c3b18';
+  useFrame(() => {
+    const a = anim.current;
+    // 歩くと はっぱが ゆらゆら（ほのかに 旗の ように）
+    if (leaf.current) {
+      leaf.current.rotation.x = -0.35 + Math.sin(a.gait * 2) * 0.06 * a.walk;
+      leaf.current.rotation.z = Math.sin(a.t * 1.7) * 0.05;
+    }
+  });
+  return (
+    <group ref={body} position={[0, 0.03, 0]}>
+      {/* 大きな ハート形の 頭：後ろの かどに とげ */}
+      <Part
+        geometry={bodyGeo('attaHead', [[0.08, 0.02, 0.02, -0.015], [0.095, 0.048, 0.04, -0.028], [0.13, 0.045, 0.036, -0.03], [0.165, 0.03, 0.022, -0.02], [0.18, 0.012, 0.01, -0.01]], {
+          nt: 2.4,
+          // 後ろの まん中を へこませて ハート形に
+          extra: (p) => {
+            if (p.z < 0.1) p.z += 0.012 * Math.exp(-((p.x / 0.018) ** 2));
+          },
+        })}
+        color={C}
+        surface={shell}
+        position={[0, 0.06, 0]}
+        castShadow
+      />
+      {[1, -1].map((s) => (
+        <group key={s}>
+          <Spine position={[s * 0.034, 0.1, 0.09]} rotation={[-1.2, 0, -s * 0.5]} color={C} />
+          <CompoundEye position={[s * 0.04, 0.07, 0.15]} size={0.007} color="#2a1810" />
+          {/* 大あご（はっぱの はしを くわえる） */}
+          <M color="#5a2410" surface={shell} position={[s * 0.012, 0.05, 0.185]} rotation={[0, s * 0.5, 0]} scale={[0.008, 0.008, 0.022]} />
+          <Antenna position={[s * 0.016, 0.08, 0.165]} side={s as 1 | -1} length={0.14} thick={0.004} kind="filiform" color="#7a3416" anim={anim} rotation={[0.4, 0.55, 0]} />
+        </group>
+      ))}
+      {/* むね：背中に 3 対の とげ */}
+      <Part geometry={bodyGeo('attaMeso', [[-0.02, 0.01, 0.01, -0.01], [0.0, 0.018, 0.022, -0.018], [0.04, 0.02, 0.025, -0.02], [0.065, 0.016, 0.02, -0.016], [0.08, 0.01, 0.012, -0.01]])} color={C} surface={shell} position={[0, 0.065, 0]} />
+      {[1, -1].map((s) =>
+        (
+          [
+            [0.062, 0.088, -0.5],
+            [0.035, 0.093, -0.2],
+            [0.0, 0.087, 0.5],
+          ] as const
+        ).map(([z, y, tilt]) => <Spine key={`${s}${z}`} position={[s * 0.012, y, z]} rotation={[tilt, 0, -s * 0.45]} len={0.022} color={C} />),
+      )}
+      {/* こしの 2 つの ふし と、小さめの はら */}
+      <M color={C} surface={shell} position={[0, 0.062, -0.03]} scale={[0.01, 0.012, 0.011]} />
+      <M color={C} surface={shell} position={[0, 0.06, -0.048]} scale={[0.014, 0.013, 0.012]} />
+      <Part geometry={abdomenZ(4)} color="#6e2c12" surface={shell} position={[0, 0.06, -0.1]} scale={[0.04, 0.036, 0.05]} castShadow />
+      {[0, 1, 2].map((p) =>
+        [1, -1].map((s) => (
+          <Leg key={`${p}${s}`} position={[s * 0.012, 0.055, 0.06 - p * 0.028]} side={s as 1 | -1} pair={p} spec={LEAFCUTTER_LEG} color="#7a3416" anim={anim} spread={0.25} />
+        )),
+      )}
+      {/* くわえた はっぱの きれはし（からだより 大きい） */}
+      <group ref={leaf} position={[0, 0.05, 0.2]}>
+        {/* 正面から 見ても はっぱと わかるよう、すこし ななめに もつ */}
+        <group rotation={[0, Math.PI / 2 - 0.55, 0]} scale={0.25}>
+          <mesh geometry={leafGeo} material={leafMat} castShadow />
+        </group>
+      </group>
+    </group>
+  );
+}
+
+/* ───────────── オオスズメバチ（はたらきバチ） ───────────── */
+
+const HORNET_LEG: LegSpec = { femur: 0.07, tibia: 0.07, tarsus: 0.06, thick: 0.01, tarsi: 4 };
+const HORNET_GASTER: [number, number] = [-0.3, -0.02];
+const HORNET_SEGS: [number, number, number, number] = [-0.28, -0.04, 6, 0.06];
+
+const waspWing = (s: THREE.Shape) => {
+  s.moveTo(0, 0.015);
+  s.bezierCurveTo(0.3, 0.08, 0.75, 0.09, 1, 0.03);
+  s.bezierCurveTo(0.92, -0.04, 0.45, -0.06, 0, -0.015);
+};
+
+function HornetWing({ anim, side, fore }: { anim: AnimRef; side: 1 | -1; fore: boolean }) {
+  const ref = useRef<THREE.Group>(null);
+  const geo = shapeGeo('waspWing', waspWing);
+  // こはくいろに すける はね
+  const material = useMemo(
+    () => mat('#ffffff', { map: veinWing('#b8792c', '#4a2c12', 0.75), opacity: 0.9, side: THREE.DoubleSide, depthWrite: false, roughness: 0.25 }),
+    [],
+  );
+  useFrame(() => {
+    const a = anim.current;
+    const g = ref.current;
+    if (!g) return;
+    // とまって いる ときは はらの 上に 後ろむきに たたむ。とぶ ときは よこに ひらいて はばたく
+    const open = a.flap;
+    g.rotation.y = THREE.MathUtils.lerp(Math.PI / 2 - (fore ? 0.16 : 0.24), 0.15, open);
+    g.rotation.z = open * Math.sin(a.t * 70 + (fore ? 0 : 0.6)) * 0.7 + a.spray * 0.15;
+  });
+  return (
+    <group position={[side * 0.02, fore ? 0.108 : 0.103, fore ? 0.07 : 0.045]} scale={[side, 1, 1]}>
+      <group ref={ref}>
+        <group rotation={[-Math.PI / 2, 0, 0]} scale={fore ? [0.27, 0.32, 1] : [0.19, 0.24, 1]}>
+          <mesh geometry={geo} material={material} />
+        </group>
+      </group>
+    </group>
+  );
+}
+
+export function Oosuzumebachi({ anim }: { anim: AnimRef }) {
+  const body = useBodyMotion(anim, 0.6);
+  const jaws = useRef<THREE.Group>(null);
+  const gaster = useRef<THREE.Group>(null);
+  const fur = useMemo(() => ({ roughness: 0.7, sheen: 0.4, sheenColor: '#8a6a3a' }), []);
+  const band = useMemo(
+    () => ({
+      roughness: 0.5,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.4,
+      // 節ごとに 前が こげちゃ、後ろが だいだいの 帯。おしりの 先は だいだい
+      map: ringPaint('suzumebachi', HORNET_GASTER[0], HORNET_GASTER[1], (z) => {
+        const [a, b, n] = HORNET_SEGS;
+        const t = ((z - a) / (b - a)) * n;
+        if (t < 1) return '#e59b25';
+        if (t > n) return '#2a1a10';
+        const f = t - Math.floor(t);
+        const k = Math.floor(t);
+        return f < (k === n - 1 ? 0.28 : 0.5) ? '#e59b25' : '#2a1a10';
+      }),
+    }),
+    [],
+  );
+  useFrame(() => {
+    const a = anim.current;
+    // spray: 大あごを カチカチ ならして おどかす
+    if (jaws.current) {
+      const clack = a.spray * Math.abs(Math.sin(a.t * 22));
+      jaws.current.children.forEach((c, i) => {
+        c.rotation.y = (i === 0 ? 1 : -1) * (0.15 + clack * 0.55);
+      });
+    }
+    // はらを ゆっくり のびちぢみ（いきを している）
+    if (gaster.current) gaster.current.scale.z = 1 + Math.sin(a.t * 3) * 0.03;
+  });
+  return (
+    <group ref={body} position={[0, 0.02, 0]}>
+      {/* 大きな だいだいいろの 頭。目は こげちゃ、てっぺんに 3 つの 単眼 */}
+      <Part geometry={GEO.sphere()} color="#e39a2a" surface={SURF.chitin(0.45)} position={[0, 0.065, 0.135]} scale={[0.056, 0.048, 0.036]} castShadow />
+      {[1, -1].map((s) => (
+        <group key={s}>
+          <CompoundEye position={[s * 0.042, 0.075, 0.143]} size={[0.014, 0.03, 0.02]} color="#3a2414" />
+          <Antenna position={[s * 0.012, 0.085, 0.165]} side={s as 1 | -1} length={0.13} thick={0.006} kind="filiform" color="#2a1a10" anim={anim} rotation={[0.2, 0.35, 0]} />
+        </group>
+      ))}
+      {[-0.012, 0, 0.012].map((x) => (
+        <M key={x} color="#3a2414" position={[x, 0.11, 0.138 - Math.abs(x) * 0.5]} scale={0.005} />
+      ))}
+      {/* 大あご：黒い 先の 太い あご */}
+      <group ref={jaws} position={[0, 0.04, 0.16]}>
+        {[1, -1].map((s) => (
+          <group key={s} position={[s * 0.02, 0, 0]}>
+            <M color="#e39a2a" surface={SURF.chitin(0.4)} position={[-s * 0.008, 0, 0.012]} scale={[0.01, 0.009, 0.02]} />
+            <M color="#1a120c" surface={SURF.chitin(0.3)} position={[-s * 0.014, 0, 0.028]} scale={[0.008, 0.007, 0.012]} />
+          </group>
+        ))}
+      </group>
+      {/* むね：こげちゃ〜黒、こまかい 毛 */}
+      <Part geometry={bodyGeo('hornetThorax', [[0.0, 0.015, 0.02, -0.015], [0.02, 0.042, 0.05, -0.04], [0.06, 0.046, 0.055, -0.045], [0.1, 0.038, 0.045, -0.035], [0.115, 0.02, 0.025, -0.018]], { nt: 2.2 })} color="#2a1d14" surface={fur} position={[0, 0.06, 0]} castShadow />
+      <M color="#b0782a" surface={fur} position={[0, 0.1, 0.012]} scale={[0.016, 0.006, 0.01]} />
+      {/* こしの くびれ と 帯の ある はら */}
+      <M color="#2a1d14" surface={fur} position={[0, 0.058, -0.012]} scale={[0.012, 0.012, 0.014]} />
+      <group ref={gaster} position={[0, 0.055, 0]}>
+        <Part
+          geometry={bodyGeo('hornetGaster', [[HORNET_GASTER[0], 0, 0.004, -0.004], [-0.29, 0.02, 0.02, -0.02], [-0.24, 0.045, 0.045, -0.042], [-0.14, 0.058, 0.055, -0.052], [-0.06, 0.05, 0.05, -0.045], [HORNET_GASTER[1], 0.022, 0.024, -0.02]], { segs: HORNET_SEGS, rings: 56 })}
+          color="#ffffff"
+          surface={band}
+          castShadow
+        />
+      </group>
+      {[1, -1].map((s) => (
+        <group key={s}>
+          <HornetWing anim={anim} side={s as 1 | -1} fore={false} />
+          <HornetWing anim={anim} side={s as 1 | -1} fore />
+        </group>
+      ))}
+      {[0, 1, 2].map((p) =>
+        [1, -1].map((s) => (
+          <Leg key={`${p}${s}`} position={[s * 0.03, 0.035, 0.09 - p * 0.03]} side={s as 1 | -1} pair={p} spec={HORNET_LEG} color="#3a2414" anim={anim} spread={0.35} />
+        )),
+      )}
+    </group>
+  );
+}
+
 export const VISITOR_MODELS = {
   shiokara: Shiokara,
   monshiro: Monshiro,
@@ -719,4 +1046,7 @@ export const VISITOR_MODELS = {
   kanabun: Kanabun,
   kurooari: Kurooari,
   shouryou: Shouryou,
+  oniyanma: Oniyanma,
+  hakiriari: Hakiriari,
+  oosuzumebachi: Oosuzumebachi,
 } as const;

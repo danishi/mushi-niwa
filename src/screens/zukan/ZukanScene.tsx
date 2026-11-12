@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { audio } from '../../audio/audio';
 import { newAnim } from '../../creatures/anim';
 import { modelFor } from '../../creatures/registry';
 import { VISITOR_MODELS } from '../../creatures/visitors';
@@ -133,7 +134,10 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
       onPointerDown={() => {
         // 出典の ある 反応だけ（まるまる・ひっこむ・あしを けって はねる・ひかる）
         const r = VISITORS[id].react;
-        if (r === 'curl' || r === 'hop' || id === 'hotaru') anim.current.spray = 1;
+        if (r === 'curl' || r === 'hop' || r === 'warn' || id === 'hotaru') {
+          anim.current.spray = 1;
+          if (r === 'warn') audio.play('clack');
+        }
         anim.current.bounce = 1;
       }}
     >

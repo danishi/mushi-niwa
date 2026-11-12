@@ -23,6 +23,19 @@ describe('garden visitors', () => {
     for (const id of night) expect(VISITORS[id].time).not.toBe('day');
     for (const id of day) expect(VISITORS[id].time).not.toBe('night');
   });
+  it('teaches safety for dangerous visitors and explains ones from abroad', () => {
+    // オオスズメバチは さわると 大あごを ならして 去る。大人向けの 注意と、こどもへの「はなれよう」が ある
+    const hornet = VISITORS.oosuzumebachi;
+    expect(hornet.react).toBe('warn');
+    expect(hornet.caution).toBeTruthy();
+    expect(hornet.facts[0]).toMatch(/はなれ/);
+    // ハキリアリは 日本に いないことを ずかんで 説明する
+    expect(VISITORS.hakiriari.abroad).toBeTruthy();
+    for (const id of VISITOR_ORDER) {
+      expect(VISITORS[id].facts.join('')).not.toContain('TODO');
+      expect(VISITORS[id].sources.every((u) => u.startsWith('https://'))).toBe(true);
+    }
+  });
   it('explains what non-insects are', () => {
     for (const id of ['dangomushi', 'jorougumo', 'katatsumuri'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
   });

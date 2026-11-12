@@ -24,7 +24,8 @@ export type SfxName =
   | 'squeak'
   | 'cicada'
   | 'shutter'
-  | 'correct';
+  | 'correct'
+  | 'clack';
 
 export type BgmMood = 'day' | 'night' | 'title';
 
@@ -216,6 +217,13 @@ class AudioEngine {
       case 'correct':
         this.tone(midi(79), t, 0.18, { type: 'triangle', gain: 0.22 });
         this.tone(midi(84), t + 0.12, 0.4, { type: 'triangle', gain: 0.22 });
+        break;
+      case 'clack':
+        // オオスズメバチの 大あごの「カチカチ」（けいかいの 音）
+        for (let i = 0; i < 6; i++) {
+          this.noiseBurst(t + i * 0.09, 0.018, { type: 'highpass', freq: 2800, gain: 0.32 });
+          this.tone(1900, t + i * 0.09, 0.02, { type: 'square', gain: 0.05 });
+        }
         break;
       case 'nope':
         this.tone(330, t, 0.12, { type: 'sine', gain: 0.2 });

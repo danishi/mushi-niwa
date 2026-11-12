@@ -61,6 +61,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
     return from.clone().add(new THREE.Vector3(0, 2, -1));
   }, [from, def.where, def.flier]);
   const lastBuzz = useRef(0);
+  // 帰りはじめた 位置（パトロール中の オニヤンマは home から ずれている）
+  const depart = useRef(new THREE.Vector3(...at));
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
@@ -89,7 +91,9 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         // ホバリング（トンボは ぴたっと、チョウは ふわふわ）
         const soft = id === 'monshiro' || id === 'hotaru';
         const wob = soft ? 0.18 : 0.05;
-        g.position.set(home.x + Math.sin(a.t * 0.9) * wob * 2, home.y + Math.sin(a.t * 2.1) * wob, home.z + Math.cos(a.t * 0.7) * wob);
+        // オニヤンマは 同じ ところを 行ったり来たり（パトロール）
+        const patrol = id === 'oniyanma' ? Math.sin(s.t * 0.55) * 0.55 : 0;
+        g.position.set(home.x + Math.sin(a.t * 0.9) * wob * 2 + patrol, home.y + Math.sin(a.t * 2.1) * wob, home.z + Math.cos(a.t * 0.7) * wob);
         a.flap = soft ? 0.6 + Math.sin(a.t * 0.5) * 0.4 : 1;
       } else if (def.where === 'post') {
         a.flap = 0;
@@ -114,12 +118,21 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         }
       }
       if (s.t > STAY_SECONDS) {
+        depart.current.copy(g.position);
         s.phase = 'leave';
         s.t = 0;
       }
     } else {
       // react（タップ）・leave（時間ぎれ）
-      if ((def.react === 'curl' || def.react === 'stay') && s.phase === 'react') {
+      if (def.react === 'warn' && s.phase === 'react') {
+        // その場で 大あごを カチカチ ならして おどかしてから、とんで いく
+        a.spray = 1;
+        a.flap = 0;
+        if (s.t > 1.4) {
+          s.phase = 'leave';
+          s.t = 0;
+        }
+      } else if ((def.react === 'curl' || def.react === 'stay') && s.phase === 'react') {
         if (def.react === 'curl') a.spray = Math.min(1, a.spray + dt * 4);
         if (s.t > 3.2) {
           s.phase = 'leave';
@@ -129,7 +142,7 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         a.spray = Math.max(0, a.spray - dt * 2);
         const k = Math.min(1, s.t / (s.phase === 'react' ? 1.4 : 2.2));
         const e = k * k;
-        g.position.lerpVectors(home, away, e);
+        g.position.lerpVectors(depart.current, away, e);
         if (def.react === 'hop') {
           g.position.y += Math.sin(k * Math.PI) * 1.2;
           a.spray = k < 0.3 ? 1 : 0;
@@ -152,6 +165,9 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         const dx = target.x - g.position.x;
         const dz = target.z - g.position.z;
         if (dx * dx + dz * dz > 0.0004) g.rotation.y = THREE.MathUtils.damp(g.rotation.y, Math.atan2(dx, dz), 6, dt);
+      } else if (id === 'oniyanma') {
+        // パトロールの 進む 向きへ むきを かえる
+        g.rotation.y = THREE.MathUtils.damp(g.rotation.y, Math.cos(s.t * 0.55) >= 0 ? Math.PI / 2 : -Math.PI / 2, 3, dt);
       } else g.rotation.y = THREE.MathUtils.damp(g.rotation.y, 0.4 * Math.sin(a.t * 0.3), 2, dt);
     }
   });
@@ -177,11 +193,14 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
           const s = st.current;
           if (s.tapped || s.phase === 'leave') return;
           s.tapped = true;
+          if (root.current) depart.current.copy(root.current.position);
           s.phase = 'react';
           s.t = 0;
           const first = !useProgress.getState().visitors.includes(id);
           useProgress.getState().foundVisitor(id);
-          audio.play(def.react === 'curl' || def.react === 'walk' || def.react === 'stay' ? 'pop' : def.call === 'cicada' ? 'cicada' : 'flap');
+          audio.play(
+            def.react === 'warn' ? 'clack' : def.react === 'curl' || def.react === 'walk' || def.react === 'stay' ? 'pop' : def.call === 'cicada' ? 'cicada' : 'flap',
+          );
           // ホタルは タップで ぱっと ひかる（ほかの 子は spray を 反応に 使う）
           if (id === 'hotaru') anim.current.spray = 1;
           audio.play('sparkle');

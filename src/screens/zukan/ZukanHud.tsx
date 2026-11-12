@@ -162,6 +162,11 @@ function GuestDetail({ id }: { id: VisitorId }) {
             <Ruby text={v.notInsect} />
           </p>
         ) : null}
+        {v.abroad ? (
+          <p className="not-insect" data-testid="guest-abroad">
+            <Ruby text={v.abroad} />
+          </p>
+        ) : null}
         <h3>まめちしき</h3>
         <ul className="facts">
           {v.facts.map((f) => (

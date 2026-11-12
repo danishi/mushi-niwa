@@ -15,7 +15,10 @@ export type VisitorId =
   | 'hotaru'
   | 'enmakorogi'
   | 'jorougumo'
-  | 'katatsumuri';
+  | 'katatsumuri'
+  | 'oniyanma'
+  | 'hakiriari'
+  | 'oosuzumebachi';
 
 export interface VisitorDef {
   id: VisitorId;
@@ -24,8 +27,8 @@ export interface VisitorDef {
   scientific: string;
   /** どこに 来るか（air: 空中で ホバリング / ground: 上の 段の 板の 上 / post: 棚の 奥の 板に とまる） */
   where: 'air' | 'ground' | 'post';
-  /** タップした ときの 反応（fly: とんで いく / hop: はねて いく / walk: あるいて いく / curl: まるまる・ひっこむ / stay: そのまま じっと） */
-  react: 'fly' | 'hop' | 'walk' | 'curl' | 'stay';
+  /** タップした ときの 反応（fly: とんで いく / hop: はねて いく / walk: あるいて いく / curl: まるまる・ひっこむ / stay: そのまま じっと / warn: 大あごを ならして おどかしてから とんで いく） */
+  react: 'fly' | 'hop' | 'walk' | 'curl' | 'stay' | 'warn';
   /** はねで とぶ（帰る ときに とんで いく） */
   flier: boolean;
   /** 来る 時間（夜は 暗いので night と any の 子だけ） */
@@ -35,6 +38,8 @@ export interface VisitorDef {
   /** 豆知識（ルビ記法） */
   facts: string[];
   notInsect?: string;
+  /** 日本には すんで いない 子の 説明（ずかんに 出す。ルビ記法） */
+  abroad?: string;
   /** 大人向けの 注意（ずかんの「おとなの かたへ」に 出す） */
   caution?: string;
   color: string;
@@ -307,17 +312,94 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
       'https://www.forth.go.jp/moreinfo/topics/name15.html',
     ],
   },
+  oniyanma: {
+    id: 'oniyanma',
+    name: 'オニヤンマ',
+    kana: 'おにやんま',
+    scientific: 'Anotogaster sieboldii',
+    where: 'air',
+    react: 'fly',
+    flier: true,
+    time: 'day',
+    facts: [
+      'にほんで いちばん おおきな トンボだよ。くろい からだに きいろい しましまが あるよ',
+      'みどりいろの おおきな めは、あたまの てっぺんで ちょこっとだけ くっついて いるよ',
+      'オスは みちや ながれの うえを、いったり きたり して とぶよ',
+    ],
+    caution: '幼虫は、きれいな小さい流れの砂の中で数年かけて育ちます。成虫は捕まえずに観察しましょう。',
+    color: '#e2c23a',
+    scale: 2.0,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%8A%E3%81%AB%E3%82%84%E3%82%93%E3%81%BE-3146475',
+      'https://kotobank.jp/word/%E9%AC%BC%E8%9C%BB%E8%9C%93-453747',
+      'https://www.honda.co.jp/outdoor/knowledge/adventure/picture-book/oniyanma/',
+    ],
+  },
+  hakiriari: {
+    id: 'hakiriari',
+    name: 'ハキリアリ',
+    kana: 'はきりあり',
+    scientific: 'Atta sexdens',
+    where: 'ground',
+    react: 'walk',
+    flier: false,
+    time: 'day',
+    facts: [
+      'はっぱを きりとって、すに はこぶよ。でも はっぱは たべないで、はっぱの うえで キノコの なかまを そだてて、それを たべるんだよ',
+      'きった はっぱを あたまの うえに かかげて はこぶから、「パラソルアリ」とも よばれるよ',
+      'おなじ すに、ちいさい こから あたまの おおきい こまで、いろんな おおきさの はたらきアリが いるよ。おおきさで しごとが ちがうんだよ',
+    ],
+    abroad: 'ハキリアリは にほんには いないよ。うみの ずっと むこうの、みなみアメリカの あつい もりに すんで いるんだ。にほんでは、{動物園|どうぶつえん}で みられる ところが あるよ',
+    caution:
+      '中南米の熱帯にすむアリで、日本の野外にはいません。葉を切るため、逃げ出すと植物や農業に大きな影響を与えるおそれがあり、輸入・飼育には農林水産省の許可が必要です。国内で生きたハキリアリを展示しているのは多摩動物公園だけです（2025年現在、同園の発表による）。原産地では、大きな働きアリにかまれると強く痛むことがあります。',
+    color: '#8c3b18',
+    scale: 3.0,
+    sources: [
+      'https://www.tokyo-zoo.net/tama/encyclopedia/leaf-cutter-ant/index.html',
+      'https://www.tokyo-zoo.net/topic/topics_detail?kind=news&inst=tama&link_num=28530',
+      'https://kotobank.jp/word/%E3%81%AF%E3%81%8D%E3%82%8A%E3%81%82%E3%82%8A-3163272',
+      'https://kotobank.jp/word/%E8%91%89%E5%88%87%E8%9F%BB-600009',
+    ],
+  },
+  oosuzumebachi: {
+    id: 'oosuzumebachi',
+    name: 'オオスズメバチ',
+    kana: 'おおすずめばち',
+    scientific: 'Vespa mandarinia',
+    where: 'post',
+    react: 'warn',
+    flier: true,
+    time: 'day',
+    facts: [
+      'おおきな ハチを みつけたら、てで はらったり、はしったり しないで、ゆっくり そっと はなれようね',
+      'あごを「カチカチ」と ならすのは、「こっちに こないで」の あいずだよ',
+      'せかいで いちばん おおきな スズメバチだよ。つちの なかに おおきな すを つくるよ',
+    ],
+    caution:
+      'とても強い毒をもつハチです。刺されると激しく痛み、体質によってはアナフィラキシー（じんましん、息苦しさ、めまいなど）で命にかかわることがあります。刺されたら流水で洗いながら毒をしぼり出して冷やし、医療機関を受診してください。息苦しさなど全身の症状が出たら、ためらわず119番で救急車を呼んでください。特に危ないのは巣が大きくなる9〜10月です。手で払ったり走ったりせず、ゆっくり離れましょう。黒い服や香水はハチを刺激します。巣を見つけても自分で壊さず、自治体の窓口や専門業者に相談してください。',
+    color: '#e59b25',
+    scale: 2.4,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%99%E3%81%9A%E3%82%81%E3%81%B0%E3%81%A1-3156198',
+      'https://www.pref.yamaguchi.lg.jp/uploaded/attachment/78222.pdf',
+      'https://www.pref.toyama.jp/documents/25936/suzumebati.pdf',
+      'https://www.city.chiba.jp/faq/hokenfukushi/iryoeisei/hokenjo/kankyo/986.html',
+    ],
+  },
 };
 
 export const VISITOR_ORDER: VisitorId[] = [
   'monshiro',
   'shiokara',
   'akiakane',
+  'oniyanma',
   'tonosama',
   'shouryou',
   'aburazemi',
   'kanabun',
+  'oosuzumebachi',
   'kurooari',
+  'hakiriari',
   'hotaru',
   'enmakorogi',
   'dangomushi',
