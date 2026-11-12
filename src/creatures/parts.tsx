@@ -72,10 +72,12 @@ export interface LegSpec {
   teeth?: number;
   /** 腿節を太くする（跳ぶ虫の後ろあし） */
   jumper?: boolean;
+  /** ふ節の つけねの まるい 吸盤（ゲンゴロウの オスの 前あし）。太さに 対する 倍率 */
+  pad?: number;
 }
 
 function legKey(s: LegSpec) {
-  return `${s.femur}:${s.tibia}:${s.tarsus}:${s.thick}:${s.tarsi ?? 5}:${s.teeth ?? 0}:${s.jumper ? 1 : 0}`;
+  return `${s.femur}:${s.tibia}:${s.tarsus}:${s.thick}:${s.tarsi ?? 5}:${s.teeth ?? 0}:${s.jumper ? 1 : 0}:${s.pad ?? 0}`;
 }
 
 /** 腿節（根元→ひざ。+X 方向に伸びる）。つけねに 基節・転節の ふくらみ、ひざに 関節 */
@@ -142,6 +144,12 @@ function lowerLegGeo(s: LegSpec) {
       c.rotateZ(Math.PI - 0.5);
       c.translate(end[0] - th * 0.3, end[1] - th * 0.45, z * th * 0.45);
       parts.push(c);
+    }
+    if (s.pad) {
+      const pad = new THREE.SphereGeometry(1, 12, 8);
+      pad.scale(th * s.pad, th * 0.5, th * s.pad);
+      pad.translate(end[0] + th * s.pad * 0.7, end[1] - th * 0.3, 0);
+      parts.push(pad);
     }
     // ふ節
     const n = s.tarsi ?? 5;
@@ -233,13 +241,19 @@ export function Leg({
     const swing = Math.sin(g) * 0.4 * a.walk;
     const lift = Math.max(0, Math.cos(g)) * 0.3 * a.walk;
     const tuck = a.sleep * 0.35;
+    // 身づくろい：前あしを 口もとへ 上げて、左右 かわるがわる こする
+    const groom = pair === 0 ? a.groom : 0;
+    const rub = groom * Math.sin(a.t * 9 + (side > 0 ? 0 : Math.PI));
+    // びくっ：あしを ちぢめて 身を ひくくする。背のびでは 前あしを うかせる
+    const crouch = a.startle * 0.12;
+    const reach = pair === 0 ? a.rear * 0.35 : 0;
     // 右側（+X）の脚として回す。左は外側の group で鏡写しにする
     if (hip.current) {
-      hip.current.rotation.y = -(defaultYaw + swing);
-      hip.current.rotation.z = spread + lift + tuck;
+      hip.current.rotation.y = -(defaultYaw + swing + groom * (0.75 - defaultYaw * 0.5) + rub * 0.08);
+      hip.current.rotation.z = spread + lift + tuck + groom * 0.55 + rub * 0.1 + crouch + reach;
     }
     // すねは 外側へ ひらいて 地面に つく（たたむと 体の下へ）
-    if (knee.current) knee.current.rotation.z = 0.7 - spread * 0.5 + lift * 0.25 - tuck * 0.8;
+    if (knee.current) knee.current.rotation.z = 0.7 - spread * 0.5 + lift * 0.25 - tuck * 0.8 - groom * 0.75 + rub * 0.25 - crouch * 1.5 - reach * 0.6;
   });
   return (
     <group position={position} scale={[side, 1, 1]}>
@@ -350,7 +364,17 @@ export function Antenna({
     const a = anim.current;
     if (!ref.current) return;
     const sway = Math.sin(a.t * (1.2 + a.energy * 1.5) + seed) * 0.12 * (0.3 + a.energy);
-    ref.current.rotation.set(rotation[0] + sway * 0.5 - a.sleep * 0.3, rotation[1] + sway, rotation[2]);
+    // 歩く ときは 左右 かわるがわる 地面を さぐる
+    const tap = Math.max(0, Math.sin(a.gait * 0.9 + (side > 0 ? 0 : Math.PI))) * 0.16 * a.walk;
+    // 身づくろい：片方ずつ 口もとへ 下げて しごく
+    const dip = a.groom * Math.max(0, Math.sin(a.t * 1.6 + (side > 0 ? 0 : Math.PI))) ** 0.6;
+    // びくっ：うしろへ ひっこめる
+    const flinch = a.startle * 0.55;
+    ref.current.rotation.set(
+      rotation[0] + sway * 0.5 - a.sleep * 0.3 + tap + dip * 0.75 - flinch + a.rear * 0.15,
+      rotation[1] + sway - dip * 0.35 + flinch * 0.3 + a.look * 0.25 * side,
+      rotation[2],
+    );
   });
   return (
     <group position={position} scale={[side, 1, 1]}>
@@ -386,4 +410,150 @@ function bandsGeo(L: number, thick: number) {
     }
     return mergeGeometries(parts)!;
   });
+}
+
+/**
+ * チョウの はねの 角度（0 = 水平に ひらく、大きいほど 背中で とじる）。
+ * とまっている ときは 半分 とじて ゆっくり 開閉し、日光浴（fan）で 水平に ひらく。
+ * みつや 樹液を すう ときは 小きざみに ふるわせ、びくっと すると ぱっと とじる。
+ * 飛ぶ ときは beat（速さ）と amp（ふれ幅）で はばたき、滑空（glide）の 間は 浅い V 字で 止める。
+ */
+export function butterflyWingAngle(a: CreatureAnim, beat: number, amp: number, closed = 1.15): number {
+  const rest =
+    THREE.MathUtils.lerp(closed, 0.08, a.fan) +
+    Math.sin(a.t * 1.2) * 0.12 * (1 - a.fan * 0.6) +
+    a.eat * (Math.sin(a.t * 11) * 0.16 - 0.3) +
+    a.startle * 0.3 * a.fan;
+  const fly = Math.sin(a.t * beat) * amp * (1 - a.glide) + a.glide * 0.32;
+  return 0.1 + fly * a.flap + (1 - a.flap) * rest;
+}
+
+/* ───────────── 跳ぶ 虫の 後ろあし（バッタ・コオロギ・スズムシ） ───────────── */
+
+export interface JumpLegSpec {
+  /** ひざの 位置（つけねが 原点。右あし） */
+  knee: V3;
+  /** すねの 先（地面に つく 所）。ひざが 原点 */
+  foot: V3;
+  /** 腿節の いちばん 太い ところの 半径 [よこ, たて] */
+  thick: [number, number];
+  /** すねの 太さ */
+  shin: number;
+  /** ふ節の 長さ */
+  tarsus: number;
+  /** すねの うしろの とげの 数（片がわ） */
+  spines?: number;
+}
+
+const jumpKey = (s: JumpLegSpec) => [...s.knee, ...s.foot, ...s.thick, s.shin, s.tarsus, s.spines ?? 5].join(':');
+
+/** 腿節：つけねが 太く、ひざへ 向かって 細くなる（跳ぶ ための 筋肉が つまっている） */
+function jumpFemurGeo(s: JumpLegSpec) {
+  return mergedGeo(`jumpFemur:${jumpKey(s)}`, () => {
+    const [kx, ky, kz] = s.knee;
+    const femur = shapedTube(
+      [[0, 0, 0], [kx * 0.45, ky * 0.55, kz * 0.45], s.knee],
+      (t) => {
+        const k = 0.35 + 0.65 * Math.sin(Math.PI * Math.min(1, 0.18 + t * 0.95)) ** 0.9 * (1 - t * 0.55);
+        return [s.thick[0] * k, s.thick[1] * k];
+      },
+      16,
+      10,
+    );
+    const knee = new THREE.SphereGeometry(s.shin * 1.3, 8, 6);
+    knee.translate(kx, ky, kz);
+    return [femur, knee];
+  });
+}
+
+/** すね（ひざが 原点）：細長く、うしろがわに 小さな とげが 2 列。先に ふ節 */
+function jumpTibiaGeo(s: JumpLegSpec) {
+  return mergedGeo(`jumpTibia:${jumpKey(s)}`, () => {
+    const [fx, fy, fz] = s.foot;
+    const len = Math.hypot(fx, fy, fz);
+    // ふ節は 地面に そって、すねの 向きの 水平成分の 逆（うしろ）へ のびる
+    const back = -1;
+    const parts: THREE.BufferGeometry[] = [
+      shapedTube([[0, 0, 0], [fx * 0.5, fy * 0.5, fz * 0.5], s.foot], (t) => [s.shin * (1 - 0.28 * t), s.shin * (1 - 0.28 * t)], 10, 7),
+      shapedTube(
+        [s.foot, [fx + 0.004, fy - s.shin * 0.7, fz + back * s.tarsus * 0.5], [fx + 0.008, fy - s.shin * 0.35, fz + back * s.tarsus]],
+        (t) => [s.shin * (0.65 - 0.38 * t), s.shin * (0.55 - 0.3 * t)],
+        6,
+        6,
+      ),
+    ];
+    const n = s.spines ?? 5;
+    // とげは すねの うしろがわ（つけねから 見て 外）へ ななめに 出る
+    const dir = new THREE.Vector3(fx, fy, fz).normalize();
+    const out = new THREE.Vector3(0, 0, -1).addScaledVector(dir, dir.z).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), out.clone().addScaledVector(dir, 0.9).normalize());
+    for (let i = 0; i < n; i++) {
+      const t = 0.35 + (i * 0.55) / Math.max(1, n - 1);
+      for (const sx of [-1, 1]) {
+        const c = new THREE.ConeGeometry(s.shin * 0.32, len * 0.1, 5);
+        c.translate(0, len * 0.05, 0);
+        c.applyQuaternion(q);
+        c.translate(fx * t + sx * s.shin * 0.55 + out.x * s.shin * 0.6, fy * t + out.y * s.shin * 0.6, fz * t + out.z * s.shin * 0.6);
+        parts.push(c);
+      }
+    }
+    return parts;
+  });
+}
+
+/** YZ 平面での 向き（+Y から +Z へ 回る 角度。rotation.x と 同じ 向き） */
+const pitchOf = (y: number, z: number) => Math.atan2(z, y);
+
+/**
+ * 跳ぶ 虫の 後ろあし：太い 腿節と 細い すね。歩く ときは 左右 交互に けり、
+ * 跳ぶ とき（kick）は ひざを のばして 後ろへ ぴんと けり出す。びくっと すると ひざを 立てて かまえる。
+ */
+export function JumpLeg({
+  position,
+  side,
+  spec,
+  color,
+  shinColor,
+  surface,
+  anim,
+  kick = 'jump',
+  part,
+}: {
+  position: V3;
+  side: 1 | -1;
+  spec: JumpLegSpec;
+  color: string;
+  shinColor?: string;
+  surface?: MatOpts;
+  anim: AnimRef;
+  /** けり出しに 使う 値（育てる 虫は jump、おきゃくさんは タップの 反応 spray） */
+  kick?: 'jump' | 'spray';
+  part?: string;
+}) {
+  const femur = useRef<THREE.Group>(null);
+  const tibia = useRef<THREE.Group>(null);
+  // のばした ときの 回転：腿節は ななめ後ろ下へ、すねは 腿節と 一直線に なるまで（下を 通って）ひらく
+  const { fKick, tKick } = useMemo(() => {
+    const f = pitchOf(spec.knee[1], spec.knee[2]);
+    const t = pitchOf(spec.foot[1], spec.foot[2]);
+    const open = (((f - t) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    return { fKick: pitchOf(-0.2, -1) - f, tKick: open * 0.66 };
+  }, [spec]);
+  useFrame(() => {
+    const a = anim.current;
+    const k = a[kick];
+    const push = Math.max(0, Math.sin(a.gait + (side > 0 ? 0 : Math.PI))) * a.walk;
+    if (femur.current) femur.current.rotation.x = -push * 0.22 + k * fKick + a.startle * 0.12 + a.sleep * 0.1;
+    if (tibia.current) tibia.current.rotation.x = push * 0.3 + k * tKick - a.startle * 0.15;
+  });
+  return (
+    <group position={position} scale={[side, 1, 1]}>
+      <group ref={femur}>
+        <Part geometry={jumpFemurGeo(spec)} color={color} surface={surface} castShadow part={part} />
+        <group ref={tibia} position={spec.knee}>
+          <Part geometry={jumpTibiaGeo(spec)} color={shinColor ?? color} surface={surface} part={part} />
+        </group>
+      </group>
+    </group>
+  );
 }

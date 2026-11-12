@@ -2,10 +2,11 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { GEO, SURF } from '../three/materials';
-import { elytraShade, grainBump, punctureNormal, striaeNormal, wrinkleBump } from '../three/textures';
+import { elytraShade, punctureNormal, striaeNormal, wrinkleBump } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube, loft, mergedGeo, segmentGeo, shapedTube, pupaGeo } from './geom';
+import { loft, mergedGeo, segmentGeo, shapedTube } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
+import { BeetlePupaBody, Chamber, kabutoPupaHorns, pupaLimbsGeo, type PupaDims } from './pupa';
 import type { ModelProps } from './registry';
 
 /* 出典: docs/species-research.md §1（形態は図鑑の記載と一般的な形態に基づく） */
@@ -111,39 +112,21 @@ export function KabutoPupa({ anim, sex }: ModelProps) {
   });
   const male = sex === 'male';
   const amber = useMemo(() => ({ ...SURF.chitin(0.7), translucent: true }), []);
+  const limbs = pupaLimbsGeo(`kabuto:${male}`, PUPA, (parts) => {
+    if (male) parts.push(...kabutoPupaHorns(PUPA));
+  });
   return (
     <group scale={0.82}>
-      {/* 蛹室（土を固めて つくった 部屋） */}
-      <M color="#3d2a1e" surface={{ roughness: 1, bumpMap: grainBump(7, 48), bumpScale: 3 }} position={[0, 0.62, -0.05]} scale={[0.42, 0.7, 0.3]} part="chamber" />
+      {/* 蛹室（土を固めて つくった たてに 長い 部屋）。中で 立っている */}
+      <Chamber color="#3d2a1e" position={[0, 0.66, 0.12]} scale={[0.46, 0.78, 0.44]} />
       <group ref={body} position={[0, 0.2, 0.05]}>
-        <Part geometry={pupaGeo()} color="#c98b48" surface={amber} position={[0, 0.4, 0]} scale={[0.25, 0.42, 0.21]} castShadow part="body" />
-        {[0.12, 0.22, 0.32, 0.42].map((y, i) => (
-          <M key={y} color="#a86a30" surface={amber} geo={GEO.cylinder()} position={[0, y, 0]} scale={[0.248 - (3 - i) * 0.02, 0.008, 0.21 - (3 - i) * 0.015]} />
-        ))}
-        <Part geometry={GEO.sphere()} color="#d29a58" surface={amber} position={[0, 0.84, 0.03]} scale={[0.21, 0.17, 0.18]} part="body" />
-        {/* たたまれた あしと はね（体の前に そって見える） */}
-        {[1, -1].map((s) => (
-          <group key={s}>
-            <M color="#d9a868" surface={amber} geo={GEO.capsule()} position={[s * 0.1, 0.58, 0.17]} rotation={[0.15, 0, s * 0.1]} scale={[0.05, 0.22, 0.05]} />
-            <M color="#d9a868" surface={amber} geo={GEO.capsule()} position={[s * 0.06, 0.45, 0.19]} rotation={[0.1, 0, -s * 0.15]} scale={[0.045, 0.2, 0.045]} />
-            <M color="#c48a46" surface={amber} position={[s * 0.18, 0.55, 0.06]} scale={[0.07, 0.24, 0.1]} />
-          </group>
-        ))}
-        {male ? (
-          <Part
-            geometry={cachedTube('pupaHornR', [[0, 0, 0], [0, 0.1, 0.1], [0, 0.24, 0.12], [0, 0.34, 0.06]], 0.055, 0.035)}
-            color="#d6a160"
-            surface={amber}
-            position={[0, 0.95, 0.1]}
-            part="horn"
-          />
-        ) : null}
-        <CompoundEye position={[0.1, 0.86, 0.12]} size={0.025} color="#6b4422" />
-        <CompoundEye position={[-0.1, 0.86, 0.12]} size={0.025} color="#6b4422" />
+        <BeetlePupaBody dims={PUPA} color="#c98b48" light="#d9a868" surface={amber} limbs={limbs} limbPart={male ? 'horn' : 'body'} />
       </group>
     </group>
   );
 }
+
+const PUPA: PupaDims = { w: 0.25, h: 0.42, d: 0.21, cy: 0.4 };
 
 const MALE = '#5a2616';
 const FEMALE = '#2c1b12';
@@ -313,7 +296,11 @@ export function KabutoAdult({ anim, sex }: ModelProps) {
   const under = useMemo(() => SURF.matteChitin(), []);
   useFrame(() => {
     const a = anim.current;
-    if (headRef.current) headRef.current.rotation.x = 0.1 - a.eat * 0.3 + Math.sin(a.t * 0.9) * 0.03 * a.energy;
+    // 背のびの ときは 角を 大きく ふり上げる（じゃまな ものを はねのける 動き）。びくっと すると 頭を ひく
+    if (headRef.current) {
+      headRef.current.rotation.x = 0.1 - a.eat * 0.3 + Math.sin(a.t * 0.9) * 0.03 * a.energy - a.rear * (0.3 + Math.sin(a.t * 5) * 0.08) + a.startle * 0.18;
+      headRef.current.rotation.z = a.look * 0.12;
+    }
     // 樹液や ゼリーを なめる オレンジ色の ブラシのような 口
     if (brush.current) brush.current.scale.setScalar(0.5 + a.eat * 0.7);
   });

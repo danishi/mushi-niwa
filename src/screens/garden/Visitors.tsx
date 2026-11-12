@@ -3,6 +3,7 @@ import { memo, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { audio } from '../../audio/audio';
 import { newAnim } from '../../creatures/anim';
+import { GestureRunner, type Gesture } from '../../creatures/gestures';
 import { JoroWeb, VISITOR_MODELS } from '../../creatures/visitors';
 import { VISITORS, visitorsAt, type VisitorId } from '../../data/visitors';
 import { FIRST_VISIT_AFTER, nextGap, pickSpot, pickVisitor, STAY_SECONDS } from '../../sim/visitors';
@@ -40,12 +41,17 @@ type VisitorDefWhere = 'air' | 'ground' | 'post';
 
 type Phase = 'arrive' | 'stay' | 'react' | 'leave';
 
+/** とまっている 間の しぐさ（飛びつづける 子は しない） */
+const REST_GESTURES: Gesture[] = ['groom', 'look'];
+const NO_GESTURES: Gesture[] = [];
+
 function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void }) {
   const def = VISITORS[id];
   const Model = VISITOR_MODELS[id];
   const root = useRef<THREE.Group>(null);
   const anim = useRef(newAnim());
   const st = useRef({ phase: 'arrive' as Phase, t: 0, tapped: false });
+  const gestures = useRef(new GestureRunner());
   const home = useMemo(() => new THREE.Vector3(...at), [at]);
   // 来る 方向（画面の 外がわから）
   const from = useMemo(() => {
@@ -73,6 +79,9 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
     a.t += dt;
     s.t += dt;
     const flier = def.flier && def.where !== 'ground';
+    a.startle = Math.max(0, a.startle - dt * 1.3);
+    // とまって いる 間は、ときどき 触角や 前あしの 手入れを したり、まわりを 見回したり する
+    gestures.current.update(dt, a, def.where === 'air' ? NO_GESTURES : REST_GESTURES, s.phase === 'stay' && a.walk === 0 && a.sing === 0 && a.flap === 0);
     if (s.phase === 'arrive') {
       const k = Math.min(1, s.t / 1.6);
       const e = 1 - (1 - k) ** 3;
@@ -203,6 +212,7 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
           );
           // ホタルは タップで ぱっと ひかる（ほかの 子は spray を 反応に 使う）
           if (id === 'hotaru') anim.current.spray = 1;
+          anim.current.startle = 1;
           audio.play('sparkle');
           const p = root.current?.position ?? home;
           emitParticles('sparkle', [p.x, p.y + 0.3, p.z], 18);

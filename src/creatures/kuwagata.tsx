@@ -1,11 +1,12 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { GEO, SURF } from '../three/materials';
-import { grainBump, striaeNormal } from '../three/textures';
+import { SURF } from '../three/materials';
+import { striaeNormal } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { cachedTube, loft, mergedGeo, shapedTube, pupaGeo } from './geom';
+import { loft, mergedGeo, shapedTube } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
+import { BeetlePupaBody, Chamber, pupaLimbsGeo, stagPupaMandibles, type PupaDims } from './pupa';
 import type { ModelProps } from './registry';
 
 /* 出典: docs/species-research-3.md §A（オオクワガタ）、docs/species-research-4.md §A（ノコギリクワガタ）。形は 図鑑の 記載と 一般的な 形態に もとづく */
@@ -79,7 +80,8 @@ function Mandible({ male, side, anim, x, kind, color }: { male: boolean; side: 1
     const a = anim.current;
     if (!ref.current) return;
     // ふだんは ほぼ とじて いて、いかく（spray）の ときに 大きく ひらく
-    const open = 0.08 + a.spray * 0.45 + Math.sin(a.t * 0.8) * 0.02 * a.energy;
+    // 背のび・びくっ の ときも 少し ひらいて かまえる。身づくろいでは ゆっくり 開け閉め
+    const open = 0.08 + a.spray * 0.45 + a.rear * 0.3 + a.startle * 0.22 + a.groom * (0.1 + Math.sin(a.t * 3) * 0.08) + Math.sin(a.t * 0.8) * 0.02 * a.energy;
     ref.current.rotation.y = side * open;
   });
   return (
@@ -223,7 +225,10 @@ function Stag({ anim, sex, kind }: ModelProps & { kind: StagKind }) {
   useFrame(() => {
     const a = anim.current;
     // いかくの ときは 頭を もちあげる
-    if (headRef.current) headRef.current.rotation.x = -0.02 - a.spray * 0.25 - a.eat * 0.2 + Math.sin(a.t * 0.9) * 0.02 * a.energy;
+    if (headRef.current) {
+      headRef.current.rotation.x = -0.02 - a.spray * 0.25 - a.eat * 0.2 - a.rear * 0.22 - a.startle * 0.1 + Math.sin(a.t * 0.9) * 0.02 * a.energy;
+      headRef.current.rotation.y = a.look * 0.15;
+    }
     if (brush.current) brush.current.scale.setScalar(0.4 + a.eat * 0.7);
   });
   const hw = male ? 0.2 : 0.14;
@@ -270,35 +275,16 @@ export function KuwaPupa({ anim, sex }: ModelProps) {
   });
   const male = sex === 'male';
   const amber = useMemo(() => ({ ...SURF.chitin(0.7), translucent: true }), []);
+  const limbs = pupaLimbsGeo(`stag:${male}`, STAG_PUPA, (parts) => parts.push(...stagPupaMandibles(STAG_PUPA, male)));
   return (
     <group scale={0.82}>
       {/* 蛹室（くち木の くずを 固めた 部屋） */}
-      <M color="#8a6640" surface={{ roughness: 1, bumpMap: grainBump(9, 48), bumpScale: 3 }} position={[0, 0.55, -0.05]} scale={[0.42, 0.62, 0.3]} part="chamber" />
+      <Chamber color="#8a6640" position={[0, 0.6, 0.1]} scale={[0.46, 0.7, 0.42]} seed={9} />
       <group ref={body} position={[0, 0.2, 0.05]}>
-        <Part geometry={pupaGeo()} color="#e8c48a" surface={amber} position={[0, 0.36, 0]} scale={[0.23, 0.36, 0.19]} castShadow part="body" />
-        {[0.12, 0.2, 0.28, 0.36].map((y, i) => (
-          <M key={y} color="#c99a5c" surface={amber} geo={GEO.cylinder()} position={[0, y, 0]} scale={[0.228 - (3 - i) * 0.02, 0.008, 0.19 - (3 - i) * 0.015]} />
-        ))}
-        <Part geometry={GEO.sphere()} color="#ecca92" surface={amber} position={[0, 0.74, 0.03]} scale={[male ? 0.22 : 0.17, 0.12, 0.15]} part="body" />
-        {[1, -1].map((s) => (
-          <group key={s}>
-            <M color="#e9c88f" surface={amber} geo={GEO.capsule()} position={[s * 0.1, 0.52, 0.15]} rotation={[0.15, 0, s * 0.1]} scale={[0.045, 0.2, 0.045]} />
-            <M color="#e9c88f" surface={amber} geo={GEO.capsule()} position={[s * 0.06, 0.4, 0.17]} rotation={[0.1, 0, -s * 0.15]} scale={[0.04, 0.18, 0.04]} />
-            <M color="#d8ac6c" surface={amber} position={[s * 0.16, 0.48, 0.05]} scale={[0.06, 0.22, 0.09]} />
-            {/* 大あごの もと */}
-            <Part
-              geometry={male ? cachedTube('kuwaPupaMand', [[0, 0, 0], [0.03, 0.06, 0.04], [0.02, 0.13, 0.05]], 0.035, 0.018, 8, 8) : cachedTube('kuwaPupaMandF', [[0, 0, 0], [0.015, 0.04, 0.03]], 0.025, 0.015, 6, 6)}
-              color="#e3bb7c"
-              surface={amber}
-              position={[s * 0.06, 0.82, 0.1]}
-              scale={[s, 1, 1]}
-              part="mandibles"
-            />
-          </group>
-        ))}
-        <CompoundEye position={[0.12, 0.76, 0.1]} size={0.022} color="#6b4422" />
-        <CompoundEye position={[-0.12, 0.76, 0.1]} size={0.022} color="#6b4422" />
+        <BeetlePupaBody dims={STAG_PUPA} color="#e8c48a" light="#ecd09c" surface={amber} limbs={limbs} headWide={male ? 0.92 : 0.72} limbPart="mandibles" />
       </group>
     </group>
   );
 }
+
+const STAG_PUPA: PupaDims = { w: 0.23, h: 0.36, d: 0.17, cy: 0.36 };

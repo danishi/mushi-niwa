@@ -14,6 +14,7 @@
 | `npm run icons` | PWA アイコン PNG を `scripts/gen-icons.mjs` から再生成 |
 
 見た目の確認は、`vite preview` を起動した状態で Playwright（WebKit・iPhone 16）からスクリーンショットを撮るのが確実（Claude の Browser ペインは非表示だと描画が止まる）。
+虫の 造形を 直した ときは `node scripts/specimen-shots.mjs <出力先> [種,種:段階,guest:id,guests]` で ずかんの 標本を まとめて 撮る（`BIG=1` で 1 枚ずつ 大きく、なしだと コンタクトシート。`npm run build` と `vite preview --port 4173` が 先。ソフトウェア描画なので 1 枚 数秒〜十数秒 かかる）。
 
 完了の条件（各フェーズ共通）: `npm run build`・`npm test`・`npm run e2e` がすべて通ること。
 
@@ -62,6 +63,15 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **遠目の表示は軽量版**: 棚のミニケースは `LiteContext` で脚の先を省略。脚・触角・ケースの角はそれぞれ 1 ジオメトリに結合。影は主要パーツ（`castShadow` 指定）だけが落とす。
 - **ドローコール削減**: マテリアルは `mat()`、ジオメトリは `GEO.*` / `sharedGeo()` でキャッシュ共有。同じ小物が多いものは `InstancedMesh`（`Scatter`）。
 - **`useBodyMotion` の group には position を付けない**（毎フレーム上書きされる）。持ち上げたいときは外側に group を重ねる。
+- **動きの しくみ**（ユーザー要望で 広げた。どれも 実際の 行動に もとづく）:
+  - `CreatureAnim`（`src/creatures/anim.ts`）の 値を Actor などが 書き、モデルの 部品が 読む。しぐさ用の `groom`（前あし・触角の 手入れ）／`look`（見回す）／`rear`（背のび）／`sway`（風に ゆれる まね）／`fan`（はねを ひろげる）、緩急・反応用の `glide`（滑空）／`jump`（跳んで 空中）／`startle`（さわられた 直後の びくっ）。
+  - しぐさの 進行は `GestureRunner`（`src/creatures/gestures.ts`。純ロジック・Vitest あり）。どの しぐさを するかは `MODELS[*].gestures`（省略すると 動きかたごとの 既定 `gesturesOf()`）。Actor（お世話・かんさつ）、ずかんの 標本、にわの おきゃくさんが 同じ ものを 使う。しぐさの 途中では 歩きださない。
+  - 共通の 部品が しぐさに 反応する: `Leg`（前あしで こする・びくっと ちぢめる）、`Antenna`（歩く ときに 地面を さぐる・片方ずつ 下げて しごく・ひっこめる）、`useBodyMotion`（歩く ときの 左右の ゆれ・背のび・見回す・ゆれる）。節が つらなる 幼虫は `useBodyMotion(anim, amount, true)` に して、前の 節だけを `larvaReach()` で 持ち上げる（体ごと かたむけると おしりが 地面に しずむ）。
+  - Actor の 緩急: 移動ごとに 速さを 変える（`pace`）、歩く 途中で 立ち止まる、大きく 向きを 変える ときは その場で 足ぶみして 回る、跳ねる虫は ときどき 山なりに 跳ぶ、テントウムシは ときどき 短く 飛ぶ（`ModelEntry.shortFlight`）、チョウは 滑空を はさむ（`ModelEntry.glide`）。かんさつ中の 飛ぶ虫は 地面へ おりて とまる。
+  - さわった 反応: びくっ（共通）に 加えて、歩く虫は 後ずさり、跳ねる虫は とびのき、およぐ虫・とまっている チョウは さっと にげる。かんさつ中は びくっと するだけ（その場に いる）。いかく（3 回 タップ）は 今までどおり `spray`。
+  - チョウの はねは `butterflyWingAngle()`（とまると 半分 とじて ゆっくり 開閉、`fan` で 日光浴、みつを すう 間は 小きざみに ふるわせる）。ずかんでは もようが 見えるよう `fan` を かけて ひらく。
+  - 跳ぶ 虫の 後ろあしは `JumpLeg` + `JumpLegSpec`（腿節・すね・とげ・ふ節。歩く ときは 交互に けり、跳ぶ ときは のばす。おきゃくさんは `kick="spray"`）。
+- **甲虫の さなぎ**は `src/creatures/pupa.tsx` の 共通部品（`BeetlePupaBody`・`pupaLimbsGeo`・角／大あご／触角の 部品）。蛹室は `Chamber`（奥の 半分だけの くぼみ。丸ごとの かたまりに すると さなぎが かくれて 見えない）。
 - **あきずに 遊べる しかけ**（ユーザーから「任せる」で追加）: どれも罰なし・失うものなし。
   - シールちょう: `src/data/stickers.ts`（条件はデータ）＋ `src/sim/progress.ts`（判定）＋ `src/state/progress.ts`（保存・トースト）。遊びの できごとは `playEvents`（`src/state/events.ts`）で中継し、ストアどうしは直接 import しあわない。トーストはクイズ回答中は出さない。
   - にわの おきゃくさん: `src/data/visitors.ts`（16 種。昼の虫・夜の虫（ホタル・コオロギ）・昆虫じゃない仲間（ダンゴムシ・クモ・カタツムリ））、モデルは `src/creatures/visitors.tsx`、出かたは `src/sim/visitors.ts` と `src/screens/garden/Visitors.tsx`。1 匹ずつ、まだ見つけていない子が来やすい。来る時間は データの `time`（day / night / any、`visitorsAt()`）。ジョロウグモは 奥の板に あみを はって 上から おりてくる。オニヤンマは 空中を 行ったり来たり（パトロール）。

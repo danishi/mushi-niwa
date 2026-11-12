@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, SURF } from '../three/materials';
 import { grainBump, leafTexture, oomurasakiWing, wrinkleBump } from '../three/textures';
-import { M, useBodyMotion } from './common';
+import { larvaReach, M, useBodyMotion } from './common';
 import { abdomenY, cachedTube, pupaGeo, segmentGeo, shapeGeo } from './geom';
-import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
+import { Antenna, butterflyWingAngle, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
 /* 出典: docs/species-research-4.md §B（オオムラサキ）。形は 図鑑の 記載と 一般的な 形態に もとづく */
@@ -48,7 +48,7 @@ export function OomurasakiEgg({ anim }: ModelProps) {
 export function OomurasakiLarva({ anim, molts }: ModelProps) {
   const segs = useRef<Array<THREE.Mesh | null>>([]);
   const head = useRef<THREE.Group>(null);
-  const body = useBodyMotion(anim, 0.3);
+  const body = useBodyMotion(anim, 0.3, true);
   const size = 0.55 + molts * 0.13;
   const base = '#7fae4a';
   const light = '#a8cc6c';
@@ -60,7 +60,8 @@ export function OomurasakiLarva({ anim, molts }: ModelProps) {
       const m = segs.current[i];
       if (!m) continue;
       const lift = Math.max(0, Math.sin(a.gait * 2 - i * 0.8)) * 0.035 * a.walk;
-      m.position.set(0, 0.13 + lift, 0.42 - i * 0.095);
+      const [rx, ry] = larvaReach(a, i);
+      m.position.set(rx, 0.13 + lift + ry, 0.42 - i * 0.095);
       // まん中が いちばん ふとく、前と うしろに むかって ほそくなる
       const k = 1 - Math.abs(i - 3.5) / 6.5;
       const r = 0.06 + k * 0.08;
@@ -68,7 +69,10 @@ export function OomurasakiLarva({ anim, molts }: ModelProps) {
     }
     // いかく：頭を もちあげて つのを ふる
     if (head.current) {
-      head.current.rotation.x = -a.spray * 0.5 - a.eat * 0.15;
+      const [rx, ry] = larvaReach(a, -0.6);
+      head.current.position.set(rx, 0.14 + ry, 0.52);
+      head.current.rotation.x = -a.spray * 0.5 - a.eat * 0.15 - a.rear * 0.35;
+      head.current.rotation.y = a.look * 0.45;
       head.current.rotation.z = Math.sin(a.t * 12) * 0.12 * a.spray;
     }
   });
@@ -185,10 +189,8 @@ function Wing({ side, anim, male }: { side: 1 | -1; anim: ModelProps['anim']; ma
   const hindMat = useMemo(() => mat('#ffffff', { ...SURF.scales(), map: oomurasakiWing('hind', male), side: THREE.DoubleSide, ...(male ? { sheen: 0.35, sheenColor: '#6a52d0' } : {}) }), [male]);
   useFrame(() => {
     const a = anim.current;
-    // 力づよく はばたき、あいだに すーっと 滑空する
-    const glide = Math.sin(a.t * 0.9) > 0.4 ? 0.3 : 1;
-    const flap = Math.sin(a.t * 9) * 0.85 * a.flap * glide + (1 - a.flap) * (0.2 + Math.sin(a.t * 1.0) * 0.18);
-    if (ref.current) ref.current.rotation.z = 0.1 + flap;
+    // 力づよく はばたき、あいだに すーっと 滑空する（滑空の 切りかえは Actor が 決める）
+    if (ref.current) ref.current.rotation.z = butterflyWingAngle(a, 9, 0.85);
   });
   return (
     <group position={[side * 0.02, 0.06, 0.06]} scale={[side, 1, 1]}>

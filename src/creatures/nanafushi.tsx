@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GEO } from '../three/materials';
 import { grainBump } from '../three/textures';
 import { M } from './common';
-import { cachedTube } from './geom';
+import { bodyGeo, yBody } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -21,17 +21,49 @@ export function NanafushiEgg({ anim }: ModelProps) {
     [0.16, 0, 0.08],
     [-0.12, 0, 0.12],
   ];
+  const shell = useMemo(() => ({ roughness: 0.75, bumpMap: grainBump(37, 48), bumpScale: 2.2 }), []);
   return (
     <group position={[0, 0, 0.3]}>
       {eggs.map(([x, y, z], i) => (
-        <group key={i} ref={i === 0 ? ref : undefined} position={[x, y + 0.05, z]} rotation={[0, i * 1.1, Math.PI / 2]}>
-          <Part geometry={GEO.capsule()} color="#5a4130" surface={{ roughness: 0.6, bumpMap: grainBump(37, 32), bumpScale: 1.5 }} scale={[0.045, 0.06, 0.04]} castShadow={i === 0} part="egg" />
-          <M geo={GEO.cylinder()} color="#3a2a1e" position={[0, 0.075, 0]} scale={[0.035, 0.012, 0.035]} part="lid" />
+        <group key={i} ref={i === 0 ? ref : undefined} position={[x, y + 0.045, z]} rotation={[0, i * 1.1, Math.PI / 2 - 0.12]}>
+          {/* たる形の から。よこに 白っぽい すじ（卵門板）が 1 本 */}
+          <Part geometry={eggGeo()} color="#5a4130" surface={shell} castShadow={i === 0} part="egg" />
+          <M geo={GEO.sphere()} color="#b9a58a" position={[0, 0, 0.041]} scale={[0.008, 0.04, 0.004]} part="egg" />
+          {/* ふた（卵蓋）と、その 上の 小さな こぶ */}
+          <Part geometry={lidGeo()} color="#3a2a1e" surface={shell} position={[0, 0.062, 0]} part="lid" />
+          <M geo={GEO.sphere()} color="#6a4c34" position={[0, 0.075, 0]} scale={[0.008, 0.006, 0.008]} part="lid" />
         </group>
       ))}
     </group>
   );
 }
+
+/** たまごの から（Y 軸が 長い たる形。両がわが 少し 平たい） */
+const eggGeo = () => once('egg', () => yBody('nanafushiEgg', [[-1, 0, 0, 0], [-0.94, 0.4, 0.34, -0.34], [-0.6, 0.86, 0.72, -0.72], [0, 1, 0.82, -0.82], [0.6, 0.9, 0.74, -0.74], [0.92, 0.66, 0.56, -0.56], [1, 0.5, 0.42, -0.42]], { nt: 2.4, nb: 2.4, rings: 20, radial: 18 }).clone().scale(0.05, 0.062, 0.05));
+const eggCache = new Map<string, THREE.BufferGeometry>();
+const once = (k: string, make: () => THREE.BufferGeometry) => eggCache.get(k) ?? (eggCache.set(k, make()), eggCache.get(k)!);
+/** ふた：ふちが 少し はり出した うすい 円ばん */
+const lidGeo = () => once('lid', () => new THREE.LatheGeometry([[0, -0.004], [0.022, -0.004], [0.027, 0], [0.025, 0.006], [0.018, 0.011], [0, 0.012]].map(([x, y]) => new THREE.Vector2(x, y)), 16));
+
+/**
+ * からだ（軸は +Z、頭が 前）。[z, 太さの 倍率] を ならべる。あしの つけねと 節の つなぎめが ふくらみ、
+ * 中胸（前あしと 中あしの 間）が いちばん 長い。はらは 10 節で、先が 少し 上を 向く。
+ */
+const stickBodyGeo = (thick: number) => {
+  const nodes: Array<[number, number]> = [
+    [-1.03, 0], [-1.015, 0.42], [-0.93, 0.6], [-0.7, 0.78], [-0.4, 0.92], [-0.16, 1],
+    [-0.12, 1.22], [-0.07, 0.98], [0.08, 0.92], [0.15, 1.24], [0.2, 0.94], [0.36, 0.84], [0.5, 0.96],
+    [0.55, 1.26], [0.595, 0.86], [0.63, 0.98], [0.69, 1.12], [0.74, 0.86], [0.768, 0],
+  ];
+  return bodyGeo(
+    `stick:${thick}`,
+    nodes.map(([z, k]) => {
+      const y = 0.16 + (z < -0.75 ? (-0.75 - z) * 0.16 : 0);
+      return [z, thick * k, y + thick * k * 0.9, y - thick * k * 0.9] as [number, number, number, number];
+    }),
+    { segs: [-1.0, -0.16, 9, 0.07], rings: 96, radial: 14, nt: 2.2, nb: 2.2 },
+  );
+};
 
 const LEG = (scale: number): LegSpec => ({ femur: 0.3 * scale, tibia: 0.32 * scale, tarsus: 0.12 * scale, thick: 0.01 * scale + 0.004, tarsi: 5 });
 
@@ -68,28 +100,19 @@ function Stick({ anim, sex, molts, adult }: ModelProps & { adult: boolean }) {
   return (
     <group scale={scale}>
       <group ref={sway}>
-        {/* 胸と 腹：1 本の 細長い 棒（つなぎめに すこし ふくらみ） */}
-        <Part
-          geometry={cachedTube(`stick${male && adult ? 'm' : 'f'}`, [[0, 0.16, 0.6], [0, 0.16, 0.2], [0, 0.16, -0.3], [0, 0.17, -0.8], [0, 0.2, -1.0]], thick, thick * 0.6, 24, 8)}
-          color={color}
-          surface={surf}
-          castShadow
-          part="body"
-        />
-        {[0.3, 0.1, -0.15, -0.4, -0.65].map((z) => (
-          <M key={z} geo={GEO.sphere()} color={dark} surface={surf} position={[0, 0.16, z]} scale={[thick * 1.15, thick * 1.1, 0.03]} />
-        ))}
+        {/* 頭・胸（前胸は 短く、中胸が とても 長い）・腹：節の つなぎめが ふくらむ 細長い からだ */}
+        <Part geometry={stickBodyGeo(thick)} color={color} surface={surf} castShadow part="body" />
         {/* おしりの 先（尾毛） */}
         {[1, -1].map((s) => (
-          <M key={s} geo={GEO.cone()} color={dark} position={[s * 0.012, 0.2, -1.03]} rotation={[-Math.PI / 2, 0, s * 0.3]} scale={[0.008, 0.05, 0.008]} />
+          <M key={s} geo={GEO.cone()} color={dark} position={[s * 0.012, 0.205, -1.03]} rotation={[-Math.PI / 2, 0, s * 0.3]} scale={[0.008, 0.05, 0.008]} />
         ))}
-        {/* 頭 */}
-        <Part geometry={GEO.capsule()} color={color} surface={surf} position={[0, 0.17, 0.66]} rotation={[Math.PI / 2, 0, 0]} scale={[thick * 1.1, 0.07, thick * 1.1]} part="head" />
-        <CompoundEye position={[0.025, 0.18, 0.7]} size={0.012} color="#4a3a20" part="head" />
-        <CompoundEye position={[-0.025, 0.18, 0.7]} size={0.012} color="#4a3a20" part="head" />
+        {/* 頭（当たり判定用に 目と いっしょに head を 付ける） */}
+        <M geo={GEO.sphere()} color={dark} surface={surf} position={[0, 0.172, 0.755]} scale={[thick * 0.55, thick * 0.4, 0.014]} part="head" />
+        <CompoundEye position={[thick * 0.92, 0.172, 0.71]} size={[0.008, 0.011, 0.014]} color="#4a3a20" part="head" />
+        <CompoundEye position={[-thick * 0.92, 0.172, 0.71]} size={[0.008, 0.011, 0.014]} color="#4a3a20" part="head" />
         {/* みじかい しょっかく */}
-        <Antenna position={[0.01, 0.18, 0.72]} side={1} length={0.12} thick={0.005} kind="filiform" color={dark} anim={anim} rotation={[0, 0.1, 0]} part="antenna" />
-        <Antenna position={[-0.01, 0.18, 0.72]} side={-1} length={0.12} thick={0.005} kind="filiform" color={dark} anim={anim} rotation={[0, 0.1, 0]} part="antenna" />
+        <Antenna position={[0.01, 0.18, 0.75]} side={1} length={0.12} thick={0.005} kind="filiform" color={dark} anim={anim} rotation={[0, 0.1, 0]} part="antenna" />
+        <Antenna position={[-0.01, 0.18, 0.75]} side={-1} length={0.12} thick={0.005} kind="filiform" color={dark} anim={anim} rotation={[0, 0.1, 0]} part="antenna" />
         {/* 前あし（前へ のばす） */}
         <group ref={frontR} position={[0.02, 0.16, 0.55]}>
           <Leg position={[0, 0, 0]} side={1} pair={0} spec={spec} color={color} anim={anim} spread={0.05} yaw={0.01} part="legs" />

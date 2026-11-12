@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, SURF } from '../three/materials';
 import { agehaWing, grainBump, leafTexture, wrinkleBump, bandTexture } from '../three/textures';
-import { M, useBodyMotion } from './common';
-import { cachedTube, shapeGeo, bodyGeo, segmentGeo } from './geom';
-import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
+import { larvaReach, M, useBodyMotion } from './common';
+import { cachedTube, shapeGeo, bodyGeo, segmentGeo, yBody } from './geom';
+import { Antenna, butterflyWingAngle, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
 /* 出典: docs/species-research.md §2 */
@@ -35,7 +35,8 @@ export function AgehaEgg({ anim }: ModelProps) {
 export function AgehaLarva({ anim, molts }: ModelProps) {
   const segs = useRef<Array<THREE.Mesh | null>>([]);
   const osm = useRef<THREE.Group>(null);
-  const body = useBodyMotion(anim, 0.3);
+  const front = useRef<THREE.Group>(null);
+  const body = useBodyMotion(anim, 0.3, true);
   const fifth = molts >= 4;
   const N = 11;
   const size = 0.5 + molts * 0.17;
@@ -58,10 +59,17 @@ export function AgehaLarva({ anim, molts }: ModelProps) {
       const m = segs.current[i];
       if (!m) continue;
       const lift = Math.max(0, Math.sin(a.gait * 2 - i * 0.8)) * 0.04 * a.walk;
-      m.position.set(0, 0.15 + lift, 0.5 - i * 0.1);
+      const [rx, ry] = larvaReach(a, i);
+      m.position.set(rx, 0.15 + lift + ry, 0.5 - i * 0.1);
       // 胸（前から 2〜4 番目）が ふくらんでいる
       const r = 0.12 + (i >= 1 && i <= 3 ? 0.035 : 0) - (i > N - 3 ? (i - (N - 3)) * 0.025 : 0);
       m.scale.set(r, r * 0.95, r * 0.72);
+    }
+    // 頭と 胸あしは 先頭の 節に ついて 動く
+    if (front.current) {
+      const [rx, ry] = larvaReach(a, -0.6);
+      front.current.position.set(rx, ry, 0);
+      front.current.rotation.set(-a.rear * 0.35 - Math.abs(a.look) * 0.15, a.look * 0.45, 0);
     }
     if (osm.current) osm.current.scale.setScalar(Math.max(0.001, Math.min(1, a.bounce * 1.6 + a.spray)));
   });
@@ -99,6 +107,7 @@ export function AgehaLarva({ anim, molts }: ModelProps) {
             <M geo={GEO.box()} color="#e8ecd8" position={[0, 0.23, -0.05]} rotation={[0.1, 0, 0]} scale={[0.24, 0.012, 0.04]} part="pattern" />
           </>
         ) : null}
+        <group ref={front}>
         {/* 頭 */}
         <Part geometry={GEO.sphere()} color={fifth ? '#6f9f3c' : '#2f241a'} surface={SURF.chitin(0.6)} position={[0, 0.11, 0.6]} scale={[0.075, 0.07, 0.06]} part="pattern" />
         <CompoundEye position={[0.045, 0.12, 0.63]} size={0.012} />
@@ -122,6 +131,7 @@ export function AgehaLarva({ anim, molts }: ModelProps) {
             <Leg position={[-0.07, 0, 0]} side={-1} pair={p} spec={LARVA_LEG} color="#2b2118" anim={anim} spread={-0.5} />
           </group>
         ))}
+        </group>
         {[0.06, -0.04, -0.14, -0.24, -0.44].map((z) =>
           [1, -1].map((s) => <M key={`${z}${s}`} color={fifth ? '#6d9d3a' : '#3e2f22'} position={[s * 0.07, 0.04, z]} scale={[0.035, 0.045, 0.04]} />),
         )}
@@ -145,26 +155,55 @@ export function AgehaPupa({ anim, sex }: ModelProps) {
     <group>
       <M geo={GEO.cylinder()} color="#7a5a43" surface={{ roughness: 0.9 }} position={[0, 0.75, -0.12]} rotation={[0.25, 0, 0]} scale={[0.05, 1.5, 0.05]} castShadow />
       <group ref={ref} position={[0, 0.7, 0.02]} rotation={[0.3, 0, 0]}>
-        <Part geometry={GEO.sphere()} color={color} surface={surf} scale={[0.14, 0.4, 0.12]} castShadow part="color" />
-        {/* 胸の背の とがり */}
-        <Part geometry={GEO.cone()} color={color} surface={surf} position={[0, 0.18, 0.1]} rotation={[0.9, 0, 0]} scale={[0.06, 0.12, 0.04]} part="color" />
+        {/* 角ばった 体：せなかの 胸が とがり、おなかがわは はねの 形に ふくらむ。おしりの 先で 枝に とまる */}
+        <Part geometry={agehaPupaGeo()} color={color} surface={surf} scale={0.4} castShadow part="color" />
         {/* 頭の 2 本の 突起 */}
         {[1, -1].map((s) => (
-          <Part key={s} geometry={GEO.cone()} color={color} surface={surf} position={[s * 0.05, 0.44, 0.03]} rotation={[0.2, 0, -s * 0.2]} scale={[0.03, 0.1, 0.03]} part="color" />
+          <Part key={s} geometry={cachedTube(`agehaPupaHorn${s}`, [[0, 0, 0], [s * 0.012, 0.045, 0.004], [s * 0.035, 0.085, 0.012]], 0.028, 0.006, 8, 7)} color={color} surface={surf} position={[s * 0.035, 0.37, 0.0]} part="color" />
         ))}
-        {/* はねの 形が 見える */}
+        {/* はねの 形が すじに なって 見える */}
         {[1, -1].map((s) => (
-          <M key={`w${s}`} color={sex === 'male' ? '#b5cc6f' : '#b39a6e'} surface={surf} position={[s * 0.08, 0.12, 0.06]} rotation={[0, 0, s * 0.15]} scale={[0.06, 0.2, 0.06]} />
+          <M key={`w${s}`} color={sex === 'male' ? '#b5cc6f' : '#b39a6e'} surface={surf} position={[s * 0.07, 0.05, -0.085]} rotation={[0.15, 0, s * 0.2]} scale={[0.07, 0.19, 0.05]} />
         ))}
         {/* 帯糸 */}
-        <mesh position={[0, 0.06, -0.06]} rotation={[0.3, 0, 0]} userData={{ part: 'girdle' }}>
-          <torusGeometry args={[0.15, 0.004, 4, 24, Math.PI]} />
+        <mesh position={[0, 0.1, -0.03]} rotation={[0.3, 0, 0]} userData={{ part: 'girdle' }}>
+          <torusGeometry args={[0.16, 0.004, 4, 24, Math.PI]} />
           <meshStandardMaterial color="#efece2" roughness={0.6} />
         </mesh>
       </group>
     </group>
   );
 }
+
+/**
+ * さなぎの 体（半径 1・Y 軸。上が 頭）。yBody は 背中が -Z に なるので、ここでは「上」を おなかがわ（枝の ほう）、
+ * 「下」を せなかがわ（手前）と して 使う。胸の せなかに とがった こぶ。
+ */
+const agehaPupaGeo = () =>
+  yBody(
+    'agehaPupa',
+    [
+      [-1, 0.02, 0.02, -0.02],
+      [-0.82, 0.13, 0.13, -0.13],
+      [-0.42, 0.27, 0.3, -0.25],
+      [0, 0.35, 0.43, -0.29],
+      [0.35, 0.36, 0.4, -0.33],
+      [0.6, 0.31, 0.3, -0.4],
+      [0.8, 0.26, 0.25, -0.27],
+      [0.95, 0.22, 0.2, -0.2],
+      [1, 0.15, 0.13, -0.13],
+    ],
+    {
+      segs: [-0.96, -0.12, 5, 0.06],
+      rings: 48,
+      nt: 2.3,
+      nb: 1.8,
+      extra: (p) => {
+        // せなかの まん中の かど（胸の とがり）
+        if (p.y < 0) p.y -= 0.13 * Math.exp(-((p.x / 0.11) ** 2) - ((p.z - 0.58) / 0.13) ** 2);
+      },
+    },
+  );
 
 const foreWing = (s: THREE.Shape) => {
   s.moveTo(0, 0);
@@ -188,10 +227,8 @@ function Wing({ side, anim }: { side: 1 | -1; anim: ModelProps['anim'] }) {
   const hindMat = useMemo(() => mat('#ffffff', { ...SURF.scales(), map: agehaWing('hind'), side: THREE.DoubleSide }), []);
   useFrame(() => {
     const a = anim.current;
-    // 飛ぶときは すばやく、とまっている時は ゆっくり 開いたり閉じたり
-    // とまっている時は 翅を すこし ひらいて、ゆっくり 開いたり 閉じたり
-    const flap = Math.sin(a.t * 13) * 0.95 * a.flap + (1 - a.flap) * (0.18 + Math.sin(a.t * 1.2) * 0.15);
-    if (ref.current) ref.current.rotation.z = 0.1 + flap;
+    // ひらひらと こまかく はばたき、ときどき 短く 滑空する
+    if (ref.current) ref.current.rotation.z = butterflyWingAngle(a, 13, 0.95);
   });
   return (
     <group position={[side * 0.02, 0.06, 0.06]} scale={[side, 1, 1]}>

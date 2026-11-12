@@ -3,8 +3,8 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { leafGeometry } from '../three/Diorama';
 import { GEO, mat, SURF } from '../three/materials';
-import { fuzzTexture, grainBump, leafTexture, mothWing, paint, striaeNormal, wrinkleBump } from '../three/textures';
-import { M, useBodyMotion } from './common';
+import { fuzzTexture, grainBump, leafTexture, mothWing, paint, striaeNormal, veinWing, wrinkleBump } from '../three/textures';
+import { larvaReach, M, useBodyMotion } from './common';
 import { bodyGeo, segmentGeo, shapeGeo, shellGeo, cocoonGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
@@ -91,28 +91,56 @@ export function TentouPupa({ anim }: ModelProps) {
     // さわると ぴくっと 起き上がる
     if (ref.current) ref.current.rotation.x = -0.5 + Math.sin(a.t * 25) * 0.12 * Math.max(a.shiver, a.bounce);
   });
-  const surf = useMemo(() => ({ roughness: 0.4, clearcoat: 0.6 }), []);
+  const surf = useMemo(() => ({ roughness: 0.4, clearcoat: 0.6, map: tentouPupaMap() }), []);
   return (
     <group>
       <M geo={leafGeometry()} color="#ffffff" surface={leaf} scale={0.9} part="tail" />
       <group ref={ref} position={[0, 0.02, 0.32]}>
-        <Part geometry={GEO.sphere()} color="#e89a3a" surface={surf} position={[0, 0.12, 0.06]} scale={[0.1, 0.12, 0.09]} castShadow part="tail" />
-        {(
-          [
-            [0.04, 0.2, 0.12],
-            [-0.04, 0.2, 0.12],
-            [0, 0.14, 0.15],
-            [0.06, 0.08, 0.12],
-            [-0.06, 0.08, 0.12],
-          ] as Array<[number, number, number]>
-        ).map((p, i) => (
-          <M key={i} color="#2b2118" position={p} scale={[0.02, 0.014, 0.01]} />
-        ))}
-        <M color="#3a2a1a" position={[0, 0.0, 0]} scale={[0.04, 0.03, 0.04]} part="tail" />
+        {/* おしりの 先で 葉に つき、背中を まるめて 立つ。ぬいだ 幼虫の 皮が 根もとに 残る */}
+        <group rotation={[-Math.PI / 2 + 0.5, 0, 0]}>
+          <Part geometry={tentouPupaGeo()} color="#ffffff" surface={surf} position={[0, 0, 0.135]} castShadow part="tail" />
+        </group>
+        <M color="#2b2620" surface={{ roughness: 0.9, bumpMap: grainBump(47, 32), bumpScale: 2 }} position={[0, 0.012, -0.012]} scale={[0.045, 0.02, 0.04]} part="tail" />
       </group>
     </group>
   );
 }
+
+/** さなぎの もよう（u が まわり、v が 前後）：だいだい色に、背中の 2 列の 黒い 点 */
+function tentouPupaMap() {
+  return paint('tentouPupa', 128, (g, s) => {
+    g.fillStyle = '#e8963a';
+    g.fillRect(0, 0, s, s);
+    // 胸は 少し うすい 色
+    g.fillStyle = 'rgba(240, 200, 130, 0.5)';
+    g.fillRect(0, 0, s, s * 0.3);
+    g.fillStyle = '#2b2118';
+    for (let i = 0; i < 6; i++) {
+      const v = 0.14 + i * 0.13;
+      const r = s * (i < 2 ? 0.035 : 0.028);
+      for (const u of [0.43, 0.57]) {
+        g.beginPath();
+        g.ellipse(u * s, (1 - v) * s, r, r * 0.8, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      // わきの 小さな 点
+      if (i >= 2)
+        for (const u of [0.33, 0.67]) {
+          g.beginPath();
+          g.ellipse(u * s, (1 - v) * s, r * 0.6, r * 0.5, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+    }
+  });
+}
+
+/** さなぎの 体（軸は Z。おしりが -Z）：背中が 高く まるく、おなかは 平ら。はらに 節 */
+const tentouPupaGeo = () =>
+  bodyGeo('tentouPupa', [[-0.135, 0.012, 0.02, 0], [-0.11, 0.055, 0.075, 0], [-0.04, 0.095, 0.14, 0], [0.04, 0.102, 0.155, 0.008], [0.1, 0.08, 0.125, 0.03], [0.135, 0.04, 0.08, 0.042], [0.146, 0, 0.06, 0.06]], {
+    mid: 0.25,
+    nb: 3,
+    segs: [-0.13, 0.02, 5, 0.05],
+  });
 
 /** 背中の 7 つの星（左右 3 つずつ と、まんなか前の 1 つ）。[横, 前後, 大きさ] */
 const SPOTS: Array<[number, number, number]> = [
@@ -126,6 +154,14 @@ const SPOTS: Array<[number, number, number]> = [
 ];
 const T_LEG: LegSpec = { femur: 0.1, tibia: 0.1, tarsus: 0.07, thick: 0.014, tarsi: 3 };
 
+/** うしろばね（右。つけねが 原点、よこへ のびる）：前ばねの 2 倍ほどの 長さ */
+const tentouHindWing = (sh: THREE.Shape) => {
+  sh.moveTo(0, 0.03);
+  sh.bezierCurveTo(0.2, 0.1, 0.45, 0.1, 0.56, 0.02);
+  sh.bezierCurveTo(0.5, -0.12, 0.25, -0.2, 0.06, -0.16);
+  sh.lineTo(0, 0.03);
+};
+
 let domeHalfGeo: THREE.SphereGeometry | null = null;
 /** ドームの右半分（左右の前ばね） */
 function domeHalf() {
@@ -136,6 +172,9 @@ function domeHalf() {
 export function TentouAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0.4);
   const shell = useRef<THREE.Group>(null);
+  const hind = useRef<THREE.Group>(null);
+  // うしろばね：前ばねより ずっと 長い、うすい まく
+  const hindMat = useMemo(() => mat('#ffffff', { map: veinWing('#d9cfb8', '#5a4a36', 0.5), roughness: 0.25, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }), []);
   const red = useMemo(() => ({ ...SURF.chitin(1), roughness: 0.22, clearcoatRoughness: 0.05, normalScale: 0.15 }), []);
   const spotMat = useMemo(() => mat('#141210', { roughness: 0.25, clearcoat: 1 }), []);
   const spots = useMemo(
@@ -154,11 +193,23 @@ export function TentouAdult({ anim }: ModelProps) {
   );
   useFrame(() => {
     const a = anim.current;
+    // 飛ぶときは かたい前ばねを 上へ ひらき、たたんでいた うすい うしろばねを のばして はばたく。
+    // ひまな ときにも、ときどき 前ばねを 少し ひらいて うしろばねを のばす（はねのばし）
+    const open = Math.max(a.flap, a.fan * 0.55);
     if (shell.current) {
-      // 飛ぶときは かたい前ばねを ひらく
-      const open = a.flap * 0.8;
-      shell.current.children[0]!.rotation.z = open;
-      shell.current.children[1]!.rotation.z = -open;
+      shell.current.children.forEach((c, i) => {
+        const s = i === 0 ? 1 : -1;
+        c.rotation.z = s * open * 0.95;
+        c.rotation.y = s * open * 0.5;
+      });
+    }
+    if (hind.current) {
+      hind.current.visible = open > 0.04;
+      hind.current.children.forEach((c, i) => {
+        const s = i === 0 ? 1 : -1;
+        c.scale.set(s * Math.max(0.05, open), 1, 0.35 + open * 0.65);
+        c.rotation.z = s * (0.15 + Math.sin(a.t * 75) * 0.6 * a.flap);
+      });
     }
   });
   return (
@@ -175,6 +226,13 @@ export function TentouAdult({ anim }: ModelProps) {
               .map((sp, i) => (
                 <mesh key={i} geometry={GEO.sphere()} material={spotMat} position={sp.p} quaternion={sp.q} scale={[sp.r, 0.006, sp.r * 1.05]} userData={{ part: 'spots' }} />
               ))}
+          </group>
+        ))}
+      </group>
+      <group ref={hind} position={[0, 0.12, 0.08]} visible={false}>
+        {[1, -1].map((s) => (
+          <group key={s}>
+            <mesh geometry={shapeGeo('tentouHind', tentouHindWing)} material={hindMat} rotation={[Math.PI / 2, 0, 0]} />
           </group>
         ))}
       </group>
@@ -237,7 +295,7 @@ export function KaikoEgg({ anim }: ModelProps) {
 export function KaikoLarva({ anim, molts }: ModelProps) {
   const segs = useRef<Array<THREE.Mesh | null>>([]);
   const head = useRef<THREE.Group>(null);
-  const body = useBodyMotion(anim, 0.3);
+  const body = useBodyMotion(anim, 0.3, true);
   const skin = useMemo(() => ({ ...SURF.softSkin(), bumpMap: wrinkleBump(), bumpScale: 0.8 }), []);
   const N = 12;
   // 4 回の脱皮で どんどん大きく（5 齢で いちばん大きい）
@@ -248,14 +306,17 @@ export function KaikoLarva({ anim, molts }: ModelProps) {
       const m = segs.current[i];
       if (!m) continue;
       const lift = Math.max(0, Math.sin(a.gait * 1.5 - i * 0.7)) * 0.03 * a.walk;
-      m.position.set(0, 0.13 + lift, 0.5 - i * 0.09);
+      const [rx, ry] = larvaReach(a, i);
+      m.position.set(rx, 0.13 + lift + ry, 0.5 - i * 0.09);
       const r = 0.12 + (i === 2 ? 0.012 : 0) - (i > N - 3 ? (i - (N - 3)) * 0.02 : 0) - (i === 0 ? 0.02 : 0);
       m.scale.set(r, r * 0.92, r * 0.7);
     }
     if (head.current) {
-      // 食べるときは 頭を 左右に ふる
-      head.current.rotation.y = Math.sin(a.t * 6) * 0.35 * a.eat;
-      head.current.rotation.x = 0.25 * a.eat;
+      // 食べるときは 頭を 左右に ふる。ひまな ときは 頭を 持ち上げて まわりを さぐる
+      const [rx, ry] = larvaReach(a, -0.6);
+      head.current.position.set(rx, 0.12 + ry, 0.58);
+      head.current.rotation.y = Math.sin(a.t * 6) * 0.35 * a.eat + a.look * 0.45;
+      head.current.rotation.x = 0.25 * a.eat - a.rear * 0.35;
     }
   });
   return (
@@ -360,9 +421,10 @@ export function KaikoAdult({ anim }: ModelProps) {
     const a = anim.current;
     // 歩くときに はねを こまかく ふるわせる（飛べない）
     if (wings.current) {
-      const buzz = Math.sin(a.t * 45) * 0.12 * (a.walk + a.bounce);
-      wings.current.children[0]!.rotation.z = 0.3 + buzz;
-      wings.current.children[1]!.rotation.z = -0.3 - buzz;
+      const buzz = Math.sin(a.t * 45) * (0.12 * (a.walk + a.bounce) + 0.3 * a.fan);
+      const lift = 0.14 + a.fan * 0.3 - a.sleep * 0.1;
+      wings.current.children[0]!.rotation.z = lift + buzz;
+      wings.current.children[1]!.rotation.z = -lift - buzz;
     }
   });
   return (
@@ -444,7 +506,10 @@ export function MiideraAdult({ anim }: ModelProps) {
   useFrame(() => {
     const a = anim.current;
     // 噴射のとき おしりを くいっと向ける
-    if (tail.current) tail.current.rotation.x = -a.spray * 0.45;
+    if (tail.current) {
+      tail.current.rotation.x = -a.spray * 0.45 - a.startle * 0.15;
+      tail.current.rotation.y = Math.sin(a.gait) * 0.05 * a.walk;
+    }
   });
   return (
     <group ref={body} scale={1.3}>

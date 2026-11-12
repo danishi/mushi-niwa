@@ -5,7 +5,7 @@ import { PIT } from '../habitat/case';
 import { GEO, mat, SURF } from '../three/materials';
 import { grainBump, sandTexture, veinWing } from '../three/textures';
 import { M, useBodyMotion } from './common';
-import { abdomenZ, cachedTube, shapeGeo } from './geom';
+import { abdomenZ, bodyGeo, cachedTube, shapeGeo } from './geom';
 import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
 import type { ModelProps } from './registry';
 
@@ -108,10 +108,10 @@ function NetWing({ side, front, anim }: { side: 1 | -1; front: boolean; anim: Mo
   useFrame(() => {
     const a = anim.current;
     // とまっているときは はねを 屋根の ように せなかに たたむ。ふわふわと よわく とぶ
-    const rest = 1 - a.flap;
+    const rest = (1 - a.flap) * (1 - a.fan * 0.6);
     // rotation.y は +x（横）から うしろへ たおす 角度。z は 屋根の かたむき
     if (ref.current) {
-      ref.current.rotation.z = -0.3 * rest + (Math.sin(a.t * 10 + (front ? 0 : 1.2)) * 0.6 + 0.2) * a.flap;
+      ref.current.rotation.z = -0.3 * rest + (Math.sin(a.t * 10 + (front ? 0 : 1.2)) * 0.6 * (1 - a.glide) + 0.2) * a.flap + a.fan * (1 - a.flap) * 0.15;
       ref.current.rotation.y = rest * (front ? 1.42 : 1.52) + (1 - rest) * (front ? -0.15 : 0.2);
     }
   });
@@ -128,29 +128,47 @@ function NetWing({ side, front, anim }: { side: 1 | -1; front: boolean; anim: Mo
 
 const A_LEG: LegSpec = { femur: 0.08, tibia: 0.09, tarsus: 0.05, thick: 0.007, tarsi: 5 };
 
-/** 成虫（ウスバカゲロウ）：トンボに にた ほそい からだに、うすい 4 まいの はね。しょっかくは みじかくて 先が ふくらむ */
+/** むね：前胸は 細い くび、はねの つく 中胸・後胸は もり上がる */
+const thoraxGeo = () => bodyGeo('usubaThorax', [[0.03, 0.02, 0.05, 0.012], [0.06, 0.034, 0.072, 0.0], [0.105, 0.036, 0.074, -0.002], [0.14, 0.026, 0.058, 0.006], [0.17, 0.018, 0.046, 0.014], [0.185, 0.014, 0.04, 0.018]], { nt: 2.2 });
+
+/** はら：細長い つつ。節の くびれが あり、先へ 少し 下がる */
+const abdomenGeo = () =>
+  bodyGeo('usubaAbdomen', [[-0.5, 0, 0.018, 0.018], [-0.49, 0.009, 0.026, 0.008], [-0.4, 0.013, 0.034, 0.008], [-0.2, 0.015, 0.042, 0.012], [-0.02, 0.017, 0.048, 0.014], [0.04, 0.02, 0.05, 0.012]], { segs: [-0.49, 0.03, 8, 0.1], rings: 60, radial: 12 });
+
+/** 頭：よこに 広く、左右に はり出した 大きな 複眼 */
+const headGeo = () => bodyGeo('usubaHead', [[0.175, 0.016, 0.046, 0.016], [0.195, 0.034, 0.058, 0.01], [0.215, 0.032, 0.054, 0.008], [0.232, 0.018, 0.04, 0.012], [0.24, 0, 0.026, 0.02]], { nt: 2.2 });
+
+/**
+ * 成虫（ウスバカゲロウ）：トンボに にた ほそい からだに、うすい 4 まいの はね。しょっかくは みじかくて 先が ふくらむ。
+ * とまる ときは はねを 屋根の ように たたみ、ふわふわと よわく 飛ぶ。
+ */
 export function UsubaAdult({ anim }: ModelProps) {
   const body = useBodyMotion(anim, 0);
-  const surf = useMemo(() => ({ roughness: 0.6, clearcoat: 0.2 }), []);
+  const tail = useRef<THREE.Group>(null);
+  const surf = useMemo(() => ({ roughness: 0.6, clearcoat: 0.2, bumpMap: grainBump(69, 64), bumpScale: 0.5 }), []);
+  useFrame(() => {
+    const a = anim.current;
+    // 飛ぶ ときは 長い はらを 少し たらし、ゆっくり ゆらす
+    if (tail.current) tail.current.rotation.x = a.flap * (0.12 + Math.sin(a.t * 5) * 0.04) - a.rear * 0.2;
+  });
   return (
     <group position={[0, 0.12, 0]} scale={1.4}>
       <group ref={body}>
-        <Part geometry={GEO.sphere()} color="#3a342c" surface={surf} position={[0, 0.03, 0.12]} scale={[0.04, 0.04, 0.06]} castShadow part="body" />
-        <Part geometry={cachedTube('usubaAbd', [[0, 0.03, 0.06], [0, 0.03, -0.2], [0, 0.02, -0.5]], 0.022, 0.012, 16, 6)} color="#3a342c" surface={surf} castShadow part="body" />
-        {[-0.05, -0.15, -0.25, -0.35].map((z) => (
-          <M key={z} geo={GEO.cylinder()} color="#6a6050" position={[0, 0.03, z]} rotation={[Math.PI / 2, 0, 0]} scale={[0.021, 0.008, 0.021]} />
-        ))}
-        <Part geometry={GEO.sphere()} color="#3a342c" surface={surf} position={[0, 0.03, 0.19]} scale={0.032} part="eyes" />
-        <CompoundEye position={[0.026, 0.035, 0.2]} size={0.02} color="#2a2a24" part="eyes" />
-        <CompoundEye position={[-0.026, 0.035, 0.2]} size={0.02} color="#2a2a24" part="eyes" />
-        <Antenna position={[0.01, 0.055, 0.215]} side={1} length={0.11} thick={0.004} kind="clavate" color="#2a2620" anim={anim} rotation={[0.3, 0.3, 0]} part="antenna" />
-        <Antenna position={[-0.01, 0.055, 0.215]} side={-1} length={0.11} thick={0.004} kind="clavate" color="#2a2620" anim={anim} rotation={[0.3, 0.3, 0]} part="antenna" />
+        <Part geometry={thoraxGeo()} color="#3f382e" surface={surf} castShadow part="body" />
+        <group ref={tail} position={[0, 0.03, 0.04]}>
+          <Part geometry={abdomenGeo()} color="#3a342c" surface={surf} position={[0, -0.03, -0.04]} castShadow part="body" />
+        </group>
+        <Part geometry={headGeo()} color="#4a4034" surface={surf} part="eyes" />
+        <CompoundEye position={[0.034, 0.036, 0.208]} size={[0.02, 0.022, 0.022]} color="#3a3a30" part="eyes" />
+        <CompoundEye position={[-0.034, 0.036, 0.208]} size={[0.02, 0.022, 0.022]} color="#3a3a30" part="eyes" />
+        <Antenna position={[0.012, 0.055, 0.232]} side={1} length={0.11} thick={0.004} kind="clavate" color="#2a2620" anim={anim} rotation={[0.3, 0.3, 0]} part="antenna" />
+        <Antenna position={[-0.012, 0.055, 0.232]} side={-1} length={0.11} thick={0.004} kind="clavate" color="#2a2620" anim={anim} rotation={[0.3, 0.3, 0]} part="antenna" />
         <NetWing side={1} front anim={anim} />
         <NetWing side={-1} front anim={anim} />
         <NetWing side={1} front={false} anim={anim} />
         <NetWing side={-1} front={false} anim={anim} />
         {[0, 1, 2].map((p) => (
-          <group key={p} position={[0, 0.0, 0.15 - p * 0.03]}>
+          <group key={p} position={[0, 0.005, 0.16 - p * 0.035]}>
             <Leg position={[0.02, 0, 0]} side={1} pair={p} spec={A_LEG} color="#4a4236" anim={anim} />
             <Leg position={[-0.02, 0, 0]} side={-1} pair={p} spec={A_LEG} color="#4a4236" anim={anim} />
           </group>

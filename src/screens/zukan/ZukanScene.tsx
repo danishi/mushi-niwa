@@ -3,7 +3,8 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { audio } from '../../audio/audio';
 import { newAnim } from '../../creatures/anim';
-import { modelFor } from '../../creatures/registry';
+import { GestureRunner, type Gesture } from '../../creatures/gestures';
+import { gesturesOf, modelFor } from '../../creatures/registry';
 import { VISITOR_MODELS } from '../../creatures/visitors';
 import { SPECIES } from '../../data/species';
 import { VISITORS, type VisitorId } from '../../data/visitors';
@@ -15,6 +16,8 @@ import { useTier } from '../../three/QualityManager';
 import { QUALITY } from '../../three/quality';
 import { GEO, mat } from '../../three/materials';
 import { woodTexture } from '../../three/textures';
+
+const GUEST_GESTURES: Gesture[] = ['groom', 'look'];
 
 export const zukanShot = (): CameraShot => ({
   // 下半分は解説シートなので、標本が画面の上半分に来るよう注視点を下げる
@@ -40,6 +43,7 @@ export function SpecimenView({ species, stage }: { species: SpeciesId; stage: nu
   const inner = useRef<THREE.Group>(null);
   const anim = useRef(newAnim());
   const frames = useRef(0);
+  const gestures = useRef(new GestureRunner());
   const st = SPECIES[z.species].stages[z.stage];
   const entry = st ? modelFor(st.model) : null;
   const flier = entry?.locomotion === 'flutter';
@@ -50,10 +54,17 @@ export function SpecimenView({ species, stage }: { species: SpeciesId; stage: nu
     const a = anim.current;
     a.t += dt;
     a.energy = 1;
-    a.walk = 0.6;
-    a.gait += dt * 4;
+    // 台の 上では、足ぶみと しぐさ（手入れ・見回す・背のび など）を かわるがわる 見せる
+    const gesturing = gestures.current.kind !== null;
+    const stepping = !gesturing && Math.sin(a.t * 0.45) > 0;
+    a.walk = THREE.MathUtils.damp(a.walk, stepping ? 0.6 : 0, 5, dt);
+    a.gait += dt * 4 * a.walk;
     a.flap = 0;
     a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
+    a.startle = Math.max(0, a.startle - dt * 1.3);
+    if (entry) gestures.current.update(dt, a, gesturesOf(entry), !stepping && a.startle < 0.1);
+    // チョウは はねの もようが 見えるよう、ひらきぎみに とまる
+    if (flier) a.fan = Math.max(a.fan, 0.8);
     if (spin.current) spin.current.rotation.y += dt * 0.5;
     // モデルの 大きさは 種と 段階で ちがうので、外接箱から 台に おさまる 大きさに そろえる。
     // 幼虫の 節などは 最初の フレームで 位置が 決まるので、少し 待ってから 測る
@@ -80,7 +91,11 @@ export function SpecimenView({ species, stage }: { species: SpeciesId; stage: nu
   if (!st || !entry) return null;
   const Model = entry.C;
   return (
-    <group ref={spin} position={[0, 0.62, 0]} onPointerDown={() => (anim.current.bounce = 1)}>
+    <group ref={spin} position={[0, 0.62, 0]} onPointerDown={() => {
+        anim.current.bounce = 1;
+        anim.current.startle = 1;
+      }}
+    >
       <group ref={fit} scale={1.2 / Math.max(0.6, entry.length)}>
         <group ref={inner}>
           <Model key={`${z.species}-${z.stage}`} anim={anim} sex="male" molts={st.molts ?? 0} outlines={QUALITY[tier].outlines} />
@@ -101,6 +116,7 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
   const fit = useRef<THREE.Group>(null);
   const inner = useRef<THREE.Group>(null);
   const anim = useRef(newAnim());
+  const gestures = useRef(new GestureRunner());
   useLayoutEffect(() => {
     const f = fit.current;
     const g = inner.current;
@@ -121,8 +137,12 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
     a.energy = 1;
     // チョウ・トンボは ときどき はねを うごかす。ほかは その場で あしぶみ
     a.flap = flier ? (Math.sin(a.t * 0.8) > 0.6 ? 1 : 0) : 0;
-    a.walk = flier ? 0 : 0.4;
-    a.gait += dt * 4;
+    // 足ぶみと しぐさ（手入れ・見回す）を かわるがわる
+    const stepping = !flier && gestures.current.kind === null && Math.sin(a.t * 0.45) > 0;
+    a.walk = THREE.MathUtils.damp(a.walk, stepping ? 0.4 : 0, 5, dt);
+    a.gait += dt * 4 * (a.walk / 0.4);
+    a.startle = Math.max(0, a.startle - dt * 1.3);
+    gestures.current.update(dt, a, GUEST_GESTURES, !stepping && a.flap === 0 && a.startle < 0.1 && a.spray < 0.1);
     a.spray = THREE.MathUtils.damp(a.spray, 0, 1.5, dt);
     a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
     if (spin.current) spin.current.rotation.y += dt * 0.5;
@@ -139,6 +159,7 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
           if (r === 'warn') audio.play('clack');
         }
         anim.current.bounce = 1;
+        anim.current.startle = 1;
       }}
     >
       <group ref={fit}>

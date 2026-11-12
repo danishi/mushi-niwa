@@ -1,12 +1,12 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { GEO, mat, SURF } from '../three/materials';
+import { GEO, mat, sharedGeo, SURF } from '../three/materials';
 import { grainBump, monshiroWing, veinWing, paint, striaeNormal } from '../three/textures';
 import type { CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
-import { shapeGeo, taperedTube, abdomenY, abdomenZ, archGeo, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
-import { Antenna, CompoundEye, Leg, Part, type LegSpec } from './parts';
+import { mergedGeo, shapeGeo, shapedTube, shellGeo as loftShell, taperedTube, abdomenY, abdomenZ, archGeo, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
+import { Antenna, CompoundEye, JumpLeg, Leg, Part, type JumpLegSpec, type LegSpec } from './parts';
 
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる 虫より 軽い つくりにして、
@@ -47,6 +47,25 @@ function DragonWing({ anim, side, front, k = 1, z = 0, tint = '#e8f1f4' }: { ani
   );
 }
 
+/** トンボの むね：はねを 動かす 筋肉で 大きく ふくらみ、前へ かたむいて いる */
+const dragonThoraxGeo = () =>
+  bodyGeo('dragonThorax', [[-0.025, 0.018, 0.03, -0.012], [0.005, 0.04, 0.056, -0.04], [0.065, 0.046, 0.06, -0.05], [0.115, 0.036, 0.046, -0.034], [0.14, 0.02, 0.028, -0.014]], { nt: 2.2 });
+
+const DRAGON_LEG: LegSpec = { femur: 0.05, tibia: 0.05, tarsus: 0.03, thick: 0.005, tarsi: 3 };
+
+/** トンボの あし：とげの ある 細い あしを 前よりに まとめて、かごの ように かまえる（歩くのは にがて） */
+function DragonLegs({ anim, color, z = 0.1 }: { anim: AnimRef; color: string; z?: number }) {
+  return (
+    <>
+      {[0, 1, 2].map((p) =>
+        [1, -1].map((s) => (
+          <Leg key={`${p}${s}`} position={[s * 0.018, 0.012, z - p * 0.024]} side={s as 1 | -1} pair={p} spec={DRAGON_LEG} color={color} anim={anim} spread={0.12} yaw={0.75 - p * 0.45} />
+        )),
+      )}
+    </>
+  );
+}
+
 export function Shiokara({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 0);
   const powder = useMemo(() => ({ roughness: 0.9, sheen: 0.6, sheenColor: '#e6f0f5' }), []);
@@ -57,7 +76,8 @@ export function Shiokara({ anim }: { anim: AnimRef }) {
       <CompoundEye position={[-0.03, 0.07, 0.17]} size={[0.04, 0.04, 0.038]} color="#3f8fb0" />
       <M color="#3b3b2e" position={[0, 0.045, 0.19]} scale={[0.03, 0.025, 0.02]} />
       {/* 胸 */}
-      <Part geometry={GEO.sphere()} color="#8e979c" surface={powder} position={[0, 0.05, 0.07]} scale={[0.045, 0.05, 0.075]} castShadow />
+      <Part geometry={dragonThoraxGeo()} color="#8e979c" surface={powder} position={[0, 0.05, 0.005]} castShadow />
+      <DragonLegs anim={anim} color="#26282a" />
       {/* 腹：しろい 粉を ふいた みずいろ、先は 黒い */}
       <Part geometry={abdomenY(9)} color="#b9c4ca" surface={powder} position={[0, 0.05, -0.17]} rotation={[Math.PI / 2, 0, 0]} scale={[0.026, 0.3, 0.026]} castShadow />
       <M geo={GEO.capsule()} color="#1c1d1f" position={[0, 0.05, -0.36]} rotation={[Math.PI / 2, 0, 0]} scale={[0.022, 0.08, 0.022]} />
@@ -112,6 +132,8 @@ function PierisWing({ anim, side }: { anim: AnimRef; side: 1 | -1 }) {
   );
 }
 
+const PIERIS_LEG: LegSpec = { femur: 0.045, tibia: 0.05, tarsus: 0.035, thick: 0.004, tarsi: 3 };
+
 export function Monshiro({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 0);
   const fur = useMemo(() => ({ roughness: 0.85, sheen: 0.5, sheenColor: '#cfcab8' }), []);
@@ -126,6 +148,11 @@ export function Monshiro({ anim }: { anim: AnimRef }) {
       <Antenna position={[-0.01, 0.07, 0.14]} side={-1} length={0.14} thick={0.004} kind="clubbed" color="#2b2a28" anim={anim} rotation={[0.2, 0.25, 0]} />
       <PierisWing anim={anim} side={1} />
       <PierisWing anim={anim} side={-1} />
+      {[0, 1, 2].map((p) =>
+        [1, -1].map((s) => (
+          <Leg key={`${p}${s}`} position={[s * 0.012, 0.02, 0.09 - p * 0.028]} side={s as 1 | -1} pair={p} spec={PIERIS_LEG} color="#2b2a28" anim={anim} spread={0.15} />
+        )),
+      )}
     </group>
   );
 }
@@ -134,24 +161,50 @@ export function Monshiro({ anim }: { anim: AnimRef }) {
 
 const HOPPER_LEG: LegSpec = { femur: 0.08, tibia: 0.08, tarsus: 0.04, thick: 0.012, tarsi: 3 };
 
+const TONOSAMA_HIND: JumpLegSpec = { knee: [0.012, 0.086, -0.19], foot: [0.004, -0.15, 0.1], thick: [0.017, 0.03], shin: 0.007, tarsus: 0.05, spines: 6 };
+
+/** バッタの 頭：たてに 長く、顔は 切り立って いる */
+const hopperHeadGeo = () =>
+  bodyGeo('hopperHead', [[-0.05, 0.038, 0.048, -0.036], [-0.02, 0.05, 0.066, -0.056], [0.02, 0.048, 0.062, -0.068], [0.046, 0.034, 0.036, -0.072], [0.056, 0, 0, -0.05]], { nt: 2.2 });
+
+/** たたんだ はね（つけねが 前、-Z へ のびる）：屋根の ように せなかを おおい、おしりより 少し 長い */
+const hopperWingGeo = () =>
+  loftShell('hopperWing', [[-0.36, 0.006, 0.004], [-0.33, 0.02, 0.014], [-0.2, 0.034, 0.03], [-0.05, 0.042, 0.036], [0.02, 0.036, 0.03], [0.045, 0.02, 0.016]], { base: -0.025, nt: 1.7, suture: 0.003, rings: 24, radial: 16 });
+
+/** はねの もよう：みどりがかった 茶色に、こい 茶色の まだら */
+function hopperWingMap() {
+  return paint('hopperWing', 128, (g, s) => {
+    g.fillStyle = '#9a9058';
+    g.fillRect(0, 0, s, s);
+    g.fillStyle = 'rgba(70, 52, 30, 0.6)';
+    for (let i = 0; i < 46; i++) {
+      const x = ((i * 0.618) % 1) * s;
+      const y = ((i * 0.377 + 0.1) % 1) * s;
+      g.beginPath();
+      g.ellipse(x, y, s * (0.02 + ((i * 7) % 5) * 0.008), s * 0.02, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    // 前の ふち（わき）は みどり
+    g.fillStyle = 'rgba(110, 140, 60, 0.75)';
+    g.fillRect(0, 0, s * 0.14, s);
+    g.fillRect(s * 0.86, 0, s * 0.14, s);
+  });
+}
+
 export function Tonosama({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 1);
-  const hind = useRef<THREE.Group>(null);
   const skin = useMemo(() => ({ roughness: 0.6, bumpMap: grainBump(41, 64), bumpScale: 0.6 }), []);
-  useFrame(() => {
-    // 跳ぶ ときに 後ろあしを けりだす
-    if (hind.current) hind.current.rotation.x = -anim.current.spray * 0.9;
-  });
+  const wing = useMemo(() => ({ roughness: 0.55, clearcoat: 0.2, map: hopperWingMap(), side: THREE.DoubleSide }), []);
   return (
     <group ref={body} position={[0, 0.05, 0]}>
       {/* 頭（たてながで 大きめ）と 前胸 */}
-      <Part geometry={GEO.sphere()} color="#6f8a3a" surface={skin} position={[0, 0.08, 0.2]} scale={[0.05, 0.065, 0.055]} castShadow />
+      <Part geometry={hopperHeadGeo()} color="#6f8a3a" surface={skin} position={[0, 0.085, 0.2]} castShadow />
       <CompoundEye position={[0.04, 0.1, 0.21]} size={[0.018, 0.026, 0.022]} color="#6b5b3a" />
       <CompoundEye position={[-0.04, 0.1, 0.21]} size={[0.018, 0.026, 0.022]} color="#6b5b3a" />
       <Part geometry={saddleGeo()} color="#7b9442" surface={skin} position={[0, 0.09, 0.11]} scale={[0.055, 0.06, 0.07]} castShadow />
       {/* 腹と、たたんだ はね（茶色の まだら） */}
       <Part geometry={abdomenY(8)} color="#8a8a4a" surface={skin} position={[0, 0.06, -0.08]} rotation={[Math.PI / 2, 0, 0]} scale={[0.05, 0.22, 0.05]} />
-      <M geo={GEO.sphere()} color="#8f8650" surface={skin} position={[0, 0.1, -0.09]} scale={[0.05, 0.022, 0.2]} castShadow />
+      <Part geometry={hopperWingGeo()} color="#ffffff" surface={wing} position={[0, 0.082, 0.06]} castShadow />
       <Antenna position={[0.015, 0.12, 0.24]} side={1} length={0.14} thick={0.006} kind="filiform" color="#6a5a35" anim={anim} rotation={[0.3, 0.2, 0]} />
       <Antenna position={[-0.015, 0.12, 0.24]} side={-1} length={0.14} thick={0.006} kind="filiform" color="#6a5a35" anim={anim} rotation={[0.3, 0.2, 0]} />
       {[0, 1].map((p) => (
@@ -160,22 +213,10 @@ export function Tonosama({ anim }: { anim: AnimRef }) {
           <Leg position={[-0.04, 0, 0]} side={-1} pair={p} spec={HOPPER_LEG} color="#6f8a3a" anim={anim} spread={0.4} />
         </group>
       ))}
-      {/* 大きな 後ろあし：太い もも が 上へ ななめに のび、ひざで すね が 下へ たたまれる */}
-      <group ref={hind} position={[0, 0.07, 0.02]}>
-        {[1, -1].map((s) => (
-          <group key={s} position={[s * 0.055, 0, 0]} rotation={[0, s * 0.12, 0]}>
-            {/* もも（腿節）：内がわに 黒い ななめの 帯 */}
-            <group rotation={[0.42, 0, 0]}>
-              <M geo={GEO.sphere()} color="#7b8f45" surface={skin} position={[0, 0, -0.11]} scale={[0.022, 0.032, 0.12]} castShadow />
-              <M geo={GEO.sphere()} color="#2a2a20" position={[0, -0.006, -0.2]} scale={[0.012, 0.012, 0.012]} />
-              {/* すね（脛節）：ひざから 前へ もどって 地面に つく */}
-              <group position={[0, 0, -0.21]} rotation={[0.6, 0, 0]}>
-                <M geo={GEO.cylinder()} color="#c7793a" position={[0, -0.01, 0.1]} rotation={[Math.PI / 2, 0, 0]} scale={[0.008, 0.2, 0.008]} />
-              </group>
-            </group>
-          </group>
-        ))}
-      </group>
+      {/* 大きな 後ろあし：太い もも が 上へ ななめに のび、ひざで すね が 下へ たたまれる。すねは 赤みが ある */}
+      {[1, -1].map((s) => (
+        <JumpLeg key={s} position={[s * 0.055, 0.07, 0.02]} side={s as 1 | -1} spec={TONOSAMA_HIND} color="#7b8f45" shinColor="#c7793a" surface={skin} anim={anim} kick="spray" />
+      ))}
     </group>
   );
 }
@@ -214,20 +255,29 @@ export function Dangomushi({ anim }: { anim: AnimRef }) {
           );
         })}
       </group>
-      {/* ちいさな あし（7 対）と 短い 触角 */}
+      {/* ちいさな あし（7 対）と、ひじの ように まがった 短い 触角 */}
       <group ref={legGroup}>
-        {Array.from({ length: 7 }, (_, i) =>
-          [1, -1].map((s) => (
-            <mesh key={`${i}${s}`} geometry={GEO.cylinder()} material={legs} position={[s * 0.07, 0.01, -0.08 + i * 0.026]} rotation={[0, 0, s * 1.2]} scale={[0.005, 0.03, 0.005]} />
-          )),
-        )}
-        {[1, -1].map((s) => (
-          <M key={s} geo={GEO.cylinder()} color="#3a3936" position={[s * 0.035, 0.03, 0.15]} rotation={[1.2, 0, s * -0.5]} scale={[0.006, 0.06, 0.006]} />
-        ))}
+        <mesh geometry={dangoLegsGeo()} material={legs} />
       </group>
     </group>
   );
 }
+
+/** 7 対の あし と 触角を 1 ジオメトリに まとめる：体の 下から 外へ 出て、先が 下へ まがる */
+const dangoLegsGeo = () =>
+  mergedGeo('dangoLegs', () => {
+    const parts: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 7; i++) {
+      const z = -0.078 + i * 0.026;
+      for (const s of [1, -1]) {
+        parts.push(shapedTube([[s * 0.03, 0.02, z], [s * 0.066, 0.022, z + 0.002], [s * 0.084, 0.012, z + 0.004], [s * 0.09, 0, z + 0.006]], (t) => [0.0055 - 0.003 * t, 0.0055 - 0.003 * t], 8, 5));
+      }
+    }
+    for (const s of [1, -1]) {
+      parts.push(shapedTube([[s * 0.02, 0.028, 0.105], [s * 0.04, 0.04, 0.135], [s * 0.05, 0.03, 0.16], [s * 0.058, 0.012, 0.18]], (t) => [0.0055 - 0.0025 * t, 0.0055 - 0.0025 * t], 10, 5));
+    }
+    return parts;
+  });
 
 /* ───────────── アブラゼミ ───────────── */
 
@@ -236,6 +286,8 @@ const cicadaWing = (s: THREE.Shape) => {
   s.bezierCurveTo(0.25, 0.1, 0.8, 0.12, 1, 0.02);
   s.bezierCurveTo(0.85, -0.12, 0.35, -0.12, 0, -0.04);
 };
+
+const CICADA_LEG: LegSpec = { femur: 0.045, tibia: 0.045, tarsus: 0.03, thick: 0.008, tarsi: 3 };
 
 export function Aburazemi({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 0);
@@ -264,6 +316,14 @@ export function Aburazemi({ anim }: { anim: AnimRef }) {
       {/* 胸：黒地に 褐色の もよう */}
       <Part geometry={shieldGeo()} color="#2a2420" surface={SURF.chitin(0.6)} position={[0, 0.055, 0.07]} scale={[0.055, 0.04, 0.065]} castShadow />
       <M geo={GEO.sphere()} color="#6b4a2a" position={[0, 0.088, 0.07]} scale={[0.03, 0.01, 0.04]} />
+      {/* 顔の ふくらみ（樹液を すい上げる 筋肉）と、ストローの ような 口 */}
+      <M color="#3a2c22" surface={SURF.chitin(0.5)} position={[0, 0.04, 0.172]} scale={[0.024, 0.022, 0.016]} />
+      <M geo={GEO.cylinder()} color="#2a1c14" position={[0, 0.02, 0.12]} rotation={[Math.PI / 2 - 0.12, 0, 0]} scale={[0.004, 0.1, 0.004]} />
+      {[0, 1, 2].map((p) =>
+        [1, -1].map((s) => (
+          <Leg key={`${p}${s}`} position={[s * 0.028, 0.028, 0.125 - p * 0.035]} side={s as 1 | -1} pair={p} spec={CICADA_LEG} color="#3a2a1c" anim={anim} spread={0.2} />
+        )),
+      )}
       {/* 腹 */}
       <Part geometry={abdomenZ(6)} color="#2f2924" surface={SURF.chitin(0.5)} position={[0, 0.045, -0.06]} scale={[0.048, 0.04, 0.09]} />
       <group ref={wings} position={[0, 0.09, 0.09]}>
@@ -292,7 +352,8 @@ export function Akiakane({ anim }: { anim: AnimRef }) {
       <CompoundEye position={[-0.028, 0.07, 0.17]} size={[0.036, 0.036, 0.034]} color="#7a3a22" />
       <M color="#b0572e" position={[0, 0.045, 0.19]} scale={[0.028, 0.022, 0.018]} />
       {/* 胸：ちゃいろで、よこに 黒い すじ */}
-      <Part geometry={GEO.sphere()} color="#9a5a34" surface={skin} position={[0, 0.05, 0.07]} scale={[0.042, 0.048, 0.07]} castShadow />
+      <Part geometry={dragonThoraxGeo()} color="#9a5a34" surface={skin} position={[0, 0.05, 0.005]} scale={0.95} castShadow />
+      <DragonLegs anim={anim} color="#2a1a12" />
       {[1, -1].map((s) => (
         <M key={s} geo={GEO.box()} color="#2a1a12" position={[s * 0.04, 0.05, 0.07]} rotation={[0.5, 0, 0]} scale={[0.004, 0.06, 0.008]} />
       ))}
@@ -311,6 +372,8 @@ export function Akiakane({ anim }: { anim: AnimRef }) {
 
 /* ───────────── ゲンジボタル（夜、おしりが ひかる） ───────────── */
 
+const FIREFLY_LEG: LegSpec = { femur: 0.035, tibia: 0.035, tarsus: 0.025, thick: 0.005, tarsi: 3 };
+
 export function Hotaru({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 0);
   const wings = useRef<THREE.Group>(null);
@@ -324,8 +387,8 @@ export function Hotaru({ anim }: { anim: AnimRef }) {
     const blink = Math.pow(Math.max(0, Math.sin(a.t * 2.4)), 2);
     const k = Math.max(blink, a.spray);
     lamp.emissiveIntensity = 0.15 + k * 2.4;
-    halo.opacity = 0.05 + k * 0.35;
-    if (haloRef.current) haloRef.current.scale.setScalar(0.05 + k * 0.08);
+    halo.opacity = 0.04 + k * 0.22;
+    if (haloRef.current) haloRef.current.scale.setScalar(0.035 + k * 0.04);
     if (wings.current) {
       wings.current.children.forEach((c, i) => {
         const s = i === 0 ? 1 : -1;
@@ -352,6 +415,11 @@ export function Hotaru({ anim }: { anim: AnimRef }) {
           </group>
         ))}
       </group>
+      {[0, 1, 2].map((p) =>
+        [1, -1].map((s) => (
+          <Leg key={`${p}${s}`} position={[s * 0.02, 0.02, 0.085 - p * 0.04]} side={s as 1 | -1} pair={p} spec={FIREFLY_LEG} color="#1a1414" anim={anim} spread={0.2} />
+        )),
+      )}
       {/* おしりの 発光器 */}
       <mesh geometry={GEO.sphere()} material={lamp} position={[0, 0.025, -0.07]} scale={[0.026, 0.016, 0.03]} />
       <mesh ref={haloRef} geometry={GEO.sphere()} material={halo} position={[0, 0.025, -0.07]} scale={0.05} />
@@ -362,17 +430,21 @@ export function Hotaru({ anim }: { anim: AnimRef }) {
 /* ───────────── エンマコオロギ（夜、リリリと なく） ───────────── */
 
 const CRICKET_LEG: LegSpec = { femur: 0.07, tibia: 0.07, tarsus: 0.035, thick: 0.01, tarsi: 3 };
+const CRICKET_HIND: JumpLegSpec = { knee: [0.008, 0.055, -0.15], foot: [0.004, -0.11, 0.06], thick: [0.017, 0.028], shin: 0.006, tarsus: 0.04, spines: 5 };
+
+/** コオロギの はね（つけねが 原点、-Z へ）：平たく せなかを おおい、わきへ 折れて 下がる */
+const cricketWingGeo = () =>
+  loftShell('cricketWingShell', [[-0.215, 0.012, 0.002], [-0.19, 0.04, 0.014], [-0.1, 0.06, 0.022], [-0.02, 0.058, 0.022], [0.02, 0.04, 0.014]], { base: -0.016, nt: 3, suture: 0.002, rings: 20, radial: 18 });
 
 export function Enmakorogi({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 1);
   const wing = useRef<THREE.Group>(null);
-  const hind = useRef<THREE.Group>(null);
   const shell = useMemo(() => ({ roughness: 0.45, clearcoat: 0.5, clearcoatRoughness: 0.3 }), []);
+  const wingSurf = useMemo(() => ({ ...shell, normalMap: striaeNormal(9, 1.2), normalScale: 0.8 }), [shell]);
   useFrame(() => {
     const a = anim.current;
     // なく ときは はねを すこし もちあげて こすりあわせる
     if (wing.current) wing.current.rotation.x = -0.15 - Math.abs(Math.sin(a.t * 30)) * 0.12 * a.sing;
-    if (hind.current) hind.current.rotation.x = -a.spray * 0.9;
   });
   return (
     <group ref={body} position={[0, 0.03, 0]}>
@@ -386,7 +458,7 @@ export function Enmakorogi({ anim }: { anim: AnimRef }) {
       <Part geometry={saddleGeo(0)} color="#2f2017" surface={shell} position={[0, 0.07, 0.08]} scale={[0.058, 0.045, 0.045]} />
       {/* はねは ちゃいろ */}
       <group ref={wing} position={[0, 0.1, 0.05]}>
-        <Part geometry={GEO.sphere()} color="#5a3c22" surface={shell} position={[0, 0, -0.1]} scale={[0.06, 0.016, 0.12]} castShadow />
+        <Part geometry={cricketWingGeo()} color="#5a3c22" surface={wingSurf} castShadow />
       </group>
       <Part geometry={abdomenZ(7)} color="#231710" surface={shell} position={[0, 0.06, -0.07]} scale={[0.055, 0.042, 0.13]} />
       {/* おしりの 2 本の 毛（尾毛） */}
@@ -399,16 +471,9 @@ export function Enmakorogi({ anim }: { anim: AnimRef }) {
           <Leg position={[-0.04, 0, 0]} side={-1} pair={p} spec={CRICKET_LEG} color="#3a2618" anim={anim} spread={0.4} />
         </group>
       ))}
-      <group ref={hind} position={[0, 0.06, 0.0]}>
-        {[1, -1].map((s) => (
-          <group key={s} position={[s * 0.055, 0, 0]} rotation={[0.35, s * 0.15, 0]}>
-            <M color="#3a2618" position={[0, 0, -0.08]} scale={[0.022, 0.03, 0.09]} castShadow />
-            <group position={[0, 0, -0.16]} rotation={[0.7, 0, 0]}>
-              <M geo={GEO.cylinder()} color="#2a1a10" position={[0, -0.01, 0.07]} rotation={[Math.PI / 2, 0, 0]} scale={[0.007, 0.14, 0.007]} />
-            </group>
-          </group>
-        ))}
-      </group>
+      {[1, -1].map((s) => (
+        <JumpLeg key={s} position={[s * 0.055, 0.06, 0]} side={s as 1 | -1} spec={CRICKET_HIND} color="#3a2618" shinColor="#2a1a10" surface={shell} anim={anim} kick="spray" />
+      ))}
     </group>
   );
 }
@@ -648,7 +713,7 @@ export function Kurooari({ anim }: { anim: AnimRef }) {
       <CompoundEye position={[-0.034, 0.068, 0.13]} size={0.009} />
       <Antenna position={[0.015, 0.08, 0.15]} side={1} length={0.12} thick={0.004} kind="clavate" color="#1a1616" anim={anim} rotation={[0.6, 0.5, 0]} />
       <Antenna position={[-0.015, 0.08, 0.15]} side={-1} length={0.12} thick={0.004} kind="clavate" color="#1a1616" anim={anim} rotation={[0.6, 0.5, 0]} />
-      <Part geometry={GEO.capsule()} color="#1c1818" surface={shell} position={[0, 0.06, 0.04]} rotation={[Math.PI / 2 - 0.25, 0, 0]} scale={[0.022, 0.06, 0.022]} />
+      <Part geometry={bodyGeo('antMesosoma', [[-0.04, 0.01, 0.012, -0.012], [-0.022, 0.016, 0.018, -0.016], [0.005, 0.019, 0.026, -0.02], [0.03, 0.022, 0.032, -0.02], [0.05, 0.012, 0.018, -0.012]], { nt: 2.2 })} color="#1c1818" surface={shell} position={[0, 0.058, 0.04]} />
       <M color="#1c1818" surface={shell} position={[0, 0.055, -0.02]} scale={[0.014, 0.018, 0.012]} />
       <Part geometry={abdomenZ(4)} color="#191515" surface={shell} position={[0, 0.06, -0.08]} scale={[0.045, 0.04, 0.055]} castShadow />
       {[0, 1, 2].map((p) =>
@@ -663,28 +728,37 @@ export function Kurooari({ anim }: { anim: AnimRef }) {
 /* ───────────── ショウリョウバッタ（メス。とがった あたま） ───────────── */
 
 const SLENDER_LEG: LegSpec = { femur: 0.07, tibia: 0.07, tarsus: 0.03, thick: 0.007, tarsi: 3 };
+const SHOURYOU_HIND: JumpLegSpec = { knee: [0.008, 0.089, -0.287], foot: [0.004, -0.15, 0.2], thick: [0.01, 0.017], shin: 0.0045, tarsus: 0.04, spines: 7 };
+
+/** とがった 頭（+Z が 先）：先へ 細く なり、顔は ななめ後ろへ そぎ落ちる */
+const shouryouHeadGeo = () =>
+  bodyGeo('shouryouHead', [[-0.06, 0.028, 0.03, -0.028], [0, 0.03, 0.034, -0.03], [0.07, 0.021, 0.03, -0.012], [0.12, 0.009, 0.022, 0.006], [0.132, 0, 0.016, 0.016]], { nt: 2.2 });
+
+/** 平たい 剣の ような 触角 */
+const swordAntennaGeo = (s: number) =>
+  sharedGeo(`swordAntenna${s}`, () => shapedTube([[0, 0, 0], [s * 0.01, 0.028, 0.04], [s * 0.024, 0.045, 0.088]], (t) => [0.0075 * (1 - t * 0.8), 0.002], 10, 6, [1, 0, 0]));
+
+/** 細長い はね：おしりの 先まで とどき、先が とがる */
+const shouryouWingGeo = () =>
+  loftShell('shouryouWing', [[-0.4, 0.003, 0.002], [-0.3, 0.018, 0.014], [-0.12, 0.027, 0.02], [0, 0.026, 0.02], [0.03, 0.014, 0.01]], { base: -0.016, nt: 1.7, suture: 0.002, rings: 22, radial: 14 });
 
 export function Shouryou({ anim }: { anim: AnimRef }) {
   const body = useBodyMotion(anim, 1);
-  const hind = useRef<THREE.Group>(null);
   const skin = useMemo(() => ({ roughness: 0.6, bumpMap: grainBump(43, 64), bumpScale: 0.4 }), []);
-  useFrame(() => {
-    if (hind.current) hind.current.rotation.x = -anim.current.spray * 0.9;
-  });
   return (
     <group ref={body} position={[0, 0.03, 0]}>
       {/* とがった 円すいの あたま。目は うしろよりに */}
-      <Part geometry={GEO.cone()} color="#7fae4a" surface={skin} position={[0, 0.06, 0.27]} rotation={[Math.PI / 2 - 0.25, 0, 0]} scale={[0.03, 0.12, 0.03]} castShadow />
+      <Part geometry={shouryouHeadGeo()} color="#7fae4a" surface={skin} position={[0, 0.058, 0.2]} rotation={[-0.25, 0, 0]} castShadow />
       <CompoundEye position={[0.022, 0.07, 0.24]} size={[0.01, 0.018, 0.016]} color="#5a6a3a" />
       <CompoundEye position={[-0.022, 0.07, 0.24]} size={[0.01, 0.018, 0.016]} color="#5a6a3a" />
       {/* 平たい 剣の ような 触角 */}
       {[1, -1].map((s) => (
-        <M key={s} geo={GEO.box()} color="#6f9a40" position={[s * 0.012, 0.1, 0.3]} rotation={[0.9, s * 0.15, 0]} scale={[0.012, 0.004, 0.08]} />
+        <Part key={s} geometry={swordAntennaGeo(s)} color="#6f9a40" surface={skin} position={[s * 0.012, 0.092, 0.262]} />
       ))}
       <Part geometry={GEO.capsule()} color="#86b552" surface={skin} position={[0, 0.06, 0.14]} rotation={[Math.PI / 2, 0, 0]} scale={[0.03, 0.08, 0.03]} />
       {/* ほそながい はらと はね */}
       <Part geometry={abdomenY(8)} color="#7aa848" surface={skin} position={[0, 0.06, -0.07]} rotation={[Math.PI / 2, 0, 0]} scale={[0.028, 0.32, 0.028]} castShadow />
-      <M color="#90b860" surface={skin} position={[0, 0.088, -0.07]} scale={[0.026, 0.012, 0.22]} />
+      <Part geometry={shouryouWingGeo()} color="#90b860" surface={skin} position={[0, 0.076, 0.1]} castShadow />
       {[0, 1].map((p) => (
         <group key={p} position={[0, 0.04, 0.16 - p * 0.05]}>
           <Leg position={[0.025, 0, 0]} side={1} pair={p} spec={SLENDER_LEG} color="#7aa848" anim={anim} spread={0.4} />
@@ -692,16 +766,9 @@ export function Shouryou({ anim }: { anim: AnimRef }) {
         </group>
       ))}
       {/* とても 長い 後ろあし */}
-      <group ref={hind} position={[0, 0.06, 0.07]}>
-        {[1, -1].map((s) => (
-          <group key={s} position={[s * 0.035, 0, 0]} rotation={[0.3, s * 0.08, 0]}>
-            <M color="#7aa848" surface={skin} position={[0, 0, -0.15]} scale={[0.014, 0.02, 0.16]} castShadow />
-            <group position={[0, 0, -0.3]} rotation={[0.45, 0, 0]}>
-              <M geo={GEO.cylinder()} color="#6a9a3a" position={[0, -0.01, 0.14]} rotation={[Math.PI / 2, 0, 0]} scale={[0.005, 0.28, 0.005]} />
-            </group>
-          </group>
-        ))}
-      </group>
+      {[1, -1].map((s) => (
+        <JumpLeg key={s} position={[s * 0.035, 0.06, 0.07]} side={s as 1 | -1} spec={SHOURYOU_HIND} color="#7aa848" shinColor="#6a9a3a" surface={skin} anim={anim} kick="spray" />
+      ))}
     </group>
   );
 }
@@ -782,6 +849,7 @@ export function Oniyanma({ anim }: { anim: AnimRef }) {
         position={[0, 0.05, 0]}
         castShadow
       />
+      <DragonLegs anim={anim} color="#1a1612" z={0.115} />
       {/* はねは すきとおって、つけねが すこし きいろい */}
       {[1, -1].map((s) => (
         <group key={s}>
