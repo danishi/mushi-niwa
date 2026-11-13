@@ -10,6 +10,7 @@ import { Lights } from '../three/Lights';
 import { Particles } from '../three/Particles';
 import { QualityManager, useTier } from '../three/QualityManager';
 import { effectiveDpr, QUALITY, useQuality } from '../three/quality';
+import { renderHealth } from '../three/renderHealth';
 import { SceneWarmup } from '../three/SceneWarmup';
 import { registerSnapshotCanvas } from '../three/snapshot';
 import { sceneFor } from './scenes';
@@ -60,6 +61,8 @@ export function World() {
   const compiling = useUi((s) => s.compiling);
   const [initialTier] = useState(() => (FLAGS.lite ? 'low' : useQuality.getState().autoTier));
   // `?lite`（CI の E2E）は 解像度を 半分に（ソフトウェア描画は 画素の 数に 比例して おそい）
+  // WebGL の コンテキストが もどったら 3D の 中身を 作りなおす（環境マップなど GPU に しか ない ものが 消えている）
+  const [epoch, setEpoch] = useState(0);
   const dpr = FLAGS.lite ? 0.5 : effectiveDpr(tier, typeof window === 'undefined' ? 1 : window.devicePixelRatio);
   return (
     <Canvas
@@ -71,20 +74,28 @@ export function World() {
       data-testid="world-canvas"
       onCreated={(state) => {
         registerSnapshotCanvas(state.gl.domElement);
-        // シェーダの エラー確認は 開発中だけ（確認の ための 問い合わせで コンパイルを 待たされる）
-        state.gl.debug.checkShaderErrors = import.meta.env.DEV;
+        const canvas = state.gl.domElement;
+        canvas.addEventListener('webglcontextlost', () => {
+          renderHealth.contextLost++;
+        });
+        canvas.addEventListener('webglcontextrestored', () => {
+          renderHealth.contextRestored++;
+          // ローディングを 出して、作りなおした シーンの シェーダを 用意してから 描く
+          useUi.setState({ loading: true, compiling: true });
+          setEpoch((e) => e + 1);
+        });
         // E2E・デバッグ用（?e2e のときだけ）
         if (FLAGS.e2e) (window as unknown as Record<string, unknown>).__r3f = state;
       }}
     >
       <QualityManager />
       <EnvDriver />
-      <Lights night={{ get current() { return env.night; } }} />
-      <ScreenContent />
-      <Particles />
-      <Effects />
+      <Lights key={`lights${epoch}`} night={{ get current() { return env.night; } }} />
+      <ScreenContent key={`scene${epoch}`} />
+      <Particles key={`particles${epoch}`} />
+      <Effects key={`effects${epoch}`} />
       {/* 最後に 置く（ほかの 部品の 準備が 済んでから シェーダを 用意する） */}
-      <SceneWarmup />
+      <SceneWarmup epoch={epoch} />
     </Canvas>
   );
 }

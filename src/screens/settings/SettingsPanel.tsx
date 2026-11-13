@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { audio } from '../../audio/audio';
 import { useSettings, type QualitySetting } from '../../state/settings';
 import { useGame } from '../../state/game';
+import { renderHealthLine } from '../../three/renderHealth';
 import { usePhotos } from '../../state/photos';
 import { useProgress } from '../../state/progress';
 import { useUi } from '../../state/ui';
@@ -120,6 +121,10 @@ export function SettingsPanel({ extra }: { extra?: ReactNode }) {
         </p>
         <p className="note" data-testid="app-version">
           バージョン {__APP_VERSION__}（ページを再読み込みすると最新版になります。ホーム画面のアプリは一度閉じて開き直してください）
+        </p>
+        {/* 実機でしか 起きない 描画の 不具合の 手がかり（開いた ときの 値） */}
+        <p className="note" data-testid="render-health">
+          {renderHealthLine()}
         </p>
         <button className="icon-btn modal-close" aria-label="とじる" data-testid="settings-close" onClick={() => close(false)}>
           <Icon name="close" />
