@@ -10,7 +10,7 @@ import { SettingsGateButton } from '../../ui/ParentalGate';
 import { SpeciesIcon } from '../../ui/SpeciesIcon';
 import { Ruby } from '../../text/ruby';
 import { MemoryCardModal } from '../zukan/MemoryCard';
-import { VISITORS, type VisitorId } from '../../data/visitors';
+import { discoveryFact, VISITORS, type VisitorId } from '../../data/visitors';
 import { VisitorIcon } from '../../ui/VisitorIcon';
 
 /** おきゃくさんを 見つけた ときの カード（すこしで 消える。タップで もう いちど 読む） */
@@ -25,7 +25,7 @@ function DiscoveryCard() {
   if (!d) return null;
   const v = VISITORS[d.id as VisitorId];
   if (!v) return null;
-  const fact = v.notInsect ?? v.facts[0]!;
+  const fact = discoveryFact(v);
   return (
     <button className="discovery" data-testid="discovery" onClick={() => speak(`${v.kana}。${fact}`, true)}>
       <span className="discovery-icon">

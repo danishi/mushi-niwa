@@ -26,7 +26,10 @@ export type SfxName =
   | 'shutter'
   | 'correct'
   | 'clack'
-  | 'drip';
+  | 'drip'
+  | 'taiko'
+  | 'clash'
+  | 'cheer';
 
 export type BgmMood = 'day' | 'night' | 'title';
 
@@ -225,6 +228,22 @@ class AudioEngine {
           this.noiseBurst(t + i * 0.09, 0.018, { type: 'highpass', freq: 2800, gain: 0.32 });
           this.tone(1900, t + i * 0.09, 0.02, { type: 'square', gain: 0.05 });
         }
+        break;
+      case 'taiko':
+        // むしずもうの 太鼓「どん」
+        this.tone(120, t, 0.45, { type: 'sine', gain: 0.6, slideTo: 52 });
+        this.tone(240, t, 0.08, { type: 'triangle', gain: 0.12, slideTo: 120 });
+        this.noiseBurst(t, 0.12, { type: 'lowpass', freq: 400, gain: 0.35 });
+        break;
+      case 'clash':
+        // ぶつかる「どすっ」
+        this.tone(190, t, 0.16, { type: 'triangle', gain: 0.35, slideTo: 80 });
+        this.noiseBurst(t, 0.09, { type: 'bandpass', freq: 900, q: 0.8, gain: 0.3 });
+        break;
+      case 'cheer':
+        // おきゃくさんの「わーっ」（ざわざわ ふくらんで しぼむ）
+        for (let i = 0; i < 10; i++) this.noiseBurst(t + i * 0.07, 0.5, { type: 'bandpass', freq: 700 + (i % 4) * 350, q: 1.4, gain: 0.07 });
+        [72, 76, 79].forEach((n, i) => this.tone(midi(n), t + 0.05 + i * 0.04, 0.5, { type: 'triangle', gain: 0.05, attack: 0.08 }));
         break;
       case 'drip':
         // ツチハンミョウの しずくが「ぽた、ぽた」

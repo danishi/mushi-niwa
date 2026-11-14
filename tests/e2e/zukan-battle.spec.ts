@@ -38,14 +38,31 @@ test('mushi-zumou can be played to a gentle result', WIDE, async ({ page }) => {
   await page.getByTestId('battle-pick-nanahoshi').tap();
   const push = page.getByTestId('battle-push');
   await expect(push).toBeVisible();
-  await page.getByTestId('battle-special').tap();
-  await expect(page.getByTestId('battle-fact')).toContainText('しんだふり');
-  for (let i = 0; i < 60; i++) {
+  // はっけよい…（入場の 間は 押せない）→ のこった！
+  await expect(page.getByTestId('battle-intro')).toContainText('はっけよい');
+  await expect(page.getByTestId('battle-intro')).toHaveCount(0, { timeout: 15000 });
+  // 押して 技ゲージを ためると 得意技が 出せる
+  const special = page.getByTestId('battle-special');
+  for (let i = 0; i < 150 && (await special.isDisabled()); i++) {
     if (await page.getByTestId('battle-result').isVisible()) break;
     await push.dispatchEvent('pointerdown');
-    await page.waitForTimeout(120);
+    await page.waitForTimeout(150);
   }
-  await expect(page.getByTestId('battle-result')).toContainText('がんばったね');
+  if (!(await page.getByTestId('battle-result').isVisible())) {
+    // 相手の 技が 割りこまないよう、相手の ゲージを からに してから 技を 出す
+    await page.evaluate(() => {
+      const bt = (window as unknown as { __mushi: { battle: { getState: () => { state: object }; setState: (p: object) => void } } }).__mushi.battle;
+      bt.setState({ state: { ...bt.getState().state, cpuCharge: 0, cpuTell: 0, playerStun: 0 } });
+    });
+    await special.tap();
+    await expect(page.getByTestId('battle-fact')).toContainText('しんだふり');
+  }
+  for (let i = 0; i < 200; i++) {
+    if (await page.getByTestId('battle-result').isVisible()) break;
+    await push.dispatchEvent('pointerdown');
+    await page.waitForTimeout(150);
+  }
+  await expect(page.getByTestId('battle-result')).toContainText('がんばったね', { timeout: 40000 });
 });
 
 test('when all six cases are full, a child can send one back and welcome a new species', async ({ page }) => {

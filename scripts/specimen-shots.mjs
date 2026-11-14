@@ -16,7 +16,7 @@ const SPECIES = {
   kabutomushi: 3, namiageha: 4, suzumushi: 2, nanahoshi: 4, kaiko: 4, miidera: 1, marukubi: 1, ookamakiri: 3, tobizumukade: 2,
   madarasasori: 2, gomadara: 3, ookuwagata: 3, nokogiri: 3, oomurasaki: 4, nanafushi: 3, usubakagerou: 3, gengorou: 3,
 };
-const GUESTS = ['shiokara', 'monshiro', 'tonosama', 'dangomushi', 'aburazemi', 'akiakane', 'kanabun', 'kurooari', 'shouryou', 'hotaru', 'enmakorogi', 'jorougumo', 'katatsumuri', 'oniyanma', 'hakiriari', 'oosuzumebachi', 'guntaiari', 'hiari', 'sashihariari'];
+const GUESTS = ['shiokara', 'monshiro', 'tonosama', 'dangomushi', 'aburazemi', 'akiakane', 'kanabun', 'kurooari', 'shouryou', 'hotaru', 'enmakorogi', 'jorougumo', 'katatsumuri', 'oniyanma', 'hakiriari', 'oosuzumebachi', 'guntaiari', 'hiari', 'sashihariari', 'seakagokegumo'];
 
 const vw = big ? 860 : 560;
 const vh = Math.round((vw * 760) / 560);
@@ -25,7 +25,8 @@ const browser = await webkit.launch();
 const page = await browser.newPage({ viewport: { width: vw, height: vh }, deviceScaleFactor: big ? 2 : 1.5 });
 page.on('pageerror', (e) => console.log('pageerror', e.message));
 await page.goto('http://localhost:4173/mushi-niwa/?e2e');
-await page.getByTestId('boot-tap').click();
+await page.waitForSelector('[data-testid=boot-tap]:not([disabled])', { timeout: 90000 });
+await page.getByTestId('boot-tap').click({ force: true });
 await page.getByTestId('start-button').click();
 await page.waitForFunction(() => '__mushi' in window);
 await page.waitForTimeout(1500);

@@ -1330,6 +1330,90 @@ export function Guntaiari({ anim }: { anim: AnimRef }) {
   );
 }
 
+/* ───────────── セアカゴケグモ（メス。docs/visitors-research-4.md） ───────────── */
+
+/**
+ * つやの ある 黒い まるい はらに、せなかの 赤い たてすじ（すな時計形）と おなかがわの 赤い もよう。
+ * 細く 長い 黒い あし。spray: あしを ちぢめて 死んだ ふり（びっくりすると あみから おちて じっと する）。
+ */
+export function Seakagokegumo({ anim }: { anim: AnimRef }) {
+  const legs = useRef<THREE.Group>(null);
+  const body = useRef<THREE.Group>(null);
+  const legMat = useMemo(() => mat('#121012', { roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.2 }), []);
+  const abdomen = useMemo(
+    () => ({
+      roughness: 0.18,
+      clearcoat: 1,
+      clearcoatRoughness: 0.06,
+      // ロフトの UV：よこ（u）は まわり（0.5 が せなか、0 と 1 が おなか）、たて（v）は 前後。
+      // せなかに すな時計形の 赤い たてすじ、おなかに 赤い もよう
+      map: paint('redback', 256, (g, s) => {
+        g.fillStyle = '#0d0b0d';
+        g.fillRect(0, 0, s, s);
+        g.fillStyle = '#d42a1f';
+        const P = (around: number, along: number): [number, number] => [around * s, along * s];
+        g.beginPath();
+        g.moveTo(...P(0.475, 0.14));
+        g.lineTo(...P(0.525, 0.14));
+        g.lineTo(...P(0.545, 0.42));
+        g.lineTo(...P(0.52, 0.55));
+        g.lineTo(...P(0.55, 0.86));
+        g.lineTo(...P(0.45, 0.86));
+        g.lineTo(...P(0.48, 0.55));
+        g.lineTo(...P(0.455, 0.42));
+        g.closePath();
+        g.fill();
+        // おなかがわ（まわりの 0 と 1 の つなぎめ）
+        for (const u of [0, 1]) {
+          g.beginPath();
+          g.ellipse(u * s, s * 0.42, s * 0.04, s * 0.06, 0, 0, Math.PI * 2);
+          g.ellipse(u * s, s * 0.58, s * 0.03, s * 0.05, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+      }),
+    }),
+    [],
+  );
+  const legAngles = [0.45, 0.95, 2.05, 2.6];
+  const legLen = [0.3, 0.24, 0.2, 0.28];
+  useFrame(() => {
+    const a = anim.current;
+    // 死んだ ふり：あしを からだの 下へ ちぢめ、じっと する
+    if (legs.current) {
+      legs.current.children.forEach((c, i) => {
+        const base = c.userData.base as number;
+        // 歩く ときは 左右 こうごに あしを 前後へ ふる
+        const step = Math.sin(a.gait + (i % 4) * Math.PI * 0.5 + (i >= 4 ? Math.PI : 0)) * 0.22 * a.walk;
+        c.rotation.y = base * (1 - a.spray * 0.35) + step + Math.sin(a.t * 1.6 + i) * 0.03 * (1 - a.spray);
+        c.rotation.x = a.spray * 0.9 - Math.max(0, Math.cos(a.gait + i)) * 0.15 * a.walk;
+        c.scale.setScalar(1 - a.spray * 0.35);
+      });
+    }
+    if (body.current) body.current.position.y = -a.spray * 0.02;
+  });
+  return (
+    <group ref={body}>
+      {/* まるい はら（つやつやの 黒） */}
+      <Part geometry={spiderAbdomen()} color="#ffffff" surface={abdomen} position={[0, 0.07, -0.085]} scale={[0.075, 0.07, 0.09]} castShadow />
+      {/* あたまむね（小さく、ひらたい） */}
+      <Part geometry={GEO.sphere()} color="#151214" surface={SURF.chitin(0.6)} position={[0, 0.04, 0.035]} scale={[0.03, 0.02, 0.038]} castShadow />
+      {[1, -1].map((s) => (
+        <M key={s} color="#151214" surface={SURF.chitin(0.6)} position={[s * 0.008, 0.03, 0.075]} scale={[0.006, 0.008, 0.01]} />
+      ))}
+      {/* 8 本の 細い あし */}
+      <group ref={legs} position={[0, 0.04, 0.035]}>
+        {[1, -1].flatMap((s) =>
+          legAngles.map((ang, i) => (
+            <group key={`${s}${i}`} rotation={[0, s * ang, 0]} userData={{ base: s * ang }}>
+              <mesh geometry={spiderLeg()} material={legMat} scale={[0.7 * legLen[i]!, legLen[i]!, legLen[i]!]} />
+            </group>
+          )),
+        )}
+      </group>
+    </group>
+  );
+}
+
 export const VISITOR_MODELS = {
   shiokara: Shiokara,
   monshiro: Monshiro,
@@ -1350,4 +1434,5 @@ export const VISITOR_MODELS = {
   guntaiari: Guntaiari,
   hiari: Hiari,
   sashihariari: Sashihariari,
+  seakagokegumo: Seakagokegumo,
 } as const;

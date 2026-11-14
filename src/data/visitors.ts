@@ -21,7 +21,8 @@ export type VisitorId =
   | 'oosuzumebachi'
   | 'guntaiari'
   | 'hiari'
-  | 'sashihariari';
+  | 'sashihariari'
+  | 'seakagokegumo';
 
 export interface VisitorDef {
   id: VisitorId;
@@ -43,6 +44,8 @@ export interface VisitorDef {
   /** 豆知識（ルビ記法） */
   facts: string[];
   notInsect?: string;
+  /** 豆知識の 1 つめが 安全の 話（見つけた ときは notInsect より 先に 読む） */
+  safety?: boolean;
   /** 日本には すんで いない 子の 説明（ずかんに 出す。ルビ記法） */
   abroad?: string;
   /** 大人向けの 注意（ずかんの「おとなの かたへ」に 出す） */
@@ -471,6 +474,36 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
       'https://dictionnaire-amoureux-des-fourmis.fr/UIEIS-IUSSI/IUSSI-Londres-1973/IUSSI-Londres-1973-Markl.pdf',
     ],
   },
+  seakagokegumo: {
+    id: 'seakagokegumo',
+    name: 'セアカゴケグモ',
+    kana: 'せあかごけぐも',
+    scientific: 'Latrodectus hasseltii',
+    where: 'ground',
+    react: 'curl',
+    flier: false,
+    time: 'any',
+    safety: true,
+    facts: [
+      'くろくて、せなかに あかい もようの ある クモを みつけたら、さわらないで おとなに しらせてね',
+      'どくを もって いるのは メスだけ。じぶんから おそっては こないけど、さわると かまれる ことが あるよ',
+      'びっくりすると あみから ぽとっと おちて、しんだ ふりを するよ',
+      'みぞや うえきばちの そこ、ものの すきまなどに、ふきそくな あみを はるよ',
+      'もとは オーストラリアの クモ。にもつに まぎれて にほんに やってきたよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、クモの なかまだよ。あしは 8ほん',
+    caution:
+      'オーストラリア原産の特定外来生物です。1995年に大阪府などで大量に見つかり、今では各地で確認されています。毒をもつのはメスだけで、攻撃性はありませんが、素手でさわると咬まれることがあります。咬まれた直後は軽い痛みでも次第に痛みが増し、腹痛や胸痛、重いときは嘔吐・発熱・高血圧・頻脈などが起こることがあります。患部を洗い、すぐに医療機関を受診してください（重症では抗毒素血清で治療します）。側溝やプランターの底、室外機の裏などのすき間にいるので、作業のときは軍手をつけ、見つけても素手でさわらないでください。生きたまま持ち運ぶことは法律で禁止されています。',
+    color: '#c8322a',
+    scale: 2.6,
+    sources: [
+      'https://kotobank.jp/word/%E3%82%BB%E3%82%A2%E3%82%AB%E3%82%B4%E3%82%B1%E3%82%B0%E3%83%A2-176175',
+      'https://kotobank.jp/word/%E3%82%B4%E3%82%B1%E3%82%B0%E3%83%A2-1537053',
+      'https://www.city.chiba.jp/kankyo/kankyohozen/hozen/shizen/tokuteigairai_seakagokegumo.html',
+      'https://www.city.hamamatsu.shizuoka.jp/kankyou/env/tayousei/gokegumo.html',
+      'https://ir.library.osaka-u.ac.jp/repo/ouka/all/85747/makoto_142_002.pdf',
+    ],
+  },
 };
 
 export const VISITOR_ORDER: VisitorId[] = [
@@ -492,8 +525,14 @@ export const VISITOR_ORDER: VisitorId[] = [
   'enmakorogi',
   'dangomushi',
   'jorougumo',
+  'seakagokegumo',
   'katatsumuri',
 ];
+
+/** 見つけた ときに 出して 読む ひとこと（危ない 子は まず「さわらない」） */
+export function discoveryFact(v: VisitorDef): string {
+  return v.safety ? v.facts[0]! : (v.notInsect ?? v.facts[0]!);
+}
 
 /** その 時間に 来られる おきゃくさん */
 export function visitorsAt(night: boolean): VisitorId[] {

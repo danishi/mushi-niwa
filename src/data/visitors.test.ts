@@ -32,6 +32,10 @@ describe('garden visitors', () => {
     // ハキリアリは 日本に いないことを ずかんで 説明する
     expect(VISITORS.hakiriari.abroad).toBeTruthy();
     // 刺す アリは タップで おどかしてから 去り、さいしょの 豆知識で「さわらない」を 教える
+    // セアカゴケグモは さわると しんだ ふり。見つけた ときは まず「さわらない」を 読む
+    expect(VISITORS.seakagokegumo.safety).toBe(true);
+    expect(VISITORS.seakagokegumo.facts[0]).toMatch(/さわらない/);
+    expect(VISITORS.seakagokegumo.caution).toBeTruthy();
     for (const id of ['hiari', 'sashihariari'] as const) {
       expect(VISITORS[id].react).toBe('warn');
       expect(VISITORS[id].caution).toBeTruthy();
@@ -46,6 +50,6 @@ describe('garden visitors', () => {
     }
   });
   it('explains what non-insects are', () => {
-    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
+    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri', 'seakagokegumo'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
   });
 });

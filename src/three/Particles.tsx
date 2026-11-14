@@ -5,7 +5,7 @@ import { useTier } from './QualityManager';
 import { QUALITY } from './quality';
 import { GEO } from './materials';
 
-export type ParticleKind = 'sparkle' | 'mist' | 'dust' | 'smoke' | 'heart' | 'leaf' | 'pollen' | 'ooze';
+export type ParticleKind = 'sparkle' | 'mist' | 'dust' | 'smoke' | 'heart' | 'leaf' | 'pollen' | 'ooze' | 'confetti';
 
 interface Spec {
   colors: string[];
@@ -26,6 +26,8 @@ const SPECS: Record<ParticleKind, Spec> = {
   heart: { colors: ['#ff8fab', '#ffb3c6', '#ff6b8b'], speed: 0.5, up: 1.4, gravity: 0.2, life: 1.3, size: [0.05, 0.08], drag: 1, glow: true },
   leaf: { colors: ['#9ccc65', '#7cb342', '#c5e1a5'], speed: 1.2, up: 1.5, gravity: -2.5, life: 1.2, size: [0.04, 0.07], drag: 1, glow: false },
   pollen: { colors: ['#fff59d', '#ffe082'], speed: 0.4, up: 0.5, gravity: 0, life: 2, size: [0.02, 0.035], drag: 0.6, glow: true },
+  // かちなのりの 紙ふぶき（ゆっくり ひらひら おちる）
+  confetti: { colors: ['#ff6b6b', '#ffd166', '#06d6a0', '#4cc9f0', '#f72585', '#ffffff'], speed: 1.8, up: 3.2, gravity: -2.4, life: 2.6, size: [0.04, 0.07], drag: 1.6, glow: false },
   // ツチハンミョウが あしの ふしから だす 黄色い しずく（ぽたぽた おちる）
   ooze: { colors: ['#f2c230', '#e8a915', '#f7d75a'], speed: 0.15, up: 0.25, gravity: -2.2, life: 1.1, size: [0.025, 0.045], drag: 0.8, glow: false },
 };

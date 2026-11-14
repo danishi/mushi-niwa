@@ -5,7 +5,7 @@ import { audio } from '../../audio/audio';
 import { newAnim } from '../../creatures/anim';
 import { GestureRunner, type Gesture } from '../../creatures/gestures';
 import { JoroWeb, VISITOR_MODELS } from '../../creatures/visitors';
-import { VISITORS, visitorsAt, type VisitorId } from '../../data/visitors';
+import { discoveryFact, VISITORS, visitorsAt, type VisitorId } from '../../data/visitors';
 import { FIRST_VISIT_AFTER, nextGap, pickSpot, pickVisitor, STAY_SECONDS } from '../../sim/visitors';
 import { env } from '../../state/env';
 import { FLAGS } from '../../state/flags';
@@ -225,7 +225,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
           const p = root.current?.position ?? home;
           emitParticles('sparkle', [p.x, p.y + 0.3, p.z], 18);
           useUi.getState().setDiscovery({ id, first, at: performance.now() });
-          const fact = def.notInsect ?? def.facts[0]!;
+          // 危ない 子は まず「さわらない」を 読む
+          const fact = discoveryFact(def);
           speak(`${def.kana}！ ${toPlain(fact)}`, true);
         }}
       >

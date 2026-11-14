@@ -251,6 +251,22 @@ const DRAW: Record<VisitorId, ReactElement> = {
       <path d="M40 20 Q28 12 22 18 M60 20 Q72 12 78 18" fill="none" {...S} strokeWidth={3} />
     </g>
   ),
+  seakagokegumo: (
+    <g>
+      {([
+        [30, 22],
+        [26, 40],
+        [26, 58],
+        [32, 80],
+      ] as const).map(([x, y], i) => (
+        <path key={i} d={`M44 ${44 + i * 3} Q${x - 4} ${y - 8} ${x - 14} ${y + 6} M56 ${44 + i * 3} Q${104 - x} ${y - 8} ${114 - x} ${y + 6}`} fill="none" {...S} strokeWidth={2.5} />
+      ))}
+      <ellipse cx="50" cy="44" rx="9" ry="8" fill="#1a1618" {...S} />
+      <circle cx="50" cy="70" r="20" fill="#0f0d0f" {...S} />
+      <path d="M47 54 L53 54 L55 64 L52 70 L56 84 L44 84 L48 70 L45 64 Z" fill="#d42a1f" />
+      <ellipse cx="44" cy="62" rx="5" ry="3" fill="#ffffff" opacity={0.35} />
+    </g>
+  ),
 };
 
 export function VisitorIcon({ id, silhouette = false }: { id: VisitorId; silhouette?: boolean }) {
