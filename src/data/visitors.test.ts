@@ -31,6 +31,15 @@ describe('garden visitors', () => {
     expect(hornet.facts[0]).toMatch(/はなれ/);
     // ハキリアリは 日本に いないことを ずかんで 説明する
     expect(VISITORS.hakiriari.abroad).toBeTruthy();
+    // 刺す アリは タップで おどかしてから 去り、さいしょの 豆知識で「さわらない」を 教える
+    for (const id of ['hiari', 'sashihariari'] as const) {
+      expect(VISITORS[id].react).toBe('warn');
+      expect(VISITORS[id].caution).toBeTruthy();
+      expect(VISITORS[id].facts[0]).toMatch(/さわらない/);
+    }
+    // ヒアリの 大人向け 注意には 相談先が ある
+    expect(VISITORS.hiari.caution).toContain('0570-046-110');
+    for (const id of ['guntaiari', 'hiari', 'sashihariari'] as const) expect(VISITORS[id].abroad).toBeTruthy();
     for (const id of VISITOR_ORDER) {
       expect(VISITORS[id].facts.join('')).not.toContain('TODO');
       expect(VISITORS[id].sources.every((u) => u.startsWith('https://'))).toBe(true);

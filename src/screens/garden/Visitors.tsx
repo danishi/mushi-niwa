@@ -58,8 +58,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
     const side = at[0] >= 0 ? 1 : -1;
     // カタツムリは ゆっくりなので ちかくから
     if (def.where === 'ground') return home.clone().add(new THREE.Vector3(side * (id === 'katatsumuri' ? 0.45 : 1.1), 0, 0));
-    // クモは 上から 糸で おりてくる
-    if (!def.flier) return home.clone().add(new THREE.Vector3(0, 1.0, 0));
+    // クモは 上から 糸で おりてくる。木に のぼる アリは 奥の 板の 上の はしから 歩いて おりる
+    if (!def.flier) return home.clone().add(new THREE.Vector3(0, id === 'jorougumo' ? 1.0 : 0.5, 0));
     return home.clone().add(new THREE.Vector3(side * 5, 1.5, 1));
   }, [home, def.where, def.flier, at, id]);
   const away = useMemo(() => {
@@ -67,6 +67,9 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
     return from.clone().add(new THREE.Vector3(0, 2, -1));
   }, [from, def.where, def.flier]);
   const lastBuzz = useRef(0);
+  // 奥の 板を 歩いて のぼりおりする 子（サシハリアリ：木の みきの つもり）は 進む 向きへ 頭を むける
+  const climber = def.where === 'post' && !def.flier && id !== 'jorougumo';
+  const spin = useRef<THREE.Group>(null);
   // 帰りはじめた 位置（パトロール中の オニヤンマは home から ずれている）
   const depart = useRef(new THREE.Vector3(...at));
 
@@ -134,9 +137,10 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
     } else {
       // react（タップ）・leave（時間ぎれ）
       if (def.react === 'warn' && s.phase === 'react') {
-        // その場で 大あごを カチカチ ならして おどかしてから、とんで いく
+        // その場で おどかしてから（ハチは 大あごを カチカチ、アリは はらを もちあげて 針を 見せる）、とんで・歩いて いく
         a.spray = 1;
         a.flap = 0;
+        a.walk = 0;
         if (s.t > 1.4) {
           s.phase = 'leave';
           s.t = 0;
@@ -167,6 +171,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         }
       }
     }
+    // のぼりおりする 子：おりてくる 間と いる 間は 頭を 下、帰る（のぼる）ときは 頭を 上へ
+    if (climber && spin.current) spin.current.rotation.z = THREE.MathUtils.damp(spin.current.rotation.z, s.phase === 'leave' ? 0 : Math.PI, 5, dt);
     // 進む 向きを 向く（奥の 板に とまる 子は 上むきの まま）
     if (def.where !== 'post') {
       const target = s.phase === 'arrive' ? home : s.phase === 'stay' ? null : away;
@@ -174,6 +180,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         const dx = target.x - g.position.x;
         const dz = target.z - g.position.z;
         if (dx * dx + dz * dz > 0.0004) g.rotation.y = THREE.MathUtils.damp(g.rotation.y, Math.atan2(dx, dz), 6, dt);
+      } else if (id === 'guntaiari') {
+        // 行列は 来た ときの 向きの まま 横切りつづける
       } else if (id === 'oniyanma') {
         // パトロールの 進む 向きへ むきを かえる
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, Math.cos(s.t * 0.55) >= 0 ? Math.PI / 2 : -Math.PI / 2, 3, dt);
@@ -208,7 +216,7 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
           const first = !useProgress.getState().visitors.includes(id);
           useProgress.getState().foundVisitor(id);
           audio.play(
-            def.react === 'warn' ? 'clack' : def.react === 'curl' || def.react === 'walk' || def.react === 'stay' ? 'pop' : def.call === 'cicada' ? 'cicada' : 'flap',
+            def.react === 'warn' ? (def.warnSfx ?? 'clack') : def.react === 'curl' || def.react === 'walk' || def.react === 'stay' ? 'pop' : def.call === 'cicada' ? 'cicada' : 'flap',
           );
           // ホタルは タップで ぱっと ひかる（ほかの 子は spray を 反応に 使う）
           if (id === 'hotaru') anim.current.spray = 1;
@@ -224,9 +232,11 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         <group scale={def.scale}>
           {def.where === 'post' ? (
             // 柱に 頭を 上に して とまる（背中が こちら）
-            <group rotation={[0, 0, Math.PI]}>
-              <group rotation={[Math.PI / 2, 0, 0]}>
-                <Model anim={anim} />
+            <group ref={spin} rotation={[0, 0, climber ? Math.PI : 0]}>
+              <group rotation={[0, 0, Math.PI]}>
+                <group rotation={[Math.PI / 2, 0, 0]}>
+                  <Model anim={anim} />
+                </group>
               </group>
             </group>
           ) : (

@@ -156,7 +156,7 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
         const r = VISITORS[id].react;
         if (r === 'curl' || r === 'hop' || r === 'warn' || id === 'hotaru') {
           anim.current.spray = 1;
-          if (r === 'warn') audio.play('clack');
+          if (r === 'warn') audio.play(VISITORS[id].warnSfx ?? 'clack');
         }
         anim.current.bounce = 1;
         anim.current.startle = 1;

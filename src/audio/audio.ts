@@ -25,7 +25,8 @@ export type SfxName =
   | 'cicada'
   | 'shutter'
   | 'correct'
-  | 'clack';
+  | 'clack'
+  | 'drip';
 
 export type BgmMood = 'day' | 'night' | 'title';
 
@@ -224,6 +225,10 @@ class AudioEngine {
           this.noiseBurst(t + i * 0.09, 0.018, { type: 'highpass', freq: 2800, gain: 0.32 });
           this.tone(1900, t + i * 0.09, 0.02, { type: 'square', gain: 0.05 });
         }
+        break;
+      case 'drip':
+        // ツチハンミョウの しずくが「ぽた、ぽた」
+        for (let i = 0; i < 3; i++) this.tone(1200 - i * 120, t + i * 0.22, 0.09, { type: 'sine', gain: 0.18, slideTo: 500 - i * 40 });
         break;
       case 'nope':
         this.tone(330, t, 0.12, { type: 'sine', gain: 0.2 });

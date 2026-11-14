@@ -124,7 +124,8 @@ export function CareScene({ freeze = false }: { freeze?: boolean }) {
 
 /**
  * 何度も さわると いかくする（安全学習。罰は ない）。
- * ミイデラゴミムシ：プッと ふきだす／カマキリ・ムカデ・サソリ：からだを おおきく みせる／カミキリ：キィキィ なく
+ * ミイデラゴミムシ：プッと ふきだす／カマキリ・ムカデ・サソリ：からだを おおきく みせる／カミキリ：キィキィ なく／
+ * ツチハンミョウ：しんだ ふりを して あしの ふしから 黄色い しるを だす
  */
 const taps: number[] = [];
 export function maybeThreat(id: string, threat: NonNullable<SpeciesDef['threat']>) {
@@ -143,6 +144,11 @@ export function maybeThreat(id: string, threat: NonNullable<SpeciesDef['threat']
     emitParticles('smoke', [p.x + back.x, p.y + 0.25, p.z + back.z], 22, back.clone().multiplyScalar(2));
   } else if (threat.kind === 'squeak') {
     audio.play('squeak');
+  } else if (threat.kind === 'ooze') {
+    // 左右の あしの つけねから ぽたぽた（死んだ ふりの ポーズは モデルが spray で とる）
+    audio.play('drip');
+    const side = new THREE.Vector3(Math.cos(h.group.rotation.y), 0, -Math.sin(h.group.rotation.y)).multiplyScalar(0.2);
+    for (const s of [1, -1]) emitParticles('ooze', [p.x + side.x * s, p.y + 0.12, p.z + side.z * s], 8);
   } else {
     audio.play('whoosh');
   }

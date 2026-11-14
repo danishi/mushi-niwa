@@ -29,10 +29,10 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 
 - **Canvas は 1 つだけ常駐**させ、画面遷移では中身（シーン）と DOM の HUD だけを入れ替える（iOS で WebGL コンテキストを作り直さない）。画面→シーン/カメラの対応は `src/app/scenes.ts`、HUD は `src/app/App.tsx`。
 - **ゲームロジックは `src/sim/` の純 TS**。React / three を import しない。固定ステップ（1 秒）で進め、描画 FPS とは独立。Vitest で検証する。
-- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md`（最初の 6 種）と `docs/species-research-2.md`（オオカマキリ・トビズムカデ・マダラサソリ・ゴマダラカミキリ）、`docs/visitors-research.md`（にわの おきゃくさん 最初の 5 種）、`docs/species-research-3.md`（オオクワガタ と おきゃくさん 8 種）、`docs/species-research-4.md`（ノコギリクワガタ・オオムラサキ・ナナフシモドキ・ウスバカゲロウ・ゲンゴロウ）、`docs/visitors-research-2.md`（おきゃくさん オニヤンマ・ハキリアリ・オオスズメバチ）の出典付き調査に基づく。ムカデ・サソリは昆虫ではないので `notInsect` を付け、ずかんで説明する。
+- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md`（最初の 6 種）と `docs/species-research-2.md`（オオカマキリ・トビズムカデ・マダラサソリ・ゴマダラカミキリ）、`docs/visitors-research.md`（にわの おきゃくさん 最初の 5 種）、`docs/species-research-3.md`（オオクワガタ と おきゃくさん 8 種）、`docs/species-research-4.md`（ノコギリクワガタ・オオムラサキ・ナナフシモドキ・ウスバカゲロウ・ゲンゴロウ）、`docs/visitors-research-2.md`（おきゃくさん オニヤンマ・ハキリアリ・オオスズメバチ）、`docs/species-research-5.md`（マルクビツチハンミョウ）、`docs/visitors-research-3.md`（おきゃくさん グンタイアリ・ヒアリ・サシハリアリ）の出典付き調査に基づく。ムカデ・サソリは昆虫ではないので `notInsect` を付け、ずかんで説明する。
 - **むしずもう（異種対戦）**: ユーザー要望で入れる。ケガ・罰なしの押し合いミニゲーム。得意技は各種の実際の防御行動から取り、「実際には異なる種どうしは戦わない」注記を出す。
 - **ケースは 6 つまで**（ユーザー判断）: いっぱいのときは「あたらしい むし」→ どの子を もりに かえすか選ぶ → 思い出カード → あいたケースで種を選ぶ。途中で送り出しても罰はない。
-- **さわると いかく**: `SpeciesDef.threat`（spray / display / squeak）。かんさつモードで何度も触ると出る安全学習。生きた虫を捕まえる場面は描かず、えさは小皿の「ちいさな むし」で表す。
+- **さわると いかく**: `SpeciesDef.threat`（spray / display / squeak / ooze）。かんさつモードで何度も触ると出る安全学習。生きた虫を捕まえる場面は描かず、えさは小皿の「ちいさな むし」で表す。
 - **お世話の わかりやすさ**: 道具を使う間はカメラが寄り（`cinematic.kind = 'tool'`）、終わると吹き出しが よろこびに変わる（`ui.reaction`）。初回は お手本（`tutorialStep`、`settings.tutorialDone`）。吹き出しは drei の `Html` ではなく、3D 側で画面座標を計算して DOM を重ねる（`BubbleAnchor` + `WantBubble`）。
 - **送り出し**: ユーザー判断で全種「もりにかえす」（物語上の表現）。現実の放虫注意は各種データの `caution` に書き、ずかんの大人向け注記で出す。
 - **すみかの しかけ**（2026-11 に 5 種を 足したときに 追加）: 段階ごとに すみかを 変えられる（`StageDef.habitat` → `habitatOf()`。`soilTop(sp, stage)`）。
@@ -40,6 +40,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
   - すりばち（`StageDef.pit`）: アリジゴク。すなの 上面を へこませた ジオメトリ（`PIT`）。幼虫は `still` で すりばちの 底に うまる（置き場所は `PIT` と そろえる）。
   - ナナフシモドキは さなぎの ない 不完全変態（たまご → ようちゅう → せいちゅう）。
 - **ミイデラゴミムシ**: 幼虫はケラの卵室で育つため家庭飼育不可。ゲームでは成虫のみ飼育し、幼虫期はずかんのコラムで紹介（ユーザー判断）。
+- **マルクビツチハンミョウ**: 幼虫は ハナバチに しがみついて 巣で 育つ（過変態）ので、ミイデラゴミムシと 同じく 成虫のみ 飼育（ユーザー判断）。えさは `dandelion`（タンポポの は）。いかくは `threat.kind = 'ooze'`（死んだ ふりで あしを ちぢめ（`Leg` の `feign`）、あしの つけねから 黄色い しずく（パーティクル `ooze`・音 `drip`））。
 - **罰を与えない**: 虫は死なない。お世話不足は「げんきがない」（成長が一時停止）になるだけ。寿命を終えた成虫は送り出し演出 → ずかんに思い出カード。
 - **時間**: 通常は遊んでいる間だけ進む。たまご〜さなぎは データの `playMinutes` の 2 倍速（ユーザー要望。`GROWTH_SPEED`・`stageMinutes()`）、成虫の期間は データどおり。設定の「リアルタイムモード」でのみ離席中も進む（追いつき計算は上限つき）。
 - **毎フレーム変わる値は React state に入れない**（`src/state/env.ts`・`perfStats` のような可変オブジェクトを `useFrame` で読む）。
@@ -77,8 +78,9 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 - **甲虫の さなぎ**は `src/creatures/pupa.tsx` の 共通部品（`BeetlePupaBody`・`pupaLimbsGeo`・角／大あご／触角の 部品）。蛹室は `Chamber`（奥の 半分だけの くぼみ。丸ごとの かたまりに すると さなぎが かくれて 見えない）。
 - **あきずに 遊べる しかけ**（ユーザーから「任せる」で追加）: どれも罰なし・失うものなし。
   - シールちょう: `src/data/stickers.ts`（条件はデータ）＋ `src/sim/progress.ts`（判定）＋ `src/state/progress.ts`（保存・トースト）。遊びの できごとは `playEvents`（`src/state/events.ts`）で中継し、ストアどうしは直接 import しあわない。トーストはクイズ回答中は出さない。
-  - にわの おきゃくさん: `src/data/visitors.ts`（16 種。昼の虫・夜の虫（ホタル・コオロギ）・昆虫じゃない仲間（ダンゴムシ・クモ・カタツムリ））、モデルは `src/creatures/visitors.tsx`、出かたは `src/sim/visitors.ts` と `src/screens/garden/Visitors.tsx`。1 匹ずつ、まだ見つけていない子が来やすい。来る時間は データの `time`（day / night / any、`visitorsAt()`）。ジョロウグモは 奥の板に あみを はって 上から おりてくる。オニヤンマは 空中を 行ったり来たり（パトロール）。
+  - にわの おきゃくさん: `src/data/visitors.ts`（19 種。昼の虫・夜の虫（ホタル・コオロギ）・昆虫じゃない仲間（ダンゴムシ・クモ・カタツムリ））、モデルは `src/creatures/visitors.tsx`、出かたは `src/sim/visitors.ts` と `src/screens/garden/Visitors.tsx`。1 匹ずつ、まだ見つけていない子が来やすい。来る時間は データの `time`（day / night / any、`visitorsAt()`）。ジョロウグモは 奥の板に あみを はって 上から おりてくる。オニヤンマは 空中を 行ったり来たり（パトロール）。
     - オオスズメバチ（ユーザー判断で 入れる）: タップすると 大あごを カチカチ ならして おどかしてから 飛びさる（`react: 'warn'`、音 `clack`）。豆知識の 1 つめは「みたら そっと はなれよう」、大人向けに 刺されたときの 注意。
+    - アリ 3 種（ユーザー判断）: グンタイアリは 6 ぴきの 行列が 棚の 手前を 横切りつづける（`Guntaiari`。列は 来た 向きの まま）。ヒアリ・サシハリアリは タップで おしりを 上げて 針を 見せてから 去る（`react: 'warn'`。音は `warnSfx`：ヒアリ `whoosh`、サシハリアリ `squeak`）。最初の 豆知識で「さわらない」を 教え、ヒアリの `caution` には 環境省の 相談ダイヤル。サシハリアリは 木に のぼる アリなので 奥の 板（`post`）を 歩いて のぼりおり（`climber`：おりる 間は 頭が 下）。3 種とも `abroad` で 日本に いない（ヒアリは 荷物に まぎれて 来る）ことを 説明。アリの からだは `AntBody`（`AntLook` で 色・頭・こし・あご・針を 変える）。
     - ハキリアリは 日本に いない（ユーザー判断で ふつうに 来る）。`VisitorDef.abroad` に「とおくの くにの アリ」の 説明を 書き、ずかんに 出す。はっぱの きれはしを くわえて 歩く。出る場所は手前の本・立てふだ・切り株の当たり判定と重ならない所（上の段・棚の奥板・空中）。
   - しゃしん: カメラボタン（`src/ui/CameraButton.tsx`）は お世話画面（道具の 演出中は かくす）と かんさつ画面の 右上。かんさつ画面だけだと 見つけにくかったので 両方に 置く。`src/three/snapshot.ts`（`addAfterEffect` で描画直後に読む。preserveDrawingBuffer は使わない）→ `src/state/photos.ts`（端末内、30 枚まで）。ずかんの「しゃしん」タブで見る。大人は設定で消せる。
   - むしクイズ: `src/sim/quiz.ts` が種データから 3 択を作る（手書きの問題を増やさない）。入口は にわの「？」立てふだ。画面は `quiz`。

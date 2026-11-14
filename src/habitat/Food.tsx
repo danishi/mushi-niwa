@@ -107,6 +107,30 @@ export function FoodModel({ food }: { food: FoodId }) {
           <Mesh color="#f2c14e" geometry={GEO.sphere()} position={[0, 0.74, 0]} scale={0.045} />
         </group>
       );
+    case 'dandelion':
+      // タンポポの 株（地面に ひろがる ぎざぎざの 葉と、黄色い 花）
+      return (
+        <group>
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <group key={i} rotation={[0, i * 0.9 + 0.3, 0]}>
+              <Mesh color="#ffffff" surface={leafSurf('#4e8a2c')} geometry={leafGeometry()} position={[0, 0.01 + i * 0.004, -0.2]} rotation={[0.12, 0, 0]} scale={[0.36, 1, 0.42]} />
+            </group>
+          ))}
+          <Mesh color="#6b8f3a" geometry={GEO.cylinder()} position={[0, 0.13, 0]} scale={[0.014, 0.26, 0.014]} />
+          {Array.from({ length: 12 }, (_, i) => (
+            <Mesh
+              key={i}
+              color="#f6c81e"
+              surface={{ roughness: 0.6, sheen: 0.6, side: THREE.DoubleSide }}
+              geometry={petalGeo()}
+              position={[Math.cos(i * 0.5236) * 0.045, 0.27, Math.sin(i * 0.5236) * 0.045]}
+              rotation={[0, Math.PI / 2 - i * 0.5236, 0.25]}
+              scale={[0.05, 0.035, 0.022]}
+            />
+          ))}
+          <Mesh color="#e8a812" geometry={GEO.sphere()} position={[0, 0.275, 0]} scale={[0.04, 0.02, 0.04]} />
+        </group>
+      );
     case 'eggplant':
       // ナスの 輪切りを くしに さして（土に 直接 ふれないように）
       return (

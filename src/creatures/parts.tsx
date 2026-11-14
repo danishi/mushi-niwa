@@ -216,6 +216,7 @@ export function Leg({
   spread = 0.3,
   yaw = 0,
   part,
+  feign = false,
 }: {
   position: V3;
   side: 1 | -1;
@@ -223,6 +224,8 @@ export function Leg({
   spec: LegSpec;
   color: string;
   anim: AnimRef;
+  /** いかく（spray）の 間 あしを ちぢめて 死んだ ふりを する（ツチハンミョウ） */
+  feign?: boolean;
   /** 腿節の持ち上げ角 */
   spread?: number;
   /** 前後の向き（ラジアン、+ で前向き） */
@@ -240,7 +243,7 @@ export function Leg({
     const g = a.gait + phase;
     const swing = Math.sin(g) * 0.4 * a.walk;
     const lift = Math.max(0, Math.cos(g)) * 0.3 * a.walk;
-    const tuck = a.sleep * 0.35;
+    const tuck = a.sleep * 0.35 + (feign ? a.spray * 0.9 : 0);
     // 身づくろい：前あしを 口もとへ 上げて、左右 かわるがわる こする
     const groom = pair === 0 ? a.groom : 0;
     const rub = groom * Math.sin(a.t * 9 + (side > 0 ? 0 : Math.PI));

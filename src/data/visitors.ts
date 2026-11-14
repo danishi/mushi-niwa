@@ -1,6 +1,6 @@
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる ことは できないが、見つけて タップすると ずかんに のる。
- * 事実は docs/visitors-research.md の 出典つき 調査に もとづく。
+ * 事実は docs/visitors-research.md（-2・-3 も）の 出典つき 調査に もとづく。
  */
 export type VisitorId =
   | 'shiokara'
@@ -18,7 +18,10 @@ export type VisitorId =
   | 'katatsumuri'
   | 'oniyanma'
   | 'hakiriari'
-  | 'oosuzumebachi';
+  | 'oosuzumebachi'
+  | 'guntaiari'
+  | 'hiari'
+  | 'sashihariari';
 
 export interface VisitorDef {
   id: VisitorId;
@@ -29,6 +32,8 @@ export interface VisitorDef {
   where: 'air' | 'ground' | 'post';
   /** タップした ときの 反応（fly: とんで いく / hop: はねて いく / walk: あるいて いく / curl: まるまる・ひっこむ / stay: そのまま じっと / warn: 大あごを ならして おどかしてから とんで いく） */
   react: 'fly' | 'hop' | 'walk' | 'curl' | 'stay' | 'warn';
+  /** warn の ときの 音（オオスズメバチは 大あごの カチカチ、サシハリアリは おなかを こする キーキー、ヒアリは 針を 見せる シュッ） */
+  warnSfx?: 'clack' | 'squeak' | 'whoosh';
   /** はねで とぶ（帰る ときに とんで いく） */
   flier: boolean;
   /** 来る 時間（夜は 暗いので night と any の 子だけ） */
@@ -386,6 +391,86 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
       'https://www.city.chiba.jp/faq/hokenfukushi/iryoeisei/hokenjo/kankyo/986.html',
     ],
   },
+  guntaiari: {
+    id: 'guntaiari',
+    name: 'グンタイアリ',
+    kana: 'ぐんたいあり',
+    scientific: 'Eciton burchellii',
+    where: 'ground',
+    react: 'walk',
+    flier: false,
+    time: 'day',
+    facts: [
+      'きまった すを つくらないで、なんじゅうまんびきも ぎょうれつに なって、かりを しながら いどうするよ',
+      'とまる ときは、はたらきアリどうしが からだを つなぎあって、じょおうや ようちゅうを まもる「いきた す」を つくるよ',
+      'あたまの おおきな へいたいアリは、かまの ような ながい おおあごを もって いるよ',
+      'めは とても ちいさくて、においの みちしるべを たどって すすむよ',
+    ],
+    abroad: 'グンタイアリは にほんには いないよ。なかアメリカや みなみアメリカの あつい もりに すんで いるんだ',
+    caution: '中南米の熱帯林にすむアリで、日本の野外にはいません。大あごが鋭く、かまれたときに無理に引き離すと皮膚が切れることがあります。',
+    color: '#7a4a22',
+    scale: 1.8,
+    sources: [
+      'https://kotobank.jp/word/%E8%BB%8D%E9%9A%8A%E8%9F%BB-685908',
+      'https://kotobank.jp/word/%E3%81%95%E3%81%99%E3%82%89%E3%81%84%E3%81%82%E3%82%8A-3152940',
+      'https://en.wikipedia.org/wiki/Eciton_burchellii',
+    ],
+  },
+  hiari: {
+    id: 'hiari',
+    name: 'ヒアリ',
+    kana: 'ひあり',
+    scientific: 'Solenopsis invicta',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'whoosh',
+    flier: false,
+    time: 'day',
+    facts: [
+      'あかちゃいろの ちいさな アリを みつけたら、さわらないで おとなに しらせてね',
+      'おしりに どくの はりが あって、さされると やけどの ように いたいよ',
+      'もとは みなみアメリカの アリ。にもつに まぎれて、にほんの みなとで みつかる ことが あるよ',
+      'ひろい くさちに、つちで ドームの ような アリづかを つくるよ',
+    ],
+    abroad: 'ヒアリは もともと にほんには いないよ。とおくの くにから、にもつに まぎれて やって くる ことが あるんだ',
+    caution:
+      '南米原産の特定外来生物（2022年に要緊急対処特定外来生物に指定）で、毒針で刺します。日本では港のコンテナなどで見つかっています。体長2.5〜6mmほどの赤茶色のアリで見分けが難しいため、疑わしいアリは素手でさわらず、環境省ヒアリ相談ダイヤル（0570-046-110）や市町村に連絡してください。生きたまま持ち運ぶことは法律で禁止されています。刺されたら20〜30分は安静にして様子を見て、じんましん・息苦しさ・激しい動悸・めまいなどが出たら、すぐに医療機関を受診してください。',
+    color: '#a8461f',
+    scale: 2.6,
+    sources: [
+      'https://kotobank.jp/word/%E7%81%AB%E8%9F%BB-1819936',
+      'https://www.pref.ibaraki.jp/seikatsukankyo/shizen/tayousei/alien_species/fire_ants/fire_ants.html',
+      'https://www.env.go.jp/nature/intro/2outline/attention/hiari.html',
+      'https://www.env.go.jp/content/900509628.pdf',
+    ],
+  },
+  sashihariari: {
+    id: 'sashihariari',
+    name: 'サシハリアリ',
+    kana: 'さしはりあり',
+    scientific: 'Paraponera clavata',
+    where: 'post',
+    react: 'warn',
+    warnSfx: 'squeak',
+    flier: false,
+    time: 'any',
+    facts: [
+      'さされると とても いたい アリだよ。いたみが まるいちにち つづくから「24じかんアリ」とも よばれるよ。みつけても さわらないでね',
+      'からだの ながさが 2〜3センチも ある、おおきな アリだよ',
+      'すは きの ねもとに つくって、きに のぼって あまい しるや ちいさな むしを あつめるよ',
+      'じゃまを されると、おなかを こすって キーキーと おとを たてるよ',
+    ],
+    abroad: 'サシハリアリは にほんには いないよ。なかアメリカや みなみアメリカの あつい もりに すんで いるんだ',
+    caution:
+      '中南米（ニカラグア〜パラグアイ）の熱帯雨林にすむアリで、日本にはいません。刺されたときの痛みは昆虫の中で最も強い部類とされ、痛みが長く続くことから「24時間アリ」と呼ばれます。巣に近づくと激しく守ります。旅行先などで見かけても、さわったり巣に近づいたりしないでください。',
+    color: '#3a1a12',
+    scale: 3.4,
+    sources: [
+      'https://ja.wikipedia.org/wiki/%E3%82%B5%E3%82%B7%E3%83%8F%E3%83%AA%E3%82%A2%E3%83%AA',
+      'https://ticotimes.net/?p=166082',
+      'https://dictionnaire-amoureux-des-fourmis.fr/UIEIS-IUSSI/IUSSI-Londres-1973/IUSSI-Londres-1973-Markl.pdf',
+    ],
+  },
 };
 
 export const VISITOR_ORDER: VisitorId[] = [
@@ -399,7 +484,10 @@ export const VISITOR_ORDER: VisitorId[] = [
   'kanabun',
   'oosuzumebachi',
   'kurooari',
+  'hiari',
   'hakiriari',
+  'guntaiari',
+  'sashihariari',
   'hotaru',
   'enmakorogi',
   'dangomushi',

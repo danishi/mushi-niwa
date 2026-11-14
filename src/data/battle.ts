@@ -25,7 +25,7 @@ export interface BattleDef {
     seconds: number;
     /** 技を出したときに出す ほんとうの話（ルビ記法） */
     fact: string;
-    sfx: 'bounce' | 'flap' | 'chirp' | 'puff' | 'whoosh';
+    sfx: 'bounce' | 'flap' | 'chirp' | 'puff' | 'whoosh' | 'drip';
   };
 }
 
@@ -193,6 +193,17 @@ export const BATTLE: Record<SpeciesId, BattleDef> = {
       seconds: 0,
       fact: 'けの はえた ひらたい うしろあしで みずを かいて、すばやく およぐよ',
       sfx: 'whoosh',
+    },
+  },
+  marukubi: {
+    power: 0.85,
+    special: {
+      label: 'しんだふり',
+      effect: 'guard',
+      strength: 0,
+      seconds: 3,
+      fact: 'つかまると しんだ ふりを して、あしの ふしから きいろい しるを だすよ',
+      sfx: 'drip',
     },
   },
   miidera: {

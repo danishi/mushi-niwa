@@ -241,6 +241,22 @@ const DRAW: Record<SpeciesId, ReactElement> = {
       <Eyes y={24} dx={6} r={4} />
     </g>
   ),
+  marukubi: (
+    <g>
+      {[40, 52, 62].map((y) => (
+        <path key={y} d={`M38 ${y} L18 ${y + 12} M62 ${y} L82 ${y + 12}`} {...S} strokeWidth={3} />
+      ))}
+      <ellipse cx="50" cy="68" rx="24" ry="26" fill="#2a3360" {...S} />
+      <path d="M30 66 Q50 72 70 66 M30 78 Q50 84 70 78" stroke="#46508a" strokeWidth={2} fill="none" />
+      <path d="M50 42 L34 62 Q36 46 48 40 Z M50 42 L66 62 Q64 46 52 40 Z" fill="#3b4a8c" {...S} strokeWidth={2.5} />
+      <rect x="43" y="30" width="14" height="12" rx="5" fill="#2a3360" {...S} />
+      <ellipse cx="50" cy="24" rx="13" ry="10" fill="#2a3360" {...S} />
+      <path d="M44 16 Q36 6 28 6 M56 16 Q64 6 72 6" fill="none" {...S} strokeWidth={2.5} strokeDasharray="3 2" />
+      <circle cx="38" cy="52" r="3" fill="#f2c230" />
+      <circle cx="62" cy="52" r="3" fill="#f2c230" />
+      <Eyes y={24} dx={8} r={3} />
+    </g>
+  ),
   gengorou: (
     <g>
       <path d="M30 70 L8 58 L4 78 M70 70 L92 58 L96 78" fill="none" {...S} strokeWidth={5} />

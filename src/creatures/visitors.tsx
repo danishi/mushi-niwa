@@ -1,12 +1,12 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { GEO, mat, sharedGeo, SURF } from '../three/materials';
+import { GEO, mat, sharedGeo, SURF, type MatOpts } from '../three/materials';
 import { grainBump, monshiroWing, veinWing, paint, striaeNormal } from '../three/textures';
-import type { CreatureAnim } from './anim';
+import { newAnim, type CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
 import { mergedGeo, shapeGeo, shapedTube, shellGeo as loftShell, taperedTube, abdomenY, abdomenZ, archGeo, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
-import { Antenna, CompoundEye, JumpLeg, Leg, Part, type JumpLegSpec, type LegSpec } from './parts';
+import { Antenna, CompoundEye, JumpLeg, Leg, LiteContext, Part, type AntennaKind, type JumpLegSpec, type LegSpec } from './parts';
 
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる 虫より 軽い つくりにして、
@@ -1100,6 +1100,236 @@ export function Oosuzumebachi({ anim }: { anim: AnimRef }) {
   );
 }
 
+/* ───────────── アリ 3 種（docs/visitors-research-3.md）の 共通の からだ ───────────── */
+
+interface AntLook {
+  /** 頭・むね・こしの 色 と はらの 色 */
+  body: string;
+  gaster: string;
+  /** 頭の 大きさ [はば, 高さ, 長さ]（半径） */
+  head: [number, number, number];
+  /** 頭の 前後の 位置 */
+  headZ: number;
+  /** はらの 大きさ（abdomenZ の 半径） */
+  gasterSize: [number, number, number];
+  /** こしの ふし（ヒアリ・グンタイアリは 2 つ、サシハリアリは 大きな 1 つ） */
+  nodes: Array<{ z: number; s: [number, number, number] }>;
+  /** 大あご：short = ふつう、sickle = かまの ような 長い あご（グンタイアリの 兵隊）、teeth = 太い あご（サシハリアリ） */
+  jaws: 'short' | 'sickle' | 'teeth';
+  /** おしりの 針 */
+  sting: number;
+  leg: LegSpec;
+  antenna: { length: number; thick: number; kind: AntennaKind };
+  /** 目の 大きさ（グンタイアリは ごく 小さい） */
+  eye: number;
+  surface: MatOpts;
+  /** いかく（spray）の とき はらを ふるわせる（サシハリアリの 発音） */
+  rattle?: boolean;
+}
+
+function AntBody({ anim, look, shadows = true }: { anim: AnimRef; look: AntLook; shadows?: boolean }) {
+  const body = useBodyMotion(anim, 1);
+  const gaster = useRef<THREE.Group>(null);
+  const jaws = useRef<THREE.Group>(null);
+  const L = look;
+  useFrame(() => {
+    const a = anim.current;
+    // いかく：はらを もちあげて 針を 見せる（サシハリアリは ぶるぶる ふるわせて 音を 出す）
+    if (gaster.current) {
+      gaster.current.rotation.x = a.spray * 0.75 + (L.rattle ? Math.sin(a.t * 60) * 0.06 * a.spray : 0) + Math.sin(a.gait * 2) * 0.03 * a.walk;
+    }
+    if (jaws.current) {
+      const open = L.jaws === 'sickle' ? 0.12 : 0.1 + a.spray * 0.45;
+      jaws.current.children.forEach((c, i) => (c.rotation.y = (i === 0 ? 1 : -1) * open));
+    }
+  });
+  const [hw, hh, hl] = L.head;
+  const hz = L.headZ;
+  // useBodyMotion の group は 毎フレーム 位置が 上書きされるので、持ち上げは 外がわの group で
+  return (
+    <group position={[0, 0.03, 0]}>
+      <group ref={body}>
+        {/* あたま（ひらたく、すこし 角ばった 形） */}
+        <Part geometry={antHeadGeo()} color={L.body} surface={L.surface} position={[0, 0.062, hz]} scale={[hw, hh, hl]} castShadow={shadows} />
+        {[1, -1].map((s) => (
+          <group key={s}>
+            <CompoundEye position={[s * hw * 0.82, 0.07, hz + hl * 0.3]} size={L.eye} color="#1a1210" />
+            <Antenna position={[s * 0.014, 0.072, hz + hl * 0.85]} side={s as 1 | -1} length={L.antenna.length} thick={L.antenna.thick} kind={L.antenna.kind} color={L.body} anim={anim} rotation={[0.55, 0.5, 0]} />
+          </group>
+        ))}
+        <group ref={jaws} position={[0, 0.052, hz + hl * 0.9]}>
+          {[1, -1].map((s) => (
+            <group key={s} position={[s * 0.014, 0, 0]}>
+              {L.jaws === 'sickle' ? (
+                // かまの ような 長い 大あご：外へ ひろがってから 内がわへ まがる
+                <mesh geometry={sickleJawGeo()} material={mat('#3a2010', SURF.chitin(0.6))} scale={[s, 1, 1]} />
+              ) : (
+                <M color={L.jaws === 'teeth' ? '#1a0e08' : '#4a1c0c'} surface={SURF.chitin(0.6)} position={[-s * 0.004, 0, 0.01]} rotation={[0, -s * 0.5, 0]} scale={L.jaws === 'teeth' ? [0.007, 0.006, 0.02] : [0.005, 0.004, 0.014]} />
+              )}
+            </group>
+          ))}
+        </group>
+        {/* むね */}
+        <Part
+          geometry={bodyGeo('antThorax', [[-0.052, 0, 0.006, 0.006], [-0.042, 0.011, 0.013, -0.01], [-0.022, 0.017, 0.02, -0.017], [0.005, 0.02, 0.028, -0.02], [0.03, 0.023, 0.032, -0.02], [0.05, 0.014, 0.02, -0.012], [0.058, 0, 0.006, 0.006]], { nt: 2.2 })}
+          color={L.body}
+          surface={L.surface}
+          position={[0, 0.058, 0.04]}
+          castShadow={shadows}
+        />
+        {/* こしの ふし */}
+        {L.nodes.map((n, i) => (
+          <M key={i} color={L.body} surface={L.surface} position={[0, 0.06, n.z]} scale={n.s} />
+        ))}
+        {/* はら（ねもとを 中心に もちあがる）と 針 */}
+        <group ref={gaster} position={[0, 0.06, L.nodes[L.nodes.length - 1]!.z - L.nodes[L.nodes.length - 1]!.s[2]]}>
+          <Part geometry={abdomenZ(4)} color={L.gaster} surface={L.surface} position={[0, 0, -L.gasterSize[2]]} scale={L.gasterSize} castShadow={shadows} />
+          <M geo={GEO.cone()} color="#2a1a14" surface={SURF.chitin(0.5)} position={[0, -L.gasterSize[1] * 0.1, -L.gasterSize[2] * 2 - L.sting * 0.4]} rotation={[-Math.PI / 2, 0, 0]} scale={[L.sting * 0.12, L.sting, L.sting * 0.12]} />
+        </group>
+        {[0, 1, 2].map((p) =>
+          [1, -1].map((s) => <Leg key={`${p}${s}`} position={[s * 0.015, 0.05, 0.07 - p * 0.03]} side={s as 1 | -1} pair={p} spec={L.leg} color={L.body} anim={anim} spread={0.22} />),
+        )}
+      </group>
+    </group>
+  );
+}
+
+/** アリの 頭（半径 1。上から 見ると 角の まるい 四角、横から 見ると ひらたい） */
+const antHeadGeo = () =>
+  bodyGeo('antHead', [[-1, 0, 0.3, 0.3], [-0.85, 0.75, 0.75, -0.65], [-0.3, 1, 0.95, -0.85], [0.4, 0.95, 0.85, -0.8], [0.85, 0.62, 0.5, -0.5], [1, 0, 0.1, 0.1]], { nt: 2.8, nb: 2.4 });
+
+const sickleJawGeo = () =>
+  mergedGeo('antSickle', () => [
+    shapedTube(
+      [
+        [0, 0, 0],
+        [0.02, 0, 0.03],
+        [0.022, 0.004, 0.065],
+        [0.008, 0.006, 0.09],
+        [-0.008, 0.004, 0.098],
+      ],
+      (t) => {
+        const r = 0.0058 * (1 - t) + 0.0008;
+        return [r, r * 0.75];
+      },
+      12,
+      8,
+    ),
+  ]);
+
+/* ───────────── ヒアリ（はたらきアリ）：赤茶の からだ、黒っぽい はら、毒の 針 ───────────── */
+
+const FIRE_ANT: AntLook = {
+  body: '#a8461f',
+  gaster: '#3a1610',
+  head: [0.034, 0.026, 0.036],
+  headZ: 0.115,
+  gasterSize: [0.04, 0.035, 0.045],
+  nodes: [
+    { z: -0.012, s: [0.011, 0.014, 0.01] },
+    { z: -0.032, s: [0.013, 0.013, 0.011] },
+  ],
+  jaws: 'short',
+  sting: 0.022,
+  leg: { femur: 0.06, tibia: 0.06, tarsus: 0.05, thick: 0.006, tarsi: 3 },
+  antenna: { length: 0.1, thick: 0.0025, kind: 'clavate' },
+  eye: 0.007,
+  surface: { roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.25 },
+};
+
+export function Hiari({ anim }: { anim: AnimRef }) {
+  return <AntBody anim={anim} look={FIRE_ANT} />;
+}
+
+/* ───────────── サシハリアリ：大きな 黒っぽい からだ、四角い 頭、大きな こしの ふし、太い 針 ───────────── */
+
+const BULLET_ANT: AntLook = {
+  body: '#3a1a12',
+  gaster: '#2c140e',
+  head: [0.038, 0.028, 0.046],
+  headZ: 0.125,
+  gasterSize: [0.046, 0.04, 0.055],
+  nodes: [{ z: -0.02, s: [0.02, 0.024, 0.016] }],
+  jaws: 'teeth',
+  sting: 0.03,
+  leg: { femur: 0.075, tibia: 0.075, tarsus: 0.055, thick: 0.008, tarsi: 3 },
+  antenna: { length: 0.13, thick: 0.0045, kind: 'filiform' },
+  eye: 0.009,
+  surface: { ...SURF.granular(0.4), roughness: 0.55 },
+  rattle: true,
+};
+
+export function Sashihariari({ anim }: { anim: AnimRef }) {
+  return <AntBody anim={anim} look={BULLET_ANT} />;
+}
+
+/* ───────────── グンタイアリ：はたらきアリの 行列（1 ぴきは 大あごの 長い 兵隊アリ） ───────────── */
+
+const ARMY_WORKER: AntLook = {
+  body: '#7a4a22',
+  gaster: '#5a3418',
+  head: [0.03, 0.024, 0.034],
+  headZ: 0.11,
+  gasterSize: [0.034, 0.03, 0.04],
+  nodes: [
+    { z: -0.012, s: [0.01, 0.013, 0.01] },
+    { z: -0.03, s: [0.012, 0.012, 0.01] },
+  ],
+  jaws: 'short',
+  sting: 0.012,
+  leg: { femur: 0.085, tibia: 0.085, tarsus: 0.06, thick: 0.006, tarsi: 3 },
+  antenna: { length: 0.12, thick: 0.004, kind: 'filiform' },
+  eye: 0.004,
+  surface: { roughness: 0.4, clearcoat: 0.6, clearcoatRoughness: 0.3 },
+};
+const ARMY_SOLDIER: AntLook = { ...ARMY_WORKER, body: '#8a5a2a', head: [0.042, 0.03, 0.044], headZ: 0.125, jaws: 'sickle' };
+
+const COLUMN = { n: 6, length: 1.2, speed: 0.16 };
+
+/** 行列の 1 ぴき（自分の 歩く リズムで あしを 動かす） */
+function ColumnAnt({ i, flow, soldier }: { i: number; flow: { current: number }; soldier: boolean }) {
+  const ref = useRef<THREE.Group>(null);
+  const anim = useRef<CreatureAnim>({ ...newAnim(), t: i * 1.7, walk: 1 });
+  useFrame((_, dt) => {
+    const a = anim.current;
+    a.t += dt;
+    a.walk = 1;
+    a.gait += dt * 16;
+    const g = ref.current;
+    if (!g) return;
+    // 列の 先へ 進み、はしまで 行ったら 後ろから また 出てくる（はしでは 小さく なって 消える）
+    const k = (((i / COLUMN.n + flow.current / COLUMN.length) % 1) + 1) % 1;
+    g.position.set(Math.sin(k * 9 + i) * 0.03, 0, (k - 0.5) * COLUMN.length);
+    const fade = Math.min(1, k / 0.1, (1 - k) / 0.1);
+    g.scale.setScalar(Math.max(0.001, fade));
+  });
+  // 最初の フレームの 前から 列に ならべておく（ずかんの 標本は 外接箱で 大きさを そろえる）
+  const k0 = i / COLUMN.n;
+  return (
+    <group ref={ref} position={[0, 0, (k0 - 0.5) * COLUMN.length]} scale={Math.max(0.001, Math.min(1, k0 / 0.1, (1 - k0) / 0.1))}>
+      {/* 6 ぴきぶんの 部品が 多いので、あしの 先は 省き（LiteContext）、影も 落とさない */}
+      <LiteContext.Provider value={true}>
+        <AntBody anim={anim} look={soldier ? ARMY_SOLDIER : ARMY_WORKER} shadows={false} />
+      </LiteContext.Provider>
+    </group>
+  );
+}
+
+export function Guntaiari({ anim }: { anim: AnimRef }) {
+  const flow = useRef(0);
+  useFrame((_, dt) => {
+    // 行列は とまらずに 進みつづける（タップで びくっと すると すこし はやく）
+    flow.current += Math.min(dt, 0.1) * COLUMN.speed * (1 + anim.current.startle);
+  });
+  return (
+    <group>
+      {Array.from({ length: COLUMN.n }, (_, i) => (
+        <ColumnAnt key={i} i={i} flow={flow} soldier={i === 2} />
+      ))}
+    </group>
+  );
+}
+
 export const VISITOR_MODELS = {
   shiokara: Shiokara,
   monshiro: Monshiro,
@@ -1117,4 +1347,7 @@ export const VISITOR_MODELS = {
   oniyanma: Oniyanma,
   hakiriari: Hakiriari,
   oosuzumebachi: Oosuzumebachi,
+  guntaiari: Guntaiari,
+  hiari: Hiari,
+  sashihariari: Sashihariari,
 } as const;

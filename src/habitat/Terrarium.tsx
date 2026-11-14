@@ -279,6 +279,7 @@ export function houseFor(id: SpeciesDef['id'], stageIdx = 0) {
     nanahoshi: 'leaf',
     kaiko: 'mulberryTwig',
     miidera: 'stone',
+    marukubi: 'stone',
     ookamakiri: 'branch',
     tobizumukade: 'bark',
     madarasasori: 'bark',

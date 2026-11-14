@@ -2,6 +2,7 @@ import type { SpeciesDef, SpeciesId } from '../../sim/types';
 import { kabutomushi } from './kabutomushi';
 import { kaiko } from './kaiko';
 import { miidera } from './miidera';
+import { marukubi } from './marukubi';
 import { namiageha } from './namiageha';
 import { nanahoshi } from './nanahoshi';
 import { gomadara } from './gomadara';
@@ -24,6 +25,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   nanahoshi,
   kaiko,
   miidera,
+  marukubi,
   ookamakiri,
   tobizumukade,
   madarasasori,
@@ -47,6 +49,7 @@ export const SPECIES_ORDER: SpeciesId[] = [
   'nanahoshi',
   'kaiko',
   'miidera',
+  'marukubi',
   'ookamakiri',
   'nanafushi',
   'usubakagerou',

@@ -23,6 +23,7 @@ export const FOOD_ICON: Record<FoodId, IconName> = {
   sakuraLeaf: 'leaf',
   waterBug: 'bug',
   fish: 'fish',
+  dandelion: 'leaf',
   none: 'food',
 };
 
@@ -41,6 +42,7 @@ export const FOOD_LABEL: Record<FoodId, string> = {
   sakuraLeaf: 'サクラの は',
   waterBug: 'みずの なかの むし',
   fish: 'にぼし',
+  dandelion: 'タンポポの は',
   none: '',
 };
 

@@ -65,6 +65,7 @@ export const FOOD_GROUP: Record<FoodId, string> = {
   sakuraLeaf: 'leaf',
   waterBug: 'smallInsect',
   fish: 'fish',
+  dandelion: 'leaf',
   none: 'none',
 };
 
@@ -139,6 +140,7 @@ export const FOOD_WORD: Record<FoodId, string> = {
   sakuraLeaf: 'サクラや クヌギの は',
   waterBug: 'みずの なかの ちいさな いきもの',
   fish: 'しんだ さかなや にぼし',
+  dandelion: 'タンポポなどの くさの は',
   none: '',
 };
 

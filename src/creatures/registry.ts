@@ -11,6 +11,7 @@ import { AntlionCocoon, AntlionLarva, UsubaAdult } from './usubakagerou';
 import { KaikoAdult, KaikoCocoon, KaikoEgg, KaikoLarva, MiideraAdult, TentouAdult, TentouEgg, TentouLarva, TentouPupa } from './others';
 import { CentipedeAdult, CentipedeYoung, GomadaraAdult, GomadaraLarva, GomadaraPupa, MantisAdult, MantisNymph, MantisOotheca, ScorpionAdult, ScorpionYoung } from './predators';
 import { SuzuAdult, SuzuNymph } from './suzumushi';
+import { MarukubiAdult } from './marukubi';
 
 export interface ModelProps {
   anim: { current: CreatureAnim };
@@ -76,6 +77,8 @@ export const MODELS: Record<string, ModelEntry> = {
   'kaiko-cocoon': { C: KaikoCocoon, locomotion: 'still', length: 0.8, speed: 0 },
   'kaiko-adult': { C: KaikoAdult, locomotion: 'crawl', length: 0.8, speed: 0.12, gestures: ['fan', 'groom', 'look'] },
   'miidera-adult': { C: MiideraAdult, locomotion: 'crawl', length: 0.9, speed: 0.55 },
+  // 体が おもく、ゆっくり 歩いて 草を かじる
+  'marukubi-adult': { C: MarukubiAdult, locomotion: 'crawl', length: 1.0, speed: 0.16, gestures: ['groom', 'look'] },
   'mantis-ootheca': { C: MantisOotheca, locomotion: 'still', length: 0.6, speed: 0 },
   'mantis-nymph': { C: MantisNymph, locomotion: 'crawl', length: 0.7, speed: 0.2, gestures: ['sway', 'groom', 'look'] },
   'mantis-adult': { C: MantisAdult, locomotion: 'crawl', length: 1.4, speed: 0.18, gestures: ['sway', 'groom', 'look'] },

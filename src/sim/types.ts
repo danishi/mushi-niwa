@@ -9,6 +9,7 @@ export type SpeciesId =
   | 'nanahoshi'
   | 'kaiko'
   | 'miidera'
+  | 'marukubi'
   | 'ookamakiri'
   | 'tobizumukade'
   | 'madarasasori'
@@ -51,6 +52,7 @@ export type FoodId =
   | 'sakuraLeaf' // サクラなどの葉（ナナフシモドキ）
   | 'waterBug' // 水の中の 小さな 生きもの（ゲンゴロウの幼虫）
   | 'fish' // にぼし・小魚（ゲンゴロウの成虫）
+  | 'dandelion' // タンポポなどの草の葉（ツチハンミョウの成虫）
   | 'none';
 
 export type SubstrateId = 'mat' | 'soil' | 'leafbed' | 'paper' | 'moistSoil' | 'wood' | 'sand' | 'water';
@@ -125,7 +127,7 @@ export interface SpeciesDef {
   /** ずかんの豆知識（ルビ記法） */
   facts: string[];
   /** 何度も さわると する いかく（安全学習。罰は ない） */
-  threat?: { kind: 'spray' | 'display' | 'squeak'; text: string };
+  threat?: { kind: 'spray' | 'display' | 'squeak' | 'ooze'; text: string };
   /** 昆虫では ない（ずかんで 教える） */
   notInsect?: string;
   /** 気をつけること（大人向け注意書きにも使う） */
