@@ -128,7 +128,8 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
   const gestures = useRef(new GestureRunner());
   // 外接箱から 大きさと 置き場所を そろえる。ムカデの 節（InstancedMesh）は 最初の useFrame で 位置が 決まるので、
   // その 子だけ 1 フレーム目に 測りなおす（インスタンスの 外接箱は キャッシュされるので 捨ててから）。
-  // ほかの 子は 描く 前の 形の まま 測る（チョウの はねなどは useFrame で 立つので、測りなおすと 大きさが 変わる）
+  // 歩く 子も 1 フレーム目に 測りなおす（Leg の あしは useFrame で まがるので、描く 前の まっすぐな あしで 測ると 台から うく）。
+  // 空中の 子は 描く 前の 形の まま 測る（チョウの はねなどは useFrame で 立つので、測りなおすと 大きさが 変わる）
   const measure = useCallback(() => {
     const f = fit.current;
     const g = inner.current;
@@ -165,7 +166,7 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
     gestures.current.update(dt, a, GUEST_GESTURES, !stepping && a.flap === 0 && a.startle < 0.1 && a.spray < 0.1);
     a.spray = THREE.MathUtils.damp(a.spray, 0, 1.5, dt);
     a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
-    if (++frames.current === 1 && spin.current && hasInstances(inner.current)) {
+    if (++frames.current === 1 && spin.current && (!flier || hasInstances(inner.current))) {
       // 回転を 0 に して 測る（台座の 向きに そろえる）
       const ry = spin.current.rotation.y;
       spin.current.rotation.y = 0;

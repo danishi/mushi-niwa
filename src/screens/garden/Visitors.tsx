@@ -44,6 +44,8 @@ type Phase = 'arrive' | 'stay' | 'react' | 'leave';
 /** とまっている 間の しぐさ（飛びつづける 子は しない） */
 const REST_GESTURES: Gesture[] = ['groom', 'look'];
 const NO_GESTURES: Gesture[] = [];
+/** いかくで 後ろあしを つかって はらの 毛を とばす タランチュラ */
+const HAIR_KICKERS = new Set<VisitorId>(['ruburon', 'tarantula']);
 
 function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void }) {
   const def = VISITORS[id];
@@ -137,8 +139,14 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
     } else {
       // react（タップ）・leave（時間ぎれ）
       if (def.react === 'warn' && s.phase === 'react') {
-        // その場で おどかしてから（ハチは 大あごを カチカチ、アリは はらを もちあげて 針を 見せる）、とんで・歩いて いく
-        a.spray = 1;
+        // その場で おどかしてから（ハチは 大あごを カチカチ、アリは はらを もちあげて 針を 見せる、
+        // クモは 前あしを 上げる・きばを ひらく・後ろあしで 毛を けりとばす）、とんで・歩いて いく
+        a.spray = Math.min(1, a.spray + dt * 6);
+        if (HAIR_KICKERS.has(id) && s.t > 0.3 && Math.floor(s.t * 6) !== Math.floor((s.t - dt) * 6)) {
+          // かゆく なる 毛が ぱっと とぶ（はらの 上あたり）
+          const back = new THREE.Vector3(0, 0.12, -0.2).multiplyScalar(def.scale).applyEuler(g.rotation).add(g.position);
+          emitParticles('dust', back, 3);
+        }
         a.flap = 0;
         a.walk = 0;
         if (s.t > 1.4) {

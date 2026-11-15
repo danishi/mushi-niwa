@@ -45,6 +45,21 @@ describe('garden visitors', () => {
       expect(VISITORS[id].caution).toBeTruthy();
       expect(VISITORS[id].facts[0]).toMatch(/さわらない/);
     }
+    // 大きな クモ 4 種は タップで いかくして 去る。見つけた ときは まず「さわらない」、大人向けの 注意も ある
+    for (const id of ['kurodokushibogumo', 'kabakikomachigumo', 'ruburon', 'tarantula'] as const) {
+      expect(VISITORS[id].react).toBe('warn');
+      expect(VISITORS[id].safety).toBe(true);
+      expect(VISITORS[id].facts[0]).toMatch(/さわらない/);
+      expect(VISITORS[id].caution).toBeTruthy();
+      expect(VISITORS[id].notInsect).toBeTruthy();
+    }
+    // カバキコマチグモは 日本に すむ。ほかの 3 種と ヘラクレス・オオエンマハンミョウは 日本に いない
+    expect(VISITORS.kabakikomachigumo.abroad).toBeUndefined();
+    for (const id of ['kurodokushibogumo', 'ruburon', 'tarantula', 'herakuresu', 'ooenmahanmyou'] as const) expect(VISITORS[id].abroad).toBeTruthy();
+    // ヘラクレスは 夜に 飛んで きて 奥の 板に とまる。オオエンマハンミョウは とべない
+    expect(VISITORS.herakuresu).toMatchObject({ where: 'post', flier: true, time: 'night' });
+    expect(VISITORS.ooenmahanmyou).toMatchObject({ where: 'ground', flier: false });
+    expect(VISITORS.herakuresu.caution).toMatch(/放さない/);
     // ヒアリの 大人向け 注意には 相談先が ある
     expect(VISITORS.hiari.caution).toContain('0570-046-110');
     for (const id of ['guntaiari', 'hiari', 'sashihariari'] as const) expect(VISITORS[id].abroad).toBeTruthy();
@@ -54,6 +69,6 @@ describe('garden visitors', () => {
     }
   });
   it('explains what non-insects are', () => {
-    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri', 'seakagokegumo', 'oomukade'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
+    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri', 'seakagokegumo', 'oomukade', 'kurodokushibogumo', 'kabakikomachigumo', 'ruburon', 'tarantula'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
   });
 });

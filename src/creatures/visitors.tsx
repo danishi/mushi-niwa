@@ -7,6 +7,7 @@ import { newAnim, type CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
 import { mergedGeo, shapeGeo, shapedTube, shellGeo as loftShell, taperedTube, abdomenY, abdomenZ, archGeo, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
 import { Antenna, CompoundEye, JumpLeg, Leg, LiteContext, Part, type AntennaKind, type JumpLegSpec, type LegSpec } from './parts';
+import { Herakuresu, Kabakikomachigumo, Kurodokushibogumo, Ooenmahanmyou, Ruburon, Tarantula } from './exotics';
 import { GiantCentipede } from './predators';
 
 /**
@@ -1437,4 +1438,10 @@ export const VISITOR_MODELS = {
   sashihariari: Sashihariari,
   seakagokegumo: Seakagokegumo,
   oomukade: GiantCentipede,
+  kurodokushibogumo: Kurodokushibogumo,
+  kabakikomachigumo: Kabakikomachigumo,
+  ruburon: Ruburon,
+  tarantula: Tarantula,
+  herakuresu: Herakuresu,
+  ooenmahanmyou: Ooenmahanmyou,
 } as const;

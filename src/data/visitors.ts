@@ -1,6 +1,6 @@
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる ことは できないが、見つけて タップすると ずかんに のる。
- * 事実は docs/visitors-research.md（-2〜-5 も）の 出典つき 調査に もとづく。
+ * 事実は docs/visitors-research.md（-2〜-6 も）の 出典つき 調査に もとづく。
  */
 export type VisitorId =
   | 'shiokara'
@@ -23,7 +23,13 @@ export type VisitorId =
   | 'hiari'
   | 'sashihariari'
   | 'seakagokegumo'
-  | 'oomukade';
+  | 'oomukade'
+  | 'kurodokushibogumo'
+  | 'kabakikomachigumo'
+  | 'ruburon'
+  | 'tarantula'
+  | 'herakuresu'
+  | 'ooenmahanmyou';
 
 export interface VisitorDef {
   id: VisitorId;
@@ -537,6 +543,165 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
       'https://www.discoverwildlife.com/animal-facts/insects-invertebrates/giant-centipede-facts',
     ],
   },
+  kurodokushibogumo: {
+    id: 'kurodokushibogumo',
+    name: 'クロドクシボグモ',
+    kana: 'くろどくしぼぐも',
+    scientific: 'Phoneutria nigriventer',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'whoosh',
+    flier: false,
+    time: 'night',
+    safety: true,
+    facts: [
+      'つよい どくを もつ クモだよ。みつけても ぜったいに さわらないでね',
+      'びっくりすると まえの あしを たかく もちあげて「こっちに こないで」と おどかすよ',
+      'あみは はらないよ。よるに あるきまわって、えものを まちぶせするんだ',
+      'ひるまは たおれた きの したや、バナナの きの あいだに かくれて いるよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、クモの なかまだよ。あしは 8ほん',
+    abroad: 'この クモは にほんには いないよ。みなみアメリカの もりや まちに すんで いるんだ',
+    caution:
+      '南米南部（ブラジル・ウルグアイ・パラグアイ・アルゼンチン）にすむ徘徊性のクモで、日本の野外にはいません。神経毒が強く、咬まれると激しい痛みのほか、重いときは心臓や呼吸の症状が出ることがあり、抗毒素血清で治療します。おどかされると前脚を高く上げて警告します。夜に歩きまわり、昼は倒木の下や家の中、バナナの木などにひそむため、現地ではバナナの房を扱うときなどに咬まれる事故があります。見かけても素手でさわらず、咬まれたらすぐに医療機関を受診してください。',
+    color: '#5a3a24',
+    scale: 1.8,
+    sources: ['https://en.wikipedia.org/wiki/Phoneutria_nigriventer', 'https://www.wandering-spiders.net/phoneutria/', 'https://www.britannica.com/animal/Phoneutria-nigriventer'],
+  },
+  kabakikomachigumo: {
+    id: 'kabakikomachigumo',
+    name: 'カバキコマチグモ',
+    kana: 'かばきこまちぐも',
+    scientific: 'Cheiracanthium japonicum',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'whoosh',
+    flier: false,
+    time: 'night',
+    safety: true,
+    facts: [
+      'ススキの はが ちまきの ように まかれて いたら、なかに この クモが いるかも。さわらないでね',
+      'くろい おおきな きばで かむよ。かまれると とても いたいんだ',
+      'ひるまは はの なかに かくれて、よるに あるきまわって むしを つかまえるよ',
+      'うまれた こグモは、おかあさんの からだを たべて おおきく なるよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、クモの なかまだよ。あしは 8ほん',
+    caution:
+      '日本の平地から山地の草むらや河原にすむ毒グモです（成虫は6〜9月）。網は張らず、メスはススキなどイネ科の葉をちまき状に巻いた巣（産室）をつくり、昼はその中にひそんで夜に活動します。人を襲うことはありませんが、巻いた葉を開いたり草刈りをしたりすると咬まれることがあります。咬まれるとすぐに強く痛み、赤く腫れます。多くは数日で治まりますが、吐き気や頭痛を伴うこともあるため、自己判断せず医療機関を受診してください。草むらに入るときや草刈りのときは長袖・長ズボンを着けてください。',
+    color: '#d08a3a',
+    scale: 1.3,
+    sources: [
+      'https://www.city.setagaya.lg.jp/02245/737.html',
+      'https://www.pref.chiba.lg.jp/eiken/eiseikenkyuu/kennkyuuhoukoku/documents/23-p26.pdf',
+      'https://kotobank.jp/word/%E3%82%AB%E3%83%90%E3%82%AD%E3%82%B3%E3%83%9E%E3%83%81%E3%82%B0%E3%83%A2-3147582',
+    ],
+  },
+  ruburon: {
+    id: 'ruburon',
+    name: 'ルブロンオオツチグモ',
+    kana: 'るぶろんおおつちぐも',
+    scientific: 'Theraphosa blondi',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'whoosh',
+    flier: false,
+    time: 'night',
+    safety: true,
+    facts: [
+      'おなかの けを とばして くるよ。めや ひふが かゆく なるから、さわらないでね',
+      'おもさで せかいいちの クモ。あしを ひろげると 30センチにも なるよ',
+      'おこると あしの けを こすって「シューッ」と おとを たてるよ',
+      'えいごの なまえは「とりを たべる クモ」。でも とりは めったに たべないよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、クモの なかま（タランチュラ）だよ。あしは 8ほん',
+    abroad: 'この クモは にほんには いないよ。みなみアメリカの きたの ほうの もりに すんで いるんだ',
+    caution:
+      '南米北部（ギアナ地方・ブラジル北部・コロンビア東部・ベネズエラ南部）の熱帯雨林にすむ、体重で世界最大のクモです（最大約175g、脚を広げて約30cm）。日本の野外にはいません。毒は弱くハチに刺された程度とされますが、牙は2〜4cmあり、人の皮膚をつらぬきます。おどかされると脚の毛をこすって音を出し、腹部の刺激毛を後ろ脚で飛ばします。刺激毛は皮膚や粘膜を刺激するので、飼育個体でも素手でさわらないでください。',
+    color: '#a07a4a',
+    // 体重で 世界最大の クモ。おきゃくさんの クモで いちばん 大きく 見せる
+    scale: 2.2,
+    sources: ['https://en.wikipedia.org/wiki/Goliath_birdeater', 'https://www.nationalgeographic.com/animals/invertebrates/facts/goliath-birdeater', 'https://guinnessworldrecords.com/world-records/largest-spider'],
+  },
+  tarantula: {
+    id: 'tarantula',
+    name: 'タランチュラ',
+    kana: 'たらんちゅら',
+    scientific: 'Brachypelma hamorii',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'whoosh',
+    flier: false,
+    time: 'any',
+    safety: true,
+    facts: [
+      'おこると うしろあしで おなかの けを けりとばすよ。かゆく なるから さわらないでね',
+      'メキシカンレッドニーと いう しゅるいの タランチュラ。くろい あしの ひざが オレンジいろで「レッドニー（あかい ひざ）」って いうんだよ',
+      'メスは 30ねんも いきる ことが あるよ',
+      'じめんに あなを ほって、なかに へやを つくって くらすよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、クモの なかま（タランチュラ）だよ。あしは 8ほん',
+    abroad: 'この クモは にほんには いないよ。メキシコの やまの もりに すんで いるんだ',
+    caution:
+      'メキシカンレッドニー（Brachypelma hamorii）は、メキシコ西部（コリマ・ハリスコ・ミチョアカン）の丘陵の森にすむタランチュラで、日本の野外にはいません。毒は弱くおとなしい種ですが、おどかされると咬むかわりに、腹部と後ろ脚の刺激毛（かゆみを起こす毛）をけり飛ばします。牙で咬まれると痛み、化膿することもあります。IUCNの危急種で、ワシントン条約の附属書IIに掲載されています。飼育個体でも素手でさわらないでください。',
+    color: '#e0782a',
+    scale: 1.9,
+    sources: ['https://en.wikipedia.org/wiki/Brachypelma_hamorii'],
+  },
+  herakuresu: {
+    id: 'herakuresu',
+    name: 'ヘラクレスオオカブト',
+    kana: 'へらくれすおおかぶと',
+    scientific: 'Dynastes hercules',
+    where: 'post',
+    react: 'warn',
+    warnSfx: 'whoosh',
+    flier: true,
+    time: 'night',
+    facts: [
+      'むねの ながい つのと あたまの つので、あいてを はさんで もちあげるよ',
+      'まえの はねは かわくと きいろ、しめると くろく かわるよ',
+      'つのを ふくめて 18センチに なる ことも ある、せかいで いちばん おおきい なかまの カブトムシだよ',
+      '{幼虫|ようちゅう}は くさった きを たべて、1ねん いじょう かけて おおきく なるよ',
+    ],
+    abroad: 'この カブトムシは にほんには いないよ。ちゅうおうアメリカや みなみアメリカの もりに すんで いるんだ',
+    caution:
+      '中南米（メキシコ南部〜ボリビア）の熱帯雨林にすむカブトムシで、日本の野外にはいません。日本では外国産のカブトムシ・クワガタとして輸入され、ペットとして売られています。野外に放すと、在来種のえさやすみかをうばったり、ダニや病気を広げたりするおそれがあるので、飼ったら最後まで飼い、決して外に放さないでください。',
+    color: '#c9a83a',
+    scale: 1.5,
+    sources: [
+      'https://animaldiversity.org/accounts/Dynastes_hercules/',
+      'https://phys.org/news/2008-03-mystery-strongest-creature-world.html',
+      'https://www.pref.hiroshima.lg.jp/soshiki/47/investigation-kabutokuwagata.html',
+      'https://www.env.go.jp/nature/intro/4document/files/p_kabukuwa2008.pdf',
+    ],
+  },
+  ooenmahanmyou: {
+    id: 'ooenmahanmyou',
+    name: 'オオエンマハンミョウ',
+    kana: 'おおえんまはんみょう',
+    scientific: 'Manticora sp.',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'clack',
+    flier: false,
+    time: 'any',
+    facts: [
+      'せかいで いちばん おおきい ハンミョウ。6センチにも なるよ',
+      'オスは みぎの おおあごが ひだりより ずっと おおきいよ',
+      'はねが くっついて いて とべないけど、はしるのが はやいよ',
+      'めより においで えものを さがすんだって',
+    ],
+    abroad: 'この ハンミョウは にほんには いないよ。アフリカの みなみの ほうの かわいた くさはらに すんで いるんだ',
+    caution:
+      'アフリカ南部（南アフリカ・ボツワナ・ジンバブエ・モザンビーク・タンザニアなど）の半乾燥地にすむ、世界最大のハンミョウのなかま（Manticora属）です。日本の野外にはいません。毒はありませんが、大あごで咬まれるとかなり痛いので、素手でつかまないでください。',
+    color: '#2a2622',
+    scale: 2.8,
+    sources: [
+      'https://en.wikipedia.org/wiki/Manticora_(beetle)',
+      'https://beetlesinthebush.com/2012/02/13/the-worlds-largest-tiger-beetle/',
+      'https://ja.wikipedia.org/wiki/%E3%83%8F%E3%83%B3%E3%83%9F%E3%83%A7%E3%82%A6',
+    ],
+  },
 };
 
 export const VISITOR_ORDER: VisitorId[] = [
@@ -548,6 +713,8 @@ export const VISITOR_ORDER: VisitorId[] = [
   'shouryou',
   'aburazemi',
   'kanabun',
+  'herakuresu',
+  'ooenmahanmyou',
   'oosuzumebachi',
   'kurooari',
   'hiari',
@@ -559,6 +726,10 @@ export const VISITOR_ORDER: VisitorId[] = [
   'dangomushi',
   'jorougumo',
   'seakagokegumo',
+  'kabakikomachigumo',
+  'kurodokushibogumo',
+  'tarantula',
+  'ruburon',
   'oomukade',
   'katatsumuri',
 ];

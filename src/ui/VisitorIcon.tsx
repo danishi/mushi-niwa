@@ -285,6 +285,95 @@ const DRAW: Record<VisitorId, ReactElement> = {
       <path d="M44 10 Q36 2 28 4 M56 10 Q64 2 72 4" fill="none" stroke="#c98a3a" strokeWidth={3} strokeLinecap="round" />
     </g>
   ),
+  kurodokushibogumo: (
+    <g>
+      {/* 前の 2 対を 高く 上げた いかくの ポーズ（上が 頭） */}
+      <path d="M44 40 L30 22 L26 4 M56 40 L70 22 L74 4 M42 44 L22 32 L10 20 M58 44 L78 32 L90 20" fill="none" stroke="#5a3e28" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M30 22 l-2 -6 M70 22 l2 -6 M22 32 l-5 -3 M78 32 l5 -3" stroke="#16100c" strokeWidth={4} strokeLinecap="round" />
+      <path d="M42 52 L20 62 L10 84 M58 52 L80 62 L90 84 M44 56 L30 74 L28 96 M56 56 L70 74 L72 96" fill="none" stroke="#5a3e28" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
+      <ellipse cx="50" cy="76" rx="13" ry="16" fill="#5e4028" {...S} />
+      <ellipse cx="50" cy="48" rx="11" ry="12" fill="#6a4a30" {...S} />
+      <path d="M50 38 V58" stroke="#3a2618" strokeWidth={2.5} />
+      <path d="M45 36 l-1 -6 M55 36 l1 -6" stroke="#7a3a22" strokeWidth={4} strokeLinecap="round" />
+    </g>
+  ),
+  kabakikomachigumo: (
+    <g>
+      <path d="M44 40 L24 20 L14 6 M56 40 L76 20 L86 6 M43 46 L22 40 L8 44 M57 46 L78 40 L92 44 M43 52 L24 62 L14 76 M57 52 L76 62 L86 76 M45 56 L34 76 L32 94 M55 56 L66 76 L68 94" fill="none" stroke="#dcaa6a" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      <ellipse cx="50" cy="74" rx="11" ry="18" fill="#d9a052" {...S} />
+      <ellipse cx="50" cy="46" rx="10" ry="12" fill="#c0682a" {...S} />
+      <ellipse cx="44" cy="32" rx="5" ry="7" fill="#141010" {...S} strokeWidth={2.5} />
+      <ellipse cx="56" cy="32" rx="5" ry="7" fill="#141010" {...S} strokeWidth={2.5} />
+    </g>
+  ),
+  ruburon: (
+    <g>
+      {([
+        [26, 14],
+        [12, 36],
+        [12, 64],
+        [24, 90],
+      ] as const).map(([x, y], i) => (
+        <path key={i} d={`M42 ${42 + i * 5} Q${x + 4} ${y - 4} ${x} ${y} M58 ${42 + i * 5} Q${96 - x} ${y - 4} ${100 - x} ${y}`} fill="none" stroke="#8a6644" strokeWidth={7} strokeLinecap="round" />
+      ))}
+      <ellipse cx="50" cy="74" rx="18" ry="18" fill="#6e4c30" {...S} />
+      <ellipse cx="50" cy="46" rx="14" ry="14" fill="#8a6440" {...S} />
+      <path d="M44 32 l-1 -6 M56 32 l1 -6" stroke="#2a1a10" strokeWidth={5} strokeLinecap="round" />
+      <circle cx="50" cy="40" r="2.5" fill="#0a0809" />
+    </g>
+  ),
+  tarantula: (
+    <g>
+      {([
+        [26, 14],
+        [12, 36],
+        [12, 64],
+        [24, 90],
+      ] as const).map(([x, y], i) => (
+        <g key={i}>
+          <path d={`M42 ${42 + i * 5} Q${x + 4} ${y - 4} ${x} ${y} M58 ${42 + i * 5} Q${96 - x} ${y - 4} ${100 - x} ${y}`} fill="none" stroke="#1a1513" strokeWidth={6} strokeLinecap="round" />
+          <circle cx={(42 + x) / 2 + 1} cy={(42 + i * 5 + y) / 2 - 3} r="3.6" fill="#e8782a" />
+          <circle cx={(58 + 100 - x) / 2 - 1} cy={(42 + i * 5 + y) / 2 - 3} r="3.6" fill="#e8782a" />
+        </g>
+      ))}
+      <ellipse cx="50" cy="74" rx="16" ry="17" fill="#1a1412" {...S} />
+      <ellipse cx="50" cy="46" rx="13" ry="13" fill="#1c1614" stroke="#d88a52" strokeWidth={3} />
+      <circle cx="50" cy="40" r="2.5" fill="#d8c8b0" />
+    </g>
+  ),
+  herakuresu: (
+    <g>
+      {[40, 54, 68].map((y) => (
+        <path key={y} d={`M34 ${y} L18 ${y + 8} M66 ${y} L82 ${y + 8}`} {...S} />
+      ))}
+      <path d="M30 50 Q28 96 50 96 Q72 96 70 50 Z" fill="#c9a83a" {...S} />
+      <path d="M50 50 V96" {...S} strokeWidth={2} />
+      {[
+        [40, 64],
+        [58, 72],
+        [42, 82],
+        [60, 58],
+      ].map(([x, y]) => (
+        <circle key={`${x}${y}`} cx={x} cy={y} r="2.5" fill="#1a1612" />
+      ))}
+      <path d="M32 36 Q50 26 68 36 L68 50 Q50 54 32 50 Z" fill="#141010" {...S} />
+      <path d="M46 30 Q44 12 50 2 Q56 12 54 30 Z" fill="#141010" {...S} />
+      <path d="M48 22 Q50 26 52 22" stroke="#b07a3a" strokeWidth={3} fill="none" />
+    </g>
+  ),
+  ooenmahanmyou: (
+    <g>
+      {[46, 58, 70].map((y, i) => (
+        <path key={y} d={`M36 ${y} L${16 - i * 2} ${y + 6 + i * 4} M64 ${y} L${84 + i * 2} ${y + 6 + i * 4}`} {...S} strokeWidth={3} />
+      ))}
+      <path d="M30 54 Q28 92 50 94 Q72 92 70 54 Q60 48 50 48 Q40 48 30 54 Z" fill="#1c1a18" {...S} />
+      <ellipse cx="50" cy="42" rx="11" ry="7" fill="#1a1816" {...S} />
+      <ellipse cx="50" cy="30" rx="15" ry="8" fill="#1a1816" {...S} />
+      {/* 上から 見た 図（頭が 上）なので、からだの 右＝画面の 右。右の 大あごが 大きい */}
+      <path d="M58 24 Q72 18 66 4 Q62 12 52 20 Z" fill="#141210" {...S} strokeWidth={2.5} />
+      <path d="M43 24 Q34 18 38 10 Q42 16 48 20 Z" fill="#141210" {...S} strokeWidth={2.5} />
+    </g>
+  ),
 };
 
 export function VisitorIcon({ id, silhouette = false }: { id: VisitorId; silhouette?: boolean }) {
