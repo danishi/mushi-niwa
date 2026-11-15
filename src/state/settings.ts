@@ -13,6 +13,8 @@ export interface SettingsState {
   showFps: boolean;
   /** はじめての お手本を 見おわった */
   tutorialDone: boolean;
+  /** むしずもうの あそびかた（はじめの 説明）を 見おわった */
+  sumoHowtoDone: boolean;
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void;
 }
 
@@ -26,6 +28,7 @@ export const useSettings = create<SettingsState>()(
       quality: 'auto',
       showFps: false,
       tutorialDone: false,
+      sumoHowtoDone: false,
       set: (patch) => set(patch),
     }),
     {

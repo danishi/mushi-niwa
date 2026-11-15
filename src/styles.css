@@ -1165,7 +1165,11 @@ ruby rt {
   border-radius: 50%;
   background: var(--c-sun);
   box-shadow: 0 8px 0 #e0a800;
-  touch-action: manipulation;
+  /* 押しっぱなしで ふんばるので、長押しの メニューや 選択・スクロールで 指が とられないように */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   isolation: isolate;
   transition: background 0.15s, transform 0.1s;
 }
@@ -1299,7 +1303,15 @@ ruby rt {
   box-shadow: 0 8px 0 #bfae8c;
 }
 
-/* ゆびの おてほん（「いま！」を のがして いる 子と、技の ときだけ） */
+/* 押したまま ふんばって いる（青く しずむ） */
+.tap-btn.mode-brace.holding {
+  background: #5aa9f0;
+  box-shadow: 0 3px 0 #2a6fb0, 0 0 0 10px rgba(90, 169, 240, 0.35);
+  translate: 0 5px;
+  animation: none;
+}
+
+/* ゆびの おてほん（「いま！」を のがして いる 子、技の とき、赤い とき） */
 .tap-hint {
   position: absolute;
   right: -40px;
@@ -1317,6 +1329,22 @@ ruby rt {
   transform: rotate(-60deg);
 }
 
+/* 押したまま：ゆびが ボタンに おりて しばらく とまる */
+.tap-hint.hold {
+  animation: tap-hold 1.6s ease-in-out infinite;
+}
+
+@keyframes tap-hold {
+  0%,
+  100% {
+    transform: translate(10px, 6px);
+  }
+  25%,
+  80% {
+    transform: translate(-10px, -2px) scale(0.9);
+  }
+}
+
 @keyframes tap-hint {
   from {
     transform: translate(8px, 2px);
@@ -1326,7 +1354,137 @@ ruby rt {
   }
 }
 
-/* あそびかた：ボタンの みほん と みじかい ことば（タップで 読む） */
+/* はじめの 説明（`HowToGuide`） */
+@property --fill {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.howto-guide {
+  /* 3D の 土俵は かくれて よい（説明の 間は 取組が 始まって いない）。ボタンまで 1 画面に おさめる */
+  max-height: 72%;
+  gap: 8px;
+}
+
+.howto-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.howto-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(74, 59, 42, 0.2);
+}
+
+.howto-dots span.on {
+  background: var(--c-leaf);
+}
+
+.howto-stage {
+  display: grid;
+  place-items: center;
+  padding: 12px 50px 4px;
+}
+
+.howto-text {
+  margin: 0;
+  font-size: 19px;
+  font-weight: bold;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.tap-btn.demo {
+  display: block;
+  width: 112px;
+  height: 112px;
+  margin: 0;
+}
+
+.tap-btn.demo .tap-face svg {
+  width: 48px;
+  height: 48px;
+}
+
+/* ひかりが たまって いっぱいに なったら 光り、ゆびが タッチ */
+.tap-btn.demo.mode-push {
+  animation: demo-fill 1.8s linear infinite;
+}
+
+@keyframes demo-fill {
+  0% {
+    --fill: 0;
+  }
+  70% {
+    --fill: 1;
+    background: var(--c-sun);
+    box-shadow: 0 8px 0 #e0a800;
+  }
+  75%,
+  100% {
+    --fill: 1;
+    background: #ffe14a;
+    box-shadow: 0 8px 0 #e0a800, 0 0 0 18px rgba(255, 210, 63, 0.35), 0 0 34px 18px rgba(255, 220, 90, 0.8);
+  }
+}
+
+.tap-btn.demo.mode-push .tap-hint {
+  animation: demo-tap 1.8s ease-in-out infinite;
+}
+
+@keyframes demo-tap {
+  0%,
+  65%,
+  100% {
+    transform: translate(12px, 8px);
+  }
+  80% {
+    transform: translate(-8px, -4px) scale(0.9);
+  }
+}
+
+/* れんしゅう：押したまま 1 秒で メーターが いっぱい */
+.hold-meter {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 14px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hold-meter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(0);
+  background: #fff;
+}
+
+.tap-btn.holding .hold-meter::after {
+  transform: scaleX(1);
+  transition: transform 1s linear;
+}
+
+.tap-btn.demo.done {
+  background: #7cb342;
+  box-shadow: 0 8px 0 #4f7a26;
+  color: #fff;
+  animation: none;
+}
+
+.tap-btn.demo.done .hold-meter {
+  display: none;
+}
+
+/* あそびかた：ボタンの みほん と みじかい ことば（タップで 説明） */
 .battle-howto {
   display: flex;
   justify-content: center;
@@ -1432,6 +1590,8 @@ ruby rt {
   .tap-btn,
   .tap-btn.mode-special,
   .tap-btn.mode-brace,
+  .tap-btn.demo.mode-push .tap-hint,
+  .tap-hint.hold,
   .tap-btn.now .tap-face,
   .tap-hint,
   .battle-result,

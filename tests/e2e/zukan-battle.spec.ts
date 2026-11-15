@@ -36,6 +36,14 @@ test('mushi-zumou can be played to a gentle result', WIDE, async ({ page }) => {
   await settled(page);
   await expect(page.getByTestId('battle-select')).toContainText('たたかわない');
   await page.getByTestId('battle-pick-nanahoshi').tap();
+  // はじめては あそびかたの 説明。さいごに 赤い ボタンを 押したまま にする れんしゅう
+  await expect(page.getByTestId('battle-howto-guide')).toBeVisible();
+  await page.getByTestId('battle-howto-next').tap();
+  await page.getByTestId('battle-howto-next').tap();
+  await expect(page.getByTestId('battle-howto-start')).toBeDisabled();
+  await page.getByTestId('battle-howto-hold').dispatchEvent('pointerdown');
+  await expect(page.getByTestId('battle-howto-start')).toBeEnabled({ timeout: 5000 });
+  await page.getByTestId('battle-howto-start').tap();
   const push = page.getByTestId('battle-push');
   await expect(push).toBeVisible();
   // はっけよい…（入場の 間は 押せない）→ のこった！

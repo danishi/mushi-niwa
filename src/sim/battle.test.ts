@@ -4,13 +4,13 @@ import { SPECIES_ORDER } from '../data/species';
 import {
   BATTLE_SECONDS,
   BEAT,
-  BRACE_WINDOW,
   INTRO_SECONDS,
   TELL_SECONDS,
   beatPhase,
   canSpecial,
   gradeAt,
   pickOpponent,
+  playerPress,
   playerPush,
   playerSpecial,
   playerTap,
@@ -65,11 +65,15 @@ describe('mushi-zumou battle', () => {
     const jitter = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 0.12;
     let s = fight('kaiko', 'kabutomushi');
     let next = 0;
+    let lift = 0;
     for (let t = 0; t < BATTLE_SECONDS * 20 && !s.result; t++) {
       if (s.time >= next) {
-        s = playerTap(s).state;
+        // タップ ＝ 押して すぐ はなす
+        s = playerPress(playerTap(s).state, true).state;
+        lift = s.time + 0.08;
         next = s.time + 0.19 + jitter();
       }
+      if (s.pressing && s.time >= lift) s = playerPress(s, false).state;
       s = stepBattle(s, 0.05).state;
     }
     expect(s.result).toBe('win');
@@ -101,7 +105,7 @@ describe('mushi-zumou battle', () => {
     // 合図の 間は 技より ふんばる ほうが 先（ゲージは のこる）
     const tell = { ...s, cpuTell: 1 };
     expect(tapMode(tell)).toBe('brace');
-    const b = playerTap(tell);
+    const b = playerPress(playerTap(tell).state, true);
     expect(b.state.brace).not.toBe('none');
     expect(b.state.playerCharge).toBe(1);
   });
@@ -142,25 +146,37 @@ describe('mushi-zumou battle', () => {
     expect(s.meter).toBe(before); // しんだふり中は押されない
   });
 
-  it('signals the cpu special first, and a well-timed tap braces fully', () => {
+  it('signals the cpu special first, and holding the button braces fully', () => {
     let s = { ...fight('kaiko', 'kabutomushi'), cpuCharge: 0.999 };
     const tell = stepBattle(s, 0.1);
     expect(tell.events).toContainEqual({ type: 'tell' });
     s = tell.state;
     expect(s.cpuTell).toBeCloseTo(TELL_SECONDS);
-    // 合図の はじめに 押すと 半分、さいごの ほうで 輪に あわせて 押すと まるごと 受けとめる
-    const early = playerPush(s);
-    expect(early.state.brace).toBe('half');
-    s = stepBattle(early.state, TELL_SECONDS - BRACE_WINDOW / 2).state;
-    // さいごの ほうでも 輪が とおい ときは 半分の まま
-    expect(playerPush({ ...s, time: Math.floor(s.time / BEAT) * BEAT + BEAT * 0.3 }).state.brace).toBe('half');
-    const late = playerPush({ ...s, time: Math.ceil(s.time / BEAT + 1) * BEAT - 0.02 });
-    expect(late.state.brace).toBe('full');
-    const meter = late.state.meter;
-    const fire = stepBattle(late.state, BRACE_WINDOW);
+    // 押したまま 技を むかえると まるごと 受けとめる
+    const down = playerPress(playerTap(s).state, true);
+    expect(down.events).toContainEqual({ type: 'brace', brace: 'full' });
+    const fire = stepBattle(down.state, TELL_SECONDS);
     expect(fire.events).toContainEqual({ type: 'special', who: 'cpu', brace: 'full' });
     expect(fire.state.playerStun).toBe(0);
-    expect(fire.state.meter).toBeGreaterThan(meter - 0.05);
+    // 受けとめない ときより ずっと 押されない
+    const unbraced = stepBattle(playerTap(s).state, TELL_SECONDS);
+    expect(fire.state.meter).toBeGreaterThan(unbraced.state.meter + BATTLE.kabutomushi.special.strength * 0.9);
+  });
+
+  it('a tap that lets go before the special braces only half', () => {
+    let s = stepBattle({ ...fight('kaiko', 'kabutomushi'), cpuCharge: 0.999 }, 0.1).state;
+    s = playerPress(playerTap(s).state, true).state;
+    const up = playerPress(s, false);
+    expect(up.events).toContainEqual({ type: 'brace', brace: 'half' });
+    const fire = stepBattle(up.state, TELL_SECONDS);
+    expect(fire.events).toContainEqual({ type: 'special', who: 'cpu', brace: 'half' });
+  });
+
+  it('a child already holding when the signal starts is braced', () => {
+    let s = playerPress({ ...fight('kaiko', 'kabutomushi'), cpuCharge: 0.999 }, true).state;
+    s = stepBattle(s, 0.1).state;
+    expect(s.brace).toBe('half');
+    expect(stepBattle(s, TELL_SECONDS).events).toContainEqual({ type: 'special', who: 'cpu', brace: 'full' });
   });
 
   it('pauses the cpu signal while the cpu is stunned, and misses a guarding child', () => {

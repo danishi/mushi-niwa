@@ -42,8 +42,10 @@ interface BattleStore {
   /** ゆっくりに する 終わりの 時刻（performance.now） */
   slowUntil: number;
   begin: (player: SpeciesId, pool: SpeciesId[]) => void;
-  /** 1 つだけの ボタン（押す・得意技・ふんばる） */
+  /** 1 つだけの ボタン（押す・得意技） */
   tap: () => void;
+  /** ボタンを 押す・はなす（赤い 間は 押したままで ふんばる） */
+  press: (down: boolean) => void;
   step: (dt: number) => void;
   reset: () => void;
 }
@@ -68,10 +70,11 @@ export const useBattle = create<BattleStore>()((set, get) => {
           }
           break;
         case 'tell':
-          patch.callout = { text: 'くるよ！ ふんばれ！', tone: 'tell', at: now };
+          patch.callout = { text: 'くるよ！ おしたまま ふんばれ！', tone: 'tell', at: now };
           break;
         case 'brace':
-          patch.callout = { text: e.brace === 'full' ? 'いまだ！ ふんばれ！' : 'ふんばれ！', tone: 'brace', at: now };
+          // 押したら「そのまま」、はなしたら「もういちど ぎゅっ」
+          patch.callout = e.brace === 'full' ? { text: 'そのまま おしてて！', tone: 'brace', at: now } : { text: 'ぎゅっと おしたまま！', tone: 'tell', at: now };
           break;
         case 'special': {
           const who = e.who === 'player' ? s.player : s.cpu;
@@ -116,6 +119,14 @@ export const useBattle = create<BattleStore>()((set, get) => {
       if (!s) return;
       const r = b.playerTap(s);
       if (r.state !== s) handle(r.state, r.events);
+    },
+    press: (down) => {
+      const s = get().state;
+      if (!s) return;
+      const r = b.playerPress(s, down);
+      if (r.state === s) return;
+      if (r.events.length) handle(r.state, r.events);
+      else set({ state: r.state });
     },
     step: (dt) => {
       const s = get().state;

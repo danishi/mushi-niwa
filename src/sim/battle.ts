@@ -13,8 +13,8 @@ import type { SpeciesId } from './types';
  *   （「まって、いまだ！」の リズム。でたらめな 連打では コンボが つながらない）。
  *   でたらめに 連打しても 勝てる 強さは 残す（小さな 子むけ）が、リズムよく 押すほうが はやく 勝てる。
  * - 技ゲージ: 押すたびに たまり（タイミングが いいほど 多く）、いっぱいに なるたびに 得意技を 出せる。
- * - ふんばり: 相手が 技を 出す 前に 合図（`cpuTell`）。その 間に 押すと ふんばって 技を 弱められる。
- *   合図の さいごの ほう（`BRACE_WINDOW`）で、しかも 輪が かさなる タイミング（good / great）で 押すと、技を まるごと 受けとめる。
+ * - ふんばり（ユーザー要望で 押しっぱなし）: 相手が 技を 出す 前に 合図（`cpuTell`。ボタンが 赤く なる）。
+ *   技が くる 瞬間に ボタンを 押したまま（`pressing`）なら まるごと 受けとめ、合図の 間に 押したが はなして しまったら 半分。
  *   相手が びっくりして 止まって いる 間は 合図も 止まる。こちらが 死んだ ふり・飛んで いる 間は 技が あたらない。
  * - はじめに「はっけよい」（`intro`）。その 間は 押せない。
  */
@@ -39,8 +39,10 @@ export interface BattleState {
   cpuCharge: number;
   /** CPU が 技を 出す 前の 合図の 残り秒数（0 なら 合図なし） */
   cpuTell: number;
-  /** 合図の 間に プレイヤーが ふんばったか */
+  /** 合図の 間に プレイヤーが ふんばったか（押したら half。技の 瞬間に 押したままなら full） */
   brace: Brace;
+  /** ボタンを 押して いる（押しっぱなしで ふんばる） */
+  pressing: boolean;
   /** さいごに 押した 時刻（連打の 弱め 判定） */
   lastPush: number;
   /** タイミングが 続けて よかった 回数 */
@@ -70,9 +72,8 @@ export const CHARGE: Record<Grade, number> = { ok: 0.012, good: 0.05, great: 0.0
 export const CPU_PUSH = 0.11;
 /** CPU の 技ゲージが 1 秒に たまる 量 */
 export const CPU_CHARGE = 0.07;
-/** 合図の 長さ と、さいごの「ぴったり」の 時間 */
+/** 合図の 長さ（この 間 押したままに して ふんばる） */
 export const TELL_SECONDS = 1.5;
-export const BRACE_WINDOW = 0.45;
 /** これより 短い 間隔の 連打は 半分の 力（指が ふるえる くらいの 連打） */
 const MASH_GAP = 0.15;
 /** 指が ふるえる くらいの 連打の 力 */
@@ -96,6 +97,7 @@ export function startBattle(player: SpeciesId, cpu: SpeciesId, rand = Math.rando
     cpuCharge: rand() * 0.3,
     cpuTell: 0,
     brace: 'none',
+    pressing: false,
     lastPush: -1,
     combo: 0,
     hitBeat: -10,
@@ -177,14 +179,6 @@ export function playerPush(s: BattleState): { state: BattleState; events: Battle
   let grade = gradeAt(s.time);
   if (grade !== 'ok' && beat === s.hitBeat) grade = 'ok';
   const mash = s.time - s.lastPush < MASH_GAP ? MASH_POWER : 1;
-  // 合図の 間に 押すと ふんばる（さいごの ほうで 輪に あわせて 押せば まるごと 受けとめる）
-  if (s.cpuTell > 0) {
-    const brace: Brace = s.cpuTell <= BRACE_WINDOW && grade !== 'ok' ? 'full' : 'half';
-    if (brace === 'full' || next.brace === 'none') {
-      if (next.brace !== brace) events.push({ type: 'brace', brace });
-      next.brace = brace;
-    }
-  }
   if (grade !== 'ok') {
     // 1 周 のがしたら コンボは 1 から
     next.combo = beat - s.hitBeat === 1 && s.combo > 0 ? s.combo + 1 : 1;
@@ -206,7 +200,8 @@ function applySpecial(s: BattleState, who: 'player' | 'cpu', events: BattleEvent
   const sp = BATTLE[me].special;
   const dir = who === 'player' ? 1 : -1;
   // ふんばった ぶん 弱まる（プレイヤーの 技は 弱まらない）。死んだ ふり・飛んで いる 子には あたらない
-  const brace: Brace = who === 'cpu' ? (s.playerGuard > 0 ? 'full' : s.brace) : 'none';
+  // 技の 瞬間に 押したままなら まるごと、合図の 間に 押して はなしたなら 半分
+  const brace: Brace = who === 'cpu' ? (s.playerGuard > 0 || (s.pressing && s.brace !== 'none') ? 'full' : s.brace) : 'none';
   const k = brace === 'full' ? 0 : brace === 'half' ? 0.5 : 1;
   const next = { ...s };
   if (who === 'player') next.playerCharge = 0;
@@ -245,6 +240,21 @@ export function playerSpecial(s: BattleState): { state: BattleState; events: Bat
   if (!canSpecial(s)) return { state: s, events };
   const next = applySpecial(s, 'player', events);
   return { state: finish(next, events), events };
+}
+
+/**
+ * ボタンを 押す・はなす（押しっぱなしで ふんばる）。合図の 間に 押すと ふんばりはじめ（`brace` 'full' の できごと）、
+ * 技の 前に はなすと 半分に もどる（'half'）。合図の 外では 押して いるか だけ おぼえる。
+ */
+export function playerPress(s: BattleState, down: boolean): { state: BattleState; events: BattleEvent[] } {
+  const events: BattleEvent[] = [];
+  if (s.pressing === down) return { state: s, events };
+  const next: BattleState = { ...s, pressing: down };
+  if (fighting(s) && s.cpuTell > 0 && s.playerStun <= 0) {
+    if (down) next.brace = 'half';
+    events.push({ type: 'brace', brace: down ? 'full' : 'half' });
+  }
+  return { state: next, events };
 }
 
 /** ボタンが いま する こと（技ゲージが いっぱいなら 技。相手の 合図の 間は ふんばる ほうを 先に） */
@@ -293,7 +303,8 @@ export function stepBattle(s: BattleState, dt: number): { state: BattleState; ev
     next.cpuCharge = Math.min(1, next.cpuCharge + CPU_CHARGE * dt);
     if (next.cpuCharge >= 1) {
       next.cpuTell = TELL_SECONDS;
-      next.brace = 'none';
+      // もう 押したまま なら そのまま ふんばれる
+      next.brace = next.pressing ? 'half' : 'none';
       events.push({ type: 'tell' });
     }
   }
