@@ -126,7 +126,7 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
     facts: ['さわると くるんと まるく なるよ', 'あしは 14ほん あるよ。こんちゅうの あしは 6ぽんだから、かぞえて くらべて みてね'],
     notInsect: 'こんちゅうでは なくて、エビや カニの なかま（{甲殻類|こうかくるい}）だよ',
     color: '#6b6a66',
-    scale: 2.2,
+    scale: 3.6,
     sources: ['https://www.city.nagoya.jp/kenkofukushi/eisei/1015269/1034848/1015298/1034491/1015373.html', 'https://kotobank.jp/word/%E5%9B%A3%E5%AD%90%E8%99%AB'],
   },
   aburazemi: {
