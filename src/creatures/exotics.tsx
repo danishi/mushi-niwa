@@ -78,6 +78,10 @@ interface SpiderLook {
   kick: boolean;
   fangs: number;
   tilt: number;
+  /** あしの 向き（前から 4 対。省略すると LEG_ANGLES）。アシダカグモは 横へ 広げる */
+  angles?: [number, number, number, number];
+  /** メスが 触肢で かかえる 白い 円板の 卵のう */
+  eggSac?: boolean;
 }
 
 const HIP = 0.06;
@@ -95,6 +99,7 @@ function BigSpider({ anim, look }: { anim: AnimRef; look: SpiderLook }) {
   const legMat = useMemo(() => mat('#ffffff', { map: look.legMap, roughness: 0.85, sheen: look.hair ? 0.9 : 0.3, sheenColor: look.hair ?? '#ffffff' }), [look]);
   const chelSurf = useMemo(() => hairy(look.chelColor), [look]);
   const fangMat = useMemo(() => mat('#0c0a0a', { roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1 }), []);
+  const eggSurf = useMemo<MatOpts>(() => ({ roughness: 0.95, sheen: 0.6, sheenColor: '#ffffff', normalMap: granuleNormal(10, 0.8), normalScale: 0.4 }), []);
   const [cw, ch, cl] = look.cara;
   const [aw, ah, al] = look.abd;
   const cz = 0.05;
@@ -194,10 +199,14 @@ function BigSpider({ anim, look }: { anim: AnimRef; look: SpiderLook }) {
               <mesh geometry={hairyLeg(look.legK * 1.1)} material={legMat} scale={[0.16, HIP / 0.12, 0.16]} />
             </group>
           ))}
+          {look.eggSac ? (
+            // 卵のう：頭胸部の 下に かかえる 白い 円板
+            <M color="#efe9dc" surface={eggSurf} position={[0, HIP * 0.42, cz + cl * 0.45]} scale={[cw * 0.72, HIP * 0.24, cw * 0.72]} castShadow />
+          ) : null}
           {/* 8 本の あし */}
           <group ref={legs}>
             {[1, -1].flatMap((s) =>
-              LEG_ANGLES.map((ang, i) => (
+              (look.angles ?? LEG_ANGLES).map((ang, i) => (
                 <group key={`${s}${i}`} position={[s * Math.sin(ang) * cw * 0.55, HIP, cz + Math.cos(ang) * cl * 0.5]} rotation={[0, s * ang, 0]}>
                   <group>
                     <mesh geometry={hairyLeg(look.legK)} material={legMat} scale={[look.legLen[i]!, HIP / 0.12, look.legLen[i]!]} castShadow={i === 0} />
@@ -364,6 +373,88 @@ export function Tarantula({ anim }: { anim: AnimRef }) {
       kick: true,
       fangs: 0.25,
       tilt: 0.05,
+    }),
+    [],
+  );
+  return <BigSpider anim={anim} look={look} />;
+}
+
+/* ───────────── アシダカグモ（メス） ───────────── */
+
+/**
+ * ひらたい 茶色の からだに、横へ 大きく 広げた 長い あし（2 対目が いちばん 長い）。顔は クリーム色の 帯。
+ * あしには 毛の つけねの 小さな 黒い 点。メスは 白い 円板の 卵のうを かかえる
+ */
+export function Ashidakagumo({ anim }: { anim: AnimRef }) {
+  const look = useMemo<SpiderLook>(
+    () => ({
+      key: 'heteropoda',
+      cara: [0.064, 0.026, 0.068],
+      abd: [0.056, 0.036, 0.088],
+      caraColor: '#7a5a3c',
+      caraMap: paint('heteropodaCara', 128, (g, s) => {
+        // ロフトの UV：u は まわり（0.5 が せなか）、v は 後ろ 0 → 前 1（canvas の 上が 前）
+        g.fillStyle = '#7e5e40';
+        g.fillRect(0, 0, s, s);
+        // 顔の クリーム色の 帯（前の はし）と、目の 後ろの 黄褐色の 帯
+        g.fillStyle = '#e2cf9e';
+        g.fillRect(0, 0, s, s * 0.14);
+        g.fillStyle = '#b0915e';
+        g.fillRect(0, s * 0.14, s, s * 0.08);
+        // まん中の こい すじと、そこから 放射状に のびる こい 線
+        g.fillStyle = '#4e3824';
+        g.fillRect(s * 0.48, s * 0.3, s * 0.04, s * 0.45);
+        g.strokeStyle = 'rgba(70, 50, 32, 0.6)';
+        g.lineWidth = s * 0.012;
+        for (const u of [0.32, 0.38, 0.62, 0.68]) {
+          g.beginPath();
+          g.moveTo(s * 0.5, s * 0.55);
+          g.lineTo(u * s, s * (u < 0.5 ? 0.35 + (0.38 - u) * 2 : 0.35 + (u - 0.62) * 2));
+          g.stroke();
+        }
+      }),
+      abdColor: '#8a6a4a',
+      abdMap: paint('heteropodaAbd', 128, (g, s) => {
+        g.fillStyle = '#86664a';
+        g.fillRect(0, 0, s, s);
+        // せなかの まん中の 心臓斑と、こい 点の ならび
+        g.fillStyle = '#6a4c32';
+        g.fillRect(s * 0.46, s * 0.3, s * 0.08, s * 0.4);
+        g.fillStyle = 'rgba(52, 36, 22, 0.8)';
+        for (let i = 0; i < 6; i++)
+          for (const u of [0.4, 0.6]) {
+            g.beginPath();
+            g.ellipse(u * s, (0.18 + i * 0.12) * s, s * 0.018, s * 0.012, 0, 0, Math.PI * 2);
+            g.fill();
+          }
+      }),
+      hair: '#c9a87a',
+      legMap: paint('spiderLeg:heteropoda', 128, (g, s) => {
+        g.fillStyle = '#8a6c4c';
+        g.fillRect(0, 0, s, s);
+        // 先へ すこし こく、ひざの まわりも こい
+        g.fillStyle = '#6e5238';
+        g.fillRect(0, 0, s, s * 0.12);
+        g.fillRect(0, s * 0.54, s, s * 0.05);
+        // 毛の つけねの 黒い 点
+        g.fillStyle = '#1e140c';
+        for (let i = 0; i < 90; i++) {
+          g.beginPath();
+          g.arc(((i * 0.618) % 1) * s, ((i * 0.291 + 0.03) % 1) * s, s * 0.009, 0, Math.PI * 2);
+          g.fill();
+        }
+      }),
+      legLen: [0.46, 0.5, 0.42, 0.44],
+      legK: 0.68,
+      chelColor: '#5e4026',
+      chel: 0.9,
+      raise: 0.3,
+      kick: false,
+      fangs: 0.4,
+      tilt: 0.1,
+      // あしを 横へ 広げる（カニの ように 横向きに まがる）
+      angles: [0.62, 1.12, 1.95, 2.42],
+      eggSac: true,
     }),
     [],
   );

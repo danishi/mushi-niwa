@@ -5,10 +5,11 @@ import { GEO, mat, sharedGeo, SURF, type MatOpts } from '../three/materials';
 import { grainBump, monshiroWing, veinWing, paint, striaeNormal } from '../three/textures';
 import { newAnim, type CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
-import { mergedGeo, shapeGeo, shapedTube, shellGeo as loftShell, taperedTube, abdomenY, abdomenZ, archGeo, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
+import { mergedGeo, shapeGeo, shapedTube, shellGeo as loftShell, taperedTube, abdomenY, abdomenZ, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
 import { Antenna, CompoundEye, JumpLeg, Leg, LiteContext, Part, type AntennaKind, type JumpLegSpec, type LegSpec } from './parts';
-import { Herakuresu, Kabakikomachigumo, Kurodokushibogumo, Ooenmahanmyou, Ruburon, Tarantula } from './exotics';
+import { Ashidakagumo, Herakuresu, Kabakikomachigumo, Kurodokushibogumo, Ooenmahanmyou, Ruburon, Tarantula } from './exotics';
 import { GiantCentipede } from './predators';
+import { Dangomushi, Mimizu } from './soil';
 
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる 虫より 軽い つくりにして、
@@ -222,64 +223,6 @@ export function Tonosama({ anim }: { anim: AnimRef }) {
     </group>
   );
 }
-
-/* ───────────── オカダンゴムシ ───────────── */
-
-export function Dangomushi({ anim }: { anim: AnimRef }) {
-  const roll = useRef<THREE.Group>(null);
-  const segs = useRef<THREE.Group>(null);
-  const legGroup = useRef<THREE.Group>(null);
-  const shell = useMemo(() => ({ roughness: 0.45, clearcoat: 0.6, clearcoatRoughness: 0.3, bumpMap: grainBump(57, 64), bumpScale: 0.4 }), []);
-  const legs = useMemo(() => mat('#5a5650', SURF.matteChitin()), []);
-  useFrame(() => {
-    const a = anim.current;
-    // spray: くるんと まるまる（0 → 1）
-    const k = a.spray;
-    if (segs.current) {
-      segs.current.children.forEach((c, i) => {
-        const u = (i - 4) / 4;
-        c.position.z = u * 0.09 * (1 - k * 0.6);
-        c.position.y = 0.03 + (1 - Math.cos(u * k * 1.7)) * 0.07;
-        c.rotation.x = -u * k * 1.5;
-      });
-    }
-    if (roll.current) roll.current.position.y = k * 0.03;
-    if (legGroup.current) legGroup.current.visible = k < 0.5;
-  });
-  return (
-    <group ref={roll}>
-      <group ref={segs}>
-        {Array.from({ length: 9 }, (_, i) => {
-          const u = (i - 4) / 4;
-          const w = 0.085 * Math.sqrt(1 - u * u * 0.55);
-          return (
-            <mesh key={i} geometry={archGeo()} material={mat(i === 8 ? '#3a3936' : '#4a4945', shell)} scale={[w, 0.05, 0.03]} castShadow={i === 4} />
-          );
-        })}
-      </group>
-      {/* ちいさな あし（7 対）と、ひじの ように まがった 短い 触角 */}
-      <group ref={legGroup}>
-        <mesh geometry={dangoLegsGeo()} material={legs} />
-      </group>
-    </group>
-  );
-}
-
-/** 7 対の あし と 触角を 1 ジオメトリに まとめる：体の 下から 外へ 出て、先が 下へ まがる */
-const dangoLegsGeo = () =>
-  mergedGeo('dangoLegs', () => {
-    const parts: THREE.BufferGeometry[] = [];
-    for (let i = 0; i < 7; i++) {
-      const z = -0.078 + i * 0.026;
-      for (const s of [1, -1]) {
-        parts.push(shapedTube([[s * 0.03, 0.02, z], [s * 0.066, 0.022, z + 0.002], [s * 0.084, 0.012, z + 0.004], [s * 0.09, 0, z + 0.006]], (t) => [0.0055 - 0.003 * t, 0.0055 - 0.003 * t], 8, 5));
-      }
-    }
-    for (const s of [1, -1]) {
-      parts.push(shapedTube([[s * 0.02, 0.028, 0.105], [s * 0.04, 0.04, 0.135], [s * 0.05, 0.03, 0.16], [s * 0.058, 0.012, 0.18]], (t) => [0.0055 - 0.0025 * t, 0.0055 - 0.0025 * t], 10, 5));
-    }
-    return parts;
-  });
 
 /* ───────────── アブラゼミ ───────────── */
 
@@ -1444,4 +1387,6 @@ export const VISITOR_MODELS = {
   tarantula: Tarantula,
   herakuresu: Herakuresu,
   ooenmahanmyou: Ooenmahanmyou,
+  mimizu: Mimizu,
+  ashidakagumo: Ashidakagumo,
 } as const;

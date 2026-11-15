@@ -1,6 +1,6 @@
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる ことは できないが、見つけて タップすると ずかんに のる。
- * 事実は docs/visitors-research.md（-2〜-6 も）の 出典つき 調査に もとづく。
+ * 事実は docs/visitors-research.md（-2〜-7 も）の 出典つき 調査に もとづく。
  */
 export type VisitorId =
   | 'shiokara'
@@ -29,7 +29,9 @@ export type VisitorId =
   | 'ruburon'
   | 'tarantula'
   | 'herakuresu'
-  | 'ooenmahanmyou';
+  | 'ooenmahanmyou'
+  | 'mimizu'
+  | 'ashidakagumo';
 
 export interface VisitorDef {
   id: VisitorId;
@@ -702,6 +704,59 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
       'https://ja.wikipedia.org/wiki/%E3%83%8F%E3%83%B3%E3%83%9F%E3%83%A7%E3%82%A6',
     ],
   },
+  mimizu: {
+    id: 'mimizu',
+    name: 'ミミズ',
+    kana: 'みみず',
+    scientific: 'Amynthas sp.',
+    where: 'ground',
+    react: 'curl',
+    flier: false,
+    time: 'night',
+    facts: [
+      'めは ないけど、からだで あかるさを かんじるよ',
+      'おちばと つちを たべて、つちを ふかふかに して くれるよ',
+      'あたまの ちかくに ある ふとい おびの ような ところで、あたまと しっぽが わかるよ',
+      'ひるは つちの なか。よるや あめの ひに そとへ でて くるよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、からだが わっかに わかれた なかま（{環形動物|かんけいどうぶつ}）だよ。あしは ないんだ',
+    caution:
+      '庭や畑でよく見る大きなミミズは、フトミミズのなかま（フトミミズ科）です。毒はなく、人に害はありません。皮ふで呼吸するため乾きや手の熱に弱いので、見つけたらそっと土の上にもどしてあげてください。さわったあとは手を洗いましょう。',
+    color: '#9a5a64',
+    scale: 2.2,
+    sources: [
+      'https://kotobank.jp/word/%E3%83%9F%E3%83%9F%E3%82%BA-3172356',
+      'https://kotobank.jp/word/%E8%B2%A7%E6%AF%9B%E9%A1%9E-122178',
+      'https://www.kyoto-u.ac.jp/sites/default/files/2023-03/2303_Sota-ea8ccf87233d332ca2141bb165ef00a2.pdf',
+    ],
+  },
+  ashidakagumo: {
+    id: 'ashidakagumo',
+    name: 'アシダカグモ',
+    kana: 'あしだかぐも',
+    scientific: 'Heteropoda venatoria',
+    where: 'post',
+    react: 'walk',
+    flier: false,
+    time: 'night',
+    facts: [
+      'いえの なかで ゴキブリを つかまえて たべて くれるよ',
+      'あみは はらないよ。よるに かべや てんじょうで あしを ひろげて、まちぶせ するんだ',
+      'おかあさんは しろい まるい たまごの ふくろを だいて はこぶよ',
+      'あしを ひろげると 10センチいじょう。いえに すむ クモでは にほんで いちばん おおきい なかまだよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、クモの なかまだよ。あしは 8ほん',
+    caution:
+      '関東以南の家の中や納屋などにすむ大きなクモで、夜に壁や天井でゴキブリなどを待ちぶせして食べます（もとは熱帯から人について広がったとされます）。毒は弱く、人をおそうことはありませんが、素手でつかむと咬まれて痛むことがあります。見かけてもそっとしておいてかまいません。',
+    color: '#86664a',
+    scale: 1.4,
+    sources: [
+      'https://kotobank.jp/word/%E3%81%82%E3%81%97%E3%81%A0%E3%81%8B%E3%81%90%E3%82%82-3140830',
+      'https://www.city.saitama.lg.jp/sciencenavi/kenkou/003/p048232.html',
+      'https://www.city.sakai.lg.jp/kenko/kenko/sodan/gaichu/oshirase/df_filename_180124.html',
+      'https://en.wikipedia.org/wiki/Heteropoda_venatoria',
+    ],
+  },
 };
 
 export const VISITOR_ORDER: VisitorId[] = [
@@ -724,7 +779,9 @@ export const VISITOR_ORDER: VisitorId[] = [
   'hotaru',
   'enmakorogi',
   'dangomushi',
+  'mimizu',
   'jorougumo',
+  'ashidakagumo',
   'seakagokegumo',
   'kabakikomachigumo',
   'kurodokushibogumo',

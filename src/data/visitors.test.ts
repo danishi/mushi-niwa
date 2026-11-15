@@ -69,6 +69,18 @@ describe('garden visitors', () => {
     }
   });
   it('explains what non-insects are', () => {
-    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri', 'seakagokegumo', 'oomukade', 'kurodokushibogumo', 'kabakikomachigumo', 'ruburon', 'tarantula'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
+    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri', 'seakagokegumo', 'oomukade', 'kurodokushibogumo', 'kabakikomachigumo', 'ruburon', 'tarantula', 'mimizu', 'ashidakagumo'] as const)
+      expect(VISITORS[id].notInsect).toBeTruthy();
+  });
+  it('brings the earthworm and the huntsman spider out at night', () => {
+    // ミミズは 夜に 板の 上を はって 来て、さわると ちぢむ。アシダカグモは 夜に 壁（奥の 板）を おりて きて、さわると 走って にげる
+    expect(VISITORS.mimizu).toMatchObject({ where: 'ground', react: 'curl', flier: false, time: 'night' });
+    expect(VISITORS.ashidakagumo).toMatchObject({ where: 'post', react: 'walk', flier: false, time: 'night' });
+    // アシダカグモは 日本に すみつき、人に 危なくない（さわらない 注意から 始めない）
+    expect(VISITORS.ashidakagumo.abroad).toBeUndefined();
+    expect(VISITORS.ashidakagumo.safety).toBeUndefined();
+    expect(VISITORS.ashidakagumo.caution).toBeTruthy();
+    expect(visitorsAt(false)).not.toContain('mimizu');
+    expect(visitorsAt(true)).toEqual(expect.arrayContaining(['mimizu', 'ashidakagumo']));
   });
 });

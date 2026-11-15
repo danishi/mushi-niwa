@@ -41,13 +41,25 @@ const DRAW: Record<VisitorId, ReactElement> = {
   dangomushi: (
     <g>
       {Array.from({ length: 7 }, (_, i) => (
-        <path key={i} d={`M28 ${36 + i * 7} L18 ${40 + i * 7} M72 ${36 + i * 7} L82 ${40 + i * 7}`} {...S} strokeWidth={2.5} />
+        <path key={i} d={`M30 ${34 + i * 7} L20 ${38 + i * 7} M70 ${34 + i * 7} L80 ${38 + i * 7}`} {...S} strokeWidth={2.5} />
       ))}
-      <ellipse cx="50" cy="56" rx="24" ry="32" fill="#5a5955" {...S} />
-      {Array.from({ length: 7 }, (_, i) => (
-        <path key={i} d={`M28 ${36 + i * 7} Q50 ${32 + i * 7} 72 ${36 + i * 7}`} fill="none" stroke="#3a3936" strokeWidth={2} />
+      {/* 尾節（台形で 先が 切れる）と 尾肢 */}
+      <path d="M42 82 L44 94 L56 94 L58 82 Z" fill="#4a4945" {...S} strokeWidth={2.5} />
+      <path d="M40 86 l-4 6 M60 86 l4 6" {...S} strokeWidth={2.5} />
+      <path d="M26 40 Q26 22 50 22 Q74 22 74 40 L72 70 Q68 86 50 86 Q32 86 28 70 Z" fill="#55544f" {...S} />
+      {Array.from({ length: 10 }, (_, i) => {
+        const y = 32 + i * (i < 7 ? 6.5 : 4.5) - (i >= 7 ? (i - 6) * 2 : 0);
+        const w = i < 6 ? 24 : 24 - (i - 5) * 3;
+        return <path key={i} d={`M${50 - w} ${y} Q50 ${y - 4} ${50 + w} ${y}`} fill="none" stroke="#33322f" strokeWidth={2} />;
+      })}
+      {[38, 62].map((x) => (
+        <circle key={x} cx={x} cy={48} r={2.5} fill="#cdb67a" />
       ))}
-      <path d="M42 26 Q36 16 30 14 M58 26 Q64 16 70 14" fill="none" {...S} strokeWidth={2.5} />
+      {/* 頭と 目、ひじの ように まがった 触角 */}
+      <ellipse cx="50" cy="20" rx="13" ry="7" fill="#3f3e3b" {...S} strokeWidth={2.5} />
+      <circle cx="39" cy="19" r="2.5" fill="#111" />
+      <circle cx="61" cy="19" r="2.5" fill="#111" />
+      <path d="M44 15 L34 8 L28 14 M56 15 L66 8 L72 14" fill="none" {...S} strokeWidth={2.5} />
     </g>
   ),
   aburazemi: (
@@ -372,6 +384,25 @@ const DRAW: Record<VisitorId, ReactElement> = {
       {/* 上から 見た 図（頭が 上）なので、からだの 右＝画面の 右。右の 大あごが 大きい */}
       <path d="M58 24 Q72 18 66 4 Q62 12 52 20 Z" fill="#141210" {...S} strokeWidth={2.5} />
       <path d="M43 24 Q34 18 38 10 Q42 16 48 20 Z" fill="#141210" {...S} strokeWidth={2.5} />
+    </g>
+  ),
+  mimizu: (
+    <g>
+      {/* くねった からだ（頭が 上）。頭の ちかくに 白っぽい 環帯 */}
+      <path d="M50 10 C64 14 66 30 52 38 C36 46 32 60 46 68 C60 76 66 86 54 94" fill="none" stroke="#4a3b2a" strokeWidth={14} strokeLinecap="round" />
+      <path d="M50 10 C64 14 66 30 52 38 C36 46 32 60 46 68 C60 76 66 86 54 94" fill="none" stroke="#a8646e" strokeWidth={9} strokeLinecap="round" />
+      <path d="M50 10 C64 14 66 30 52 38 C36 46 32 60 46 68 C60 76 66 86 54 94" fill="none" stroke="#7a4450" strokeWidth={9} strokeLinecap="butt" strokeDasharray="1.5 4" />
+      <path d="M61 24 C60 30 57 34 52 38" fill="none" stroke="#e2c8b8" strokeWidth={10} />
+    </g>
+  ),
+  ashidakagumo: (
+    <g>
+      {/* 横へ 広げた 長い あし（上が 頭） */}
+      <path d="M44 40 L24 26 L6 30 M56 40 L76 26 L94 30 M43 46 L18 40 L2 52 M57 46 L82 40 L98 52 M43 52 L22 62 L8 78 M57 52 L78 62 L92 78 M45 56 L32 76 L26 96 M55 56 L68 76 L74 96" fill="none" stroke="#7a5c40" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
+      <ellipse cx="50" cy="70" rx="11" ry="15" fill="#86664a" {...S} />
+      <ellipse cx="50" cy="46" rx="13" ry="12" fill="#7e5e40" {...S} />
+      <path d="M38 38 Q50 32 62 38" fill="none" stroke="#e2cf9e" strokeWidth={4} />
+      <path d="M50 44 V56" stroke="#4e3824" strokeWidth={2.5} />
     </g>
   ),
 };

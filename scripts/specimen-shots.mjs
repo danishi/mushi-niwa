@@ -16,7 +16,7 @@ const SPECIES = {
   kabutomushi: 3, namiageha: 4, suzumushi: 2, nanahoshi: 4, kaiko: 4, miidera: 1, marukubi: 1, ookamakiri: 3, tobizumukade: 2,
   madarasasori: 2, gomadara: 3, ookuwagata: 3, nokogiri: 3, oomurasaki: 4, nanafushi: 3, usubakagerou: 3, gengorou: 3,
 };
-const GUESTS = ['shiokara', 'monshiro', 'tonosama', 'dangomushi', 'aburazemi', 'akiakane', 'kanabun', 'kurooari', 'shouryou', 'hotaru', 'enmakorogi', 'jorougumo', 'katatsumuri', 'oniyanma', 'hakiriari', 'oosuzumebachi', 'guntaiari', 'hiari', 'sashihariari', 'seakagokegumo', 'oomukade', 'kurodokushibogumo', 'kabakikomachigumo', 'ruburon', 'tarantula', 'herakuresu', 'ooenmahanmyou'];
+const GUESTS = ['shiokara', 'monshiro', 'tonosama', 'dangomushi', 'aburazemi', 'akiakane', 'kanabun', 'kurooari', 'shouryou', 'hotaru', 'enmakorogi', 'jorougumo', 'katatsumuri', 'oniyanma', 'hakiriari', 'oosuzumebachi', 'guntaiari', 'hiari', 'sashihariari', 'seakagokegumo', 'oomukade', 'kurodokushibogumo', 'kabakikomachigumo', 'ruburon', 'tarantula', 'herakuresu', 'ooenmahanmyou', 'mimizu', 'ashidakagumo'];
 
 const vw = big ? 860 : 560;
 const vh = Math.round((vw * 760) / 560);

@@ -388,11 +388,6 @@ export function abdomenZ(n = 6): THREE.BufferGeometry {
 
 /* ── 球・カプセルと 同じ 寸法で 差しかえる 部品（半径 1、または カプセルは 半径 0.5・長さ ±1） ── */
 
-/** ダンゴムシの 背板：アーチ形で、下は 平ら */
-export function archGeo(): THREE.BufferGeometry {
-  return bodyGeo('arch', [[-1, 0.55, 0.3, -0.25], [-0.8, 0.9, 0.8, -0.25], [-0.4, 0.99, 0.97, -0.25], [0.3, 1, 1, -0.25], [0.8, 0.92, 0.85, -0.25], [1, 0.6, 0.4, -0.25]], { nt: 2.2, nb: 5, mid: 0.1, rings: 10, radial: 24 });
-}
-
 /** バッタ・コオロギの 前胸：くらの ような 背板。keel で 背中の まん中に すじ */
 export function saddleGeo(keel = 0.05): THREE.BufferGeometry {
   return bodyGeo(`saddle${keel}`, [[-1, 0.72, 0.82, -0.7], [-0.55, 0.96, 1, -0.9], [0.3, 0.92, 0.94, -0.9], [0.85, 0.74, 0.78, -0.72], [1, 0.5, 0.55, -0.5]], {

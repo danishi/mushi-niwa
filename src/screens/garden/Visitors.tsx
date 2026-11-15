@@ -46,6 +46,8 @@ const REST_GESTURES: Gesture[] = ['groom', 'look'];
 const NO_GESTURES: Gesture[] = [];
 /** いかくで 後ろあしを つかって はらの 毛を とばす タランチュラ */
 const HAIR_KICKERS = new Set<VisitorId>(['ruburon', 'tarantula']);
+/** ゆっくり はう 子（ちかくから 来て、歩みも おそい） */
+const CRAWLERS = new Set<VisitorId>(['katatsumuri', 'mimizu']);
 
 function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void }) {
   const def = VISITORS[id];
@@ -58,8 +60,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
   // 来る 方向（画面の 外がわから）
   const from = useMemo(() => {
     const side = at[0] >= 0 ? 1 : -1;
-    // カタツムリは ゆっくりなので ちかくから
-    if (def.where === 'ground') return home.clone().add(new THREE.Vector3(side * (id === 'katatsumuri' ? 0.45 : 1.1), 0, 0));
+    // カタツムリ・ミミズは ゆっくりなので ちかくから
+    if (def.where === 'ground') return home.clone().add(new THREE.Vector3(side * (CRAWLERS.has(id) ? 0.45 : 1.1), 0, 0));
     // クモは 上から 糸で おりてくる。木に のぼる アリは 奥の 板の 上の はしから 歩いて おりる
     if (!def.flier) return home.clone().add(new THREE.Vector3(0, id === 'jorougumo' ? 1.0 : 0.5, 0));
     return home.clone().add(new THREE.Vector3(side * 5, 1.5, 1));
@@ -120,7 +122,7 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         // ときどき ちょこちょこ 歩く
         const step = Math.max(0, Math.sin(a.t * 0.8));
         a.walk = step > 0.7 ? 1 : 0;
-        if (a.walk) a.gait += dt * (id === 'katatsumuri' ? 2 : 8);
+        if (a.walk) a.gait += dt * (CRAWLERS.has(id) ? 2 : 8);
         // コオロギは ときどき はねを こすって なく
         if (def.call === 'chirp') {
           if (a.t - lastBuzz.current > 4.5) {
@@ -188,8 +190,8 @@ function Visitor({ id, at, onGone }: { id: VisitorId; at: V3; onGone: () => void
         const dx = target.x - g.position.x;
         const dz = target.z - g.position.z;
         if (dx * dx + dz * dz > 0.0004) g.rotation.y = THREE.MathUtils.damp(g.rotation.y, Math.atan2(dx, dz), 6, dt);
-      } else if (id === 'guntaiari') {
-        // 行列は 来た ときの 向きの まま 横切りつづける
+      } else if (id === 'guntaiari' || id === 'mimizu') {
+        // 行列は 来た ときの 向きの まま 横切りつづける。ミミズも 横を むいた まま（長い からだが よく 見える）
       } else if (id === 'oniyanma') {
         // パトロールの 進む 向きへ むきを かえる
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, Math.cos(s.t * 0.55) >= 0 ? Math.PI / 2 : -Math.PI / 2, 3, dt);
