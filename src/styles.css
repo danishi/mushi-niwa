@@ -1032,49 +1032,6 @@ ruby rt {
   flex-wrap: wrap;
 }
 
-.push-btn {
-  min-width: 170px;
-  min-height: 96px;
-  border-radius: 48px;
-  background: var(--c-sun);
-  box-shadow: 0 8px 0 #e0a800;
-  font-size: 28px;
-  font-weight: 900;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  touch-action: manipulation;
-}
-
-.push-btn:active {
-  transform: translateY(4px) scale(0.96);
-  box-shadow: 0 4px 0 #e0a800;
-}
-
-.push-btn svg,
-.special-btn svg {
-  width: 40px;
-  height: 40px;
-}
-
-.special-btn {
-  min-height: 72px;
-  padding: 0 18px;
-  border-radius: 36px;
-  background: #fffaf0;
-  box-shadow: 0 5px 0 var(--c-shadow);
-  font-size: 18px;
-  font-weight: bold;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.special-btn[disabled] {
-  opacity: 0.45;
-}
-
 /* ── むしずもう：取組の しかけ ── */
 .battle-side {
   display: flex;
@@ -1136,6 +1093,7 @@ ruby rt {
   max-width: calc(100% - 24px);
   text-align: center;
   line-height: 1.3;
+  word-break: keep-all;
   animation: callout-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 
@@ -1198,81 +1156,255 @@ ruby rt {
   pointer-events: none;
 }
 
-.special-btn {
+/* ── むしずもう：1 つだけの ボタン（ふだんは 黄色・技は きらきら・ふんばるは 赤） ── */
+.tap-btn {
   position: relative;
-  overflow: hidden;
+  width: 132px;
+  height: 132px;
+  margin: 14px 0 6px;
+  border-radius: 50%;
+  background: var(--c-sun);
+  box-shadow: 0 8px 0 #e0a800;
+  touch-action: manipulation;
   isolation: isolate;
+  transition: background 0.15s, transform 0.1s;
 }
 
-/* 技ゲージ：ボタンの 下から たまって いく */
-.special-gauge {
+.tap-btn:active {
+  /* きらきら・ふんばれの 動き（transform の アニメーション）と かさなっても へこむよう、個別の translate / scale で */
+  translate: 0 4px;
+  scale: 0.95;
+}
+
+/* まわりの 光：1 周 たまって いっぱいに なったら「いま！」 */
+.tap-ring {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--charge, 0%);
-  background: linear-gradient(#ffe38a, #ffc23a);
+  inset: -13px;
+  border-radius: 50%;
+  background: conic-gradient(#fff calc(var(--fill, 0) * 1turn), rgba(255, 255, 255, 0.28) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 11px), #000 calc(100% - 10px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 11px), #000 calc(100% - 10px));
+  pointer-events: none;
   z-index: -1;
-  transition: height 0.15s ease-out;
 }
 
-.special-btn[disabled].special-btn {
-  opacity: 0.85;
+.tap-btn.now {
+  background: #ffe14a;
+  box-shadow: 0 8px 0 #e0a800, 0 0 0 18px rgba(255, 210, 63, 0.35), 0 0 34px 18px rgba(255, 220, 90, 0.8);
 }
 
-.special-btn.ready {
-  background: #ffd23f;
-  animation: special-ready 0.6s ease-in-out infinite alternate;
+.tap-btn.now .tap-ring {
+  background: #ffb300;
 }
 
-@keyframes special-ready {
+.tap-btn.now .tap-face {
+  animation: tap-pop 0.25s cubic-bezier(0.2, 1.8, 0.4, 1) both;
+}
+
+@keyframes tap-pop {
   from {
-    box-shadow: 0 5px 0 #e0a800, 0 0 0 0 rgba(255, 210, 63, 0.9);
+    transform: scale(0.8);
   }
   to {
-    box-shadow: 0 5px 0 #e0a800, 0 0 0 10px rgba(255, 210, 63, 0.15);
+    transform: scale(1.12);
   }
 }
 
-.push-btn {
-  position: relative;
-}
-
-/* タイミングの 輪：ちぢんで ボタンに かさなったら「いま！」 */
-.beat-ring {
+.tap-face {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 100%;
-  height: 100%;
-  border-radius: 48px;
-  border: 5px solid rgba(255, 255, 255, 0.85);
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-weight: 900;
+  font-size: 19px;
+  line-height: 1.1;
   pointer-events: none;
 }
 
-.push-btn.now {
-  background: #ffe066;
-  box-shadow: 0 8px 0 #e0a800, 0 0 0 6px rgba(255, 255, 255, 0.8);
+.tap-face svg {
+  width: 52px;
+  height: 52px;
 }
 
-.push-btn.now .beat-ring {
-  border-color: #ff9f1c;
+/* 技ゲージ：ボタンの 下の ふちに たまる */
+.tap-charge {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 14px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(74, 59, 42, 0.18);
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.push-btn.tell {
-  background: #ff8a6b;
+.tap-charge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(var(--charge, 0));
+  background: linear-gradient(90deg, #ffe38a, #ff9f1c);
+}
+
+.tap-btn.mode-special {
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd23f 45%, #ffae00);
+  box-shadow: 0 8px 0 #c98a00;
+  animation: tap-sparkle 0.5s ease-in-out infinite alternate;
+}
+
+.tap-btn.mode-special .tap-ring,
+.tap-btn.mode-special .tap-charge {
+  display: none;
+}
+
+@keyframes tap-sparkle {
+  from {
+    box-shadow: 0 8px 0 #c98a00, 0 0 0 0 rgba(255, 210, 63, 0.9);
+    transform: scale(1);
+  }
+  to {
+    box-shadow: 0 8px 0 #c98a00, 0 0 0 16px rgba(255, 210, 63, 0.12);
+    transform: scale(1.06);
+  }
+}
+
+.tap-btn.mode-brace {
+  background: #ff7a5c;
   box-shadow: 0 8px 0 #c8322a;
+  color: #fff;
+  animation: tap-shake 0.3s ease-in-out infinite alternate;
+}
+
+.tap-btn.mode-brace.now {
+  background: #ffb39e;
+  box-shadow: 0 8px 0 #c8322a, 0 0 0 18px rgba(255, 90, 60, 0.3), 0 0 34px 18px rgba(255, 120, 90, 0.7);
+}
+
+@keyframes tap-shake {
+  from {
+    transform: rotate(-3deg);
+  }
+  to {
+    transform: rotate(3deg);
+  }
+}
+
+.tap-btn.mode-wait {
+  background: #e8dcc4;
+  box-shadow: 0 8px 0 #bfae8c;
+}
+
+/* ゆびの おてほん（「いま！」を のがして いる 子と、技の ときだけ） */
+.tap-hint {
+  position: absolute;
+  right: -40px;
+  top: 34px;
+  width: 58px;
+  height: 58px;
+  pointer-events: none;
+  animation: tap-hint 0.45s ease-in-out infinite alternate;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3));
+}
+
+.tap-hint svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-60deg);
+}
+
+@keyframes tap-hint {
+  from {
+    transform: translate(8px, 2px);
+  }
+  to {
+    transform: translate(-8px, -2px);
+  }
+}
+
+/* あそびかた：ボタンの みほん と みじかい ことば（タップで 読む） */
+.battle-howto {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.howto-tile {
+  flex: 1;
+  max-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.howto-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--c-sun);
+  box-shadow: 0 4px 0 #e0a800, 0 0 0 5px #ffb300;
+}
+
+.howto-btn svg {
+  width: 32px;
+  height: 32px;
+}
+
+.howto-btn.mode-special {
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd23f 45%, #ffae00);
+  box-shadow: 0 4px 0 #c98a00, 0 0 10px 4px rgba(255, 210, 63, 0.8);
+}
+
+.howto-btn.mode-brace {
+  background: #ff7a5c;
+  box-shadow: 0 4px 0 #c8322a;
+}
+
+/* 結果：すこし おくれて 出て、連打が やむまで ボタンは うすい まま */
+.battle-result {
+  animation: result-in 0.5s ease-out 0.6s both;
+}
+
+.battle-result .pill-btn[disabled] {
+  /* 押せない 間の タップは 後ろの 板へ（連打が やんだかの 判定に 入れる） */
+  pointer-events: none;
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+
+.battle-result.open .pill-btn {
+  animation: callout-pop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes result-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .bubble.battle-fact {
   font-size: 16px;
   margin-bottom: 8px;
-}
-
-.battle-howto {
-  margin: 8px 0 0;
-  font-size: 15px;
-  line-height: 1.6;
 }
 
 .battle-result-fact {
@@ -1297,7 +1429,13 @@ ruby rt {
   .battle-callout,
   .battle-callout.intro,
   .battle-callout.tone-tell,
-  .special-btn.ready,
+  .tap-btn,
+  .tap-btn.mode-special,
+  .tap-btn.mode-brace,
+  .tap-btn.now .tap-face,
+  .tap-hint,
+  .battle-result,
+  .battle-result.open .pill-btn,
   .battle-face.tell {
     animation: none;
   }

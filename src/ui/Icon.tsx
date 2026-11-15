@@ -38,7 +38,8 @@ export type IconName =
   | 'next'
   | 'down'
   | 'fish'
-  | 'weed';
+  | 'weed'
+  | 'tap';
 
 const S = { stroke: '#4a3b2a', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
@@ -139,6 +140,13 @@ const PATHS: Record<IconName, ReactElement> = {
     />
   ),
   drop: <path d="M50 16 C38 36 28 48 28 60 A22 22 0 0 0 72 60 C72 48 62 36 50 16 Z" fill="#7ec8e3" {...S} />,
+  // ゆびで タッチ（ひとさしゆびを たてた 手）
+  tap: (
+    <g {...S} fill="#fffaf0">
+      <path d="M43 22 A7 7 0 0 1 57 22 V50 L70 52 A9 9 0 0 1 78 62 L74 80 A9 9 0 0 1 65 88 H47 A9 9 0 0 1 40 84 L24 64 A6.5 6.5 0 0 1 34 56 L43 64 Z" />
+      <path d="M57 50 V58 M68 52 V60" fill="none" />
+    </g>
+  ),
   sparkle: (
     <g {...S} fill="#ffd166">
       <path d="M50 14 L58 42 L86 50 L58 58 L50 86 L42 58 L14 50 L42 42 Z" />

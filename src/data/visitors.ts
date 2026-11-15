@@ -1,6 +1,6 @@
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる ことは できないが、見つけて タップすると ずかんに のる。
- * 事実は docs/visitors-research.md（-2・-3 も）の 出典つき 調査に もとづく。
+ * 事実は docs/visitors-research.md（-2〜-5 も）の 出典つき 調査に もとづく。
  */
 export type VisitorId =
   | 'shiokara'
@@ -22,7 +22,8 @@ export type VisitorId =
   | 'guntaiari'
   | 'hiari'
   | 'sashihariari'
-  | 'seakagokegumo';
+  | 'seakagokegumo'
+  | 'oomukade';
 
 export interface VisitorDef {
   id: VisitorId;
@@ -504,6 +505,38 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
       'https://ir.library.osaka-u.ac.jp/repo/ouka/all/85747/makoto_142_002.pdf',
     ],
   },
+  oomukade: {
+    id: 'oomukade',
+    name: 'ペルビアンジャイアントオオムカデ',
+    kana: 'ぺるびあんじゃいあんとおおむかで',
+    scientific: 'Scolopendra gigantea',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'whoosh',
+    flier: false,
+    time: 'any',
+    safety: true,
+    facts: [
+      'かまれると ひどい けがに なる ことも ある ムカデだよ。みつけても さわらないでね',
+      'せかいで いちばん おおきい ムカデ。30センチを こえる ことも あるよ',
+      'どうくつの てんじょうに うしろの あしで ぶらさがって、コウモリを つかまえる ことが あるよ',
+      'あたまの すぐ うしろの あしが、どくの ある きばに なって いるよ',
+      'おかあさんは たまごを だいて、こどもが じぶんで えさを とれるまで まもるよ',
+    ],
+    notInsect: 'こんちゅうでは なくて、ムカデの なかま（たそくるい）だよ。あしは 21〜23つい',
+    abroad: 'このムカデは にほんには いないよ。みなみアメリカの きたの ほうの もりに すんで いるんだ',
+    caution:
+      '南米北部（ベネズエラ・コロンビア・ブラジル・トリニダードなど）の森林にすむ、世界最大のムカデです。日本の野外にはいません。頭のすぐ後ろの顎肢（がくし）に毒があり、人が咬まれると重い傷になることがあります。ベネズエラでは幼児が咬まれて亡くなった例も報告されています。見かけても素手でさわらず、咬まれたときは医療機関を受診してください。',
+    color: '#8a2a16',
+    // せかいで いちばん 大きい ムカデ。おきゃくさんの 中で いちばん 大きく 見せる
+    scale: 1.7,
+    sources: [
+      'https://animaldiversity.org/accounts/Scolopendra_gigantea/',
+      'https://en.wikipedia.org/wiki/Scolopendra_gigantea',
+      'https://www.academia.edu/32674121',
+      'https://www.discoverwildlife.com/animal-facts/insects-invertebrates/giant-centipede-facts',
+    ],
+  },
 };
 
 export const VISITOR_ORDER: VisitorId[] = [
@@ -526,6 +559,7 @@ export const VISITOR_ORDER: VisitorId[] = [
   'dangomushi',
   'jorougumo',
   'seakagokegumo',
+  'oomukade',
   'katatsumuri',
 ];
 

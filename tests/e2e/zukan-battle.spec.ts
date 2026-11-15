@@ -41,28 +41,23 @@ test('mushi-zumou can be played to a gentle result', WIDE, async ({ page }) => {
   // はっけよい…（入場の 間は 押せない）→ のこった！
   await expect(page.getByTestId('battle-intro')).toContainText('はっけよい');
   await expect(page.getByTestId('battle-intro')).toHaveCount(0, { timeout: 15000 });
-  // 押して 技ゲージを ためると 得意技が 出せる
-  const special = page.getByTestId('battle-special');
-  for (let i = 0; i < 150 && (await special.isDisabled()); i++) {
-    if (await page.getByTestId('battle-result').isVisible()) break;
-    await push.dispatchEvent('pointerdown');
-    await page.waitForTimeout(150);
-  }
-  if (!(await page.getByTestId('battle-result').isVisible())) {
-    // 相手の 技が 割りこまないよう、相手の ゲージを からに してから 技を 出す
-    await page.evaluate(() => {
-      const bt = (window as unknown as { __mushi: { battle: { getState: () => { state: object }; setState: (p: object) => void } } }).__mushi.battle;
-      bt.setState({ state: { ...bt.getState().state, cpuCharge: 0, cpuTell: 0, playerStun: 0 } });
-    });
-    await special.tap();
-    await expect(page.getByTestId('battle-fact')).toContainText('しんだふり');
-  }
+  // ボタンは 1 つ。技ゲージが いっぱいの ときに 押すと 得意技（相手の 技が 割りこまないよう、相手の ゲージは からに する）
+  await page.evaluate(() => {
+    const bt = (window as unknown as { __mushi: { battle: { getState: () => { state: object }; setState: (p: object) => void } } }).__mushi.battle;
+    bt.setState({ state: { ...bt.getState().state, playerCharge: 1, cpuCharge: 0, cpuTell: 0, playerStun: 0 } });
+  });
+  await expect(push).toHaveAttribute('data-mode', 'special');
+  await push.dispatchEvent('pointerdown');
+  await expect(page.getByTestId('battle-fact')).toContainText('しんだふり');
   for (let i = 0; i < 200; i++) {
     if (await page.getByTestId('battle-result').isVisible()) break;
     await push.dispatchEvent('pointerdown');
     await page.waitForTimeout(150);
   }
   await expect(page.getByTestId('battle-result')).toContainText('がんばったね', { timeout: 40000 });
+  // 終わって すぐは 連打の いきおいで 次へ 進まない。手を はなすと 押せる ように なる
+  await expect(page.getByTestId('battle-again')).toBeDisabled();
+  await expect(page.getByTestId('battle-again')).toBeEnabled({ timeout: 6000 });
 });
 
 test('when all six cases are full, a child can send one back and welcome a new species', async ({ page }) => {

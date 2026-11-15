@@ -13,6 +13,9 @@ import {
   pickOpponent,
   playerPush,
   playerSpecial,
+  playerTap,
+  ringFill,
+  tapMode,
   startBattle,
   stepBattle,
   type BattleState,
@@ -56,14 +59,61 @@ describe('mushi-zumou battle', () => {
     expect(great).toBeGreaterThan(ok * 2);
   });
 
-  it('lets a child win by tapping steadily without minding the timing', () => {
+  it('lets a child win by tapping the one button steadily without minding the timing', () => {
+    // だいたい 4 タップ/秒（ゆびの 間隔は すこし ばらつく）。技も 同じ ボタン
+    let seed = 7;
+    const jitter = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 0.12;
     let s = fight('kaiko', 'kabutomushi');
-    for (let t = 0; t < BATTLE_SECONDS * 10 && !s.result; t++) {
-      if (t % 2 === 0) s = playerPush(s).state; // 5 タップ/秒
-      if (canSpecial(s)) s = playerSpecial(s).state;
-      s = stepBattle(s, 0.1).state;
+    let next = 0;
+    for (let t = 0; t < BATTLE_SECONDS * 20 && !s.result; t++) {
+      if (s.time >= next) {
+        s = playerTap(s).state;
+        next = s.time + 0.19 + jitter();
+      }
+      s = stepBattle(s, 0.05).state;
     }
     expect(s.result).toBe('win');
+  });
+
+  it('wins sooner when tapping as the ring lights up', () => {
+    let s = fight('kaiko', 'kabutomushi');
+    let last = -1;
+    for (let t = 0; t < BATTLE_SECONDS * 20 && !s.result; t++) {
+      const beat = Math.floor(s.time / BEAT);
+      if (ringFill(s.time) >= 1 && beat !== last) {
+        s = playerTap(s).state;
+        last = beat;
+      }
+      s = stepBattle(s, 0.05).state;
+    }
+    expect(s.result).toBe('win');
+    expect(s.time).toBeLessThan(15);
+  });
+
+  it('uses one button: push, special when the gauge is full, brace while the cpu signals', () => {
+    let s = fight('miidera', 'kabutomushi');
+    expect(tapMode(startBattle('miidera', 'kabutomushi'))).toBe('wait');
+    expect(tapMode(s)).toBe('push');
+    s = { ...s, playerCharge: 1 };
+    expect(tapMode(s)).toBe('special');
+    const r = playerTap(s);
+    expect(r.events).toContainEqual({ type: 'special', who: 'player', brace: 'none' });
+    // 合図の 間は 技より ふんばる ほうが 先（ゲージは のこる）
+    const tell = { ...s, cpuTell: 1 };
+    expect(tapMode(tell)).toBe('brace');
+    const b = playerTap(tell);
+    expect(b.state.brace).not.toBe('none');
+    expect(b.state.playerCharge).toBe(1);
+  });
+
+  it('fills the ring before the great window and keeps it full during it', () => {
+    expect(ringFill(BEAT * 0.1)).toBeLessThan(0.1);
+    expect(ringFill(BEAT * 0.5)).toBeGreaterThan(0.4);
+    expect(ringFill(BEAT * 0.5)).toBeLessThan(1);
+    for (const p of [0.8, 0.9, 0.99, 1.05]) {
+      expect(ringFill(BEAT * p)).toBe(1);
+      expect(gradeAt(BEAT * p)).toBe('great');
+    }
   });
 
   it('ends in a draw or loss without tapping, never throws', () => {

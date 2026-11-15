@@ -36,7 +36,11 @@ describe('garden visitors', () => {
     expect(VISITORS.seakagokegumo.safety).toBe(true);
     expect(VISITORS.seakagokegumo.facts[0]).toMatch(/さわらない/);
     expect(VISITORS.seakagokegumo.caution).toBeTruthy();
-    for (const id of ['hiari', 'sashihariari'] as const) {
+    // ペルビアンジャイアントオオムカデは タップで おどかしてから 去る。見つけた ときは まず「さわらない」、日本に いないことも 説明
+    expect(VISITORS.oomukade.react).toBe('warn');
+    expect(VISITORS.oomukade.safety).toBe(true);
+    expect(VISITORS.oomukade.abroad).toBeTruthy();
+    for (const id of ['hiari', 'sashihariari', 'oomukade'] as const) {
       expect(VISITORS[id].react).toBe('warn');
       expect(VISITORS[id].caution).toBeTruthy();
       expect(VISITORS[id].facts[0]).toMatch(/さわらない/);
@@ -50,6 +54,6 @@ describe('garden visitors', () => {
     }
   });
   it('explains what non-insects are', () => {
-    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri', 'seakagokegumo'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
+    for (const id of ['dangomushi', 'jorougumo', 'katatsumuri', 'seakagokegumo', 'oomukade'] as const) expect(VISITORS[id].notInsect).toBeTruthy();
   });
 });

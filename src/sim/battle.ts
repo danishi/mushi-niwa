@@ -5,9 +5,11 @@ import type { SpeciesId } from './types';
  * むしずもうのロジック（純 TS）。meter は -1..1 で、+1 にとどけば プレイヤーの勝ち。
  *
  * 遊びの しかけ（ユーザー要望）:
- * - タイミング押し: 「がんばれ」ボタンの まわりの 輪が ちぢんで ボタンに かさなった 瞬間に 押すと 強く 押せる
- *   （`grade`：ok / good / great）。good / great は 輪 1 周に 1 回だけ（連打で 何回も 取れない）。
- *   輪の たびに 続けて 取ると コンボで さらに 強く なる。1 周 のがすか、輪が ちかづく 前に あわてて 押すと とぎれる
+ * - ボタンは 1 つだけ（ユーザー要望。`playerTap`）。ふだんは 押す、技ゲージが いっぱいなら 得意技、
+ *   相手の 合図の 間は ふんばる。
+ * - タイミング押し: ボタンの まわりの 光が 1 周 たまって 光った ときに 押すと 強く 押せる
+ *   （`ringFill`。`grade`：ok / good / great）。good / great は 1 周に 1 回だけ（連打で 何回も 取れない）。
+ *   光る たびに 続けて 取ると コンボで さらに 強く なる。1 周 のがすか、光が 半分 すぎた あたり（いっぱいに なる 前）で あわてて 押すと とぎれる
  *   （「まって、いまだ！」の リズム。でたらめな 連打では コンボが つながらない）。
  *   でたらめに 連打しても 勝てる 強さは 残す（小さな 子むけ）が、リズムよく 押すほうが はやく 勝てる。
  * - 技ゲージ: 押すたびに たまり（タイミングが いいほど 多く）、いっぱいに なるたびに 得意技を 出せる。
@@ -58,7 +60,7 @@ export type BattleEvent =
 
 export const BATTLE_SECONDS = 30;
 export const INTRO_SECONDS = 3.4;
-/** タイミングの 輪が 1 周する 秒数 */
+/** タイミングの 光が 1 周する 秒数 */
 export const BEAT = 0.9;
 /** 1 タップで 進む 量（power 1 のとき） */
 export const PUSH: Record<Grade, number> = { ok: 0.022, good: 0.065, great: 0.12 };
@@ -107,14 +109,26 @@ export function pickOpponent(player: SpeciesId, pool: SpeciesId[], rand = Math.r
   return list[Math.floor(rand() * list.length)]!;
 }
 
-/** タイミングの 輪の 位置 0..1（1 に ちかいほど ボタンに かさなる） */
+/** タイミングの 位置 0..1（1 に ちかいほど「いま」） */
 export function beatPhase(time: number): number {
   return (((time / BEAT) % 1) + 1) % 1;
 }
 
-/** 輪の 番号（good の 窓の はじまりで 次の 番号に かわる。窓が 1 周の さかいめを またぐため） */
+/** good / great の 窓（位置）。great は 光が いっぱいに なってから、good は その 少し 前 */
+const GOOD_FROM = 0.64;
+const GREAT_FROM = 0.8;
+const WINDOW_END = 0.08;
+
+/** 1 周の 番号（good の 窓の はじまりで 次の 番号に かわる。窓が 1 周の さかいめを またぐため） */
 export function beatIndex(time: number): number {
-  return Math.floor(time / BEAT + 0.32);
+  return Math.floor(time / BEAT + (1 - GOOD_FROM));
+}
+
+/** ボタンの まわりの 光の たまりぐあい 0..1（1 で いっぱい＝ great の 窓。窓が おわると 0 から たまりなおす） */
+export function ringFill(time: number): number {
+  const p = beatPhase(time);
+  if (p >= GREAT_FROM || p < WINDOW_END) return 1;
+  return (p - WINDOW_END) / (GREAT_FROM - WINDOW_END);
 }
 
 /** いま 押すと good / great に なるか（この 輪で もう 取って いれば ok） */
@@ -122,17 +136,17 @@ export function timingOpen(s: BattleState): boolean {
   return gradeAt(s.time) !== 'ok' && beatIndex(s.time) !== s.hitBeat;
 }
 
-/** 輪が まだ とおい のに 押した（あわてた）。コンボが とぎれる */
+/** 光が いっぱいに なる 前に 押した（あわてた）。コンボが とぎれる */
 export function tooEarly(time: number): boolean {
   const p = beatPhase(time);
-  return p >= 0.4 && p < 0.68;
+  return p >= 0.5 && p < GOOD_FROM;
 }
 
-/** 押した 瞬間の できばえ。輪が ボタンに かさなる 直前〜直後が great */
+/** 押した 瞬間の できばえ。光が いっぱいの 間が great、いっぱい 直前が good */
 export function gradeAt(time: number): Grade {
   const p = beatPhase(time);
-  if (p >= 0.85 || p < 0.08) return 'great';
-  if (p >= 0.68) return 'good';
+  if (p >= GREAT_FROM || p < WINDOW_END) return 'great';
+  if (p >= GOOD_FROM) return 'good';
   return 'ok';
 }
 
@@ -231,6 +245,19 @@ export function playerSpecial(s: BattleState): { state: BattleState; events: Bat
   if (!canSpecial(s)) return { state: s, events };
   const next = applySpecial(s, 'player', events);
   return { state: finish(next, events), events };
+}
+
+/** ボタンが いま する こと（技ゲージが いっぱいなら 技。相手の 合図の 間は ふんばる ほうを 先に） */
+export type TapMode = 'wait' | 'push' | 'special' | 'brace';
+export function tapMode(s: BattleState): TapMode {
+  if (!fighting(s) || s.playerStun > 0) return 'wait';
+  if (s.cpuTell > 0) return 'brace';
+  return canSpecial(s) ? 'special' : 'push';
+}
+
+/** 1 つだけの ボタンを タップ */
+export function playerTap(s: BattleState): { state: BattleState; events: BattleEvent[] } {
+  return tapMode(s) === 'special' ? playerSpecial(s) : playerPush(s);
 }
 
 /** 時間を進める（はっけよい・CPU が押す・技の 合図と 技・効果が切れる） */

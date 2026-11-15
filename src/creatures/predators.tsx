@@ -265,14 +265,29 @@ export function MantisOotheca({ anim }: ModelProps) {
 
 const SEGMENTS = 21;
 
+/** ムカデの 色（トビズムカデの こども・おとな、おきゃくさんの ペルビアンジャイアントオオムカデ） */
+interface CentipedeLook {
+  /** 頭と 頭の すぐ 後ろの 1 節 */
+  head: string;
+  /** 胴の 節（こうごに すこし 色を かえる） */
+  body: [string, string];
+  leg: string;
+  antenna: string;
+  forcipules: string;
+}
+const TOBIZU_YOUNG: CentipedeLook = { head: '#c7754a', body: ['#4a4a3a', '#4a4a3a'], leg: '#d9b46a', antenna: '#d9973a', forcipules: '#7a2412' };
+const TOBIZU_ADULT: CentipedeLook = { head: '#c2401f', body: ['#1e2a26', '#222e2a'], leg: '#e4b13c', antenna: '#d9973a', forcipules: '#7a2412' };
+/** ペルビアンジャイアントオオムカデ：赤茶色の 頭、えんじ色の 胴、黄色い あし（docs/visitors-research-5.md。色には 個体差が ある） */
+const GIGANTEA: CentipedeLook = { head: '#8a2a16', body: ['#4c1812', '#3c120e'], leg: '#efc24a', antenna: '#c98a3a', forcipules: '#3a0e08' };
+
 /** 胴の節と 21 対の脚を InstancedMesh で 2 ドローコールに まとめる */
-function CentipedeBody({ anim, young }: { anim: ModelProps['anim']; young: boolean }) {
+function CentipedeBody({ anim, look }: { anim: ModelProps['anim']; look: CentipedeLook }) {
   const lite = useContext(LiteContext);
   const tergites = useRef<THREE.InstancedMesh>(null);
   const legs = useRef<THREE.InstancedMesh>(null);
-  // 背板は 白地に インスタンスの 色を かける（頭の すぐ 後ろの 1 節だけ、頭と 同じ とび色）
+  // 背板は 白地に インスタンスの 色を かける（頭の すぐ 後ろの 1 節だけ、頭と 同じ 色）
   const tergMat = useMemo(() => mat('#ffffff', { roughness: 0.32, clearcoat: 1, bumpMap: grainBump(131, 64), bumpScale: 0.4 }), []);
-  const legMat = useMemo(() => mat(young ? '#d9b46a' : '#e4b13c', { roughness: 0.45, clearcoat: 0.4 }), [young]);
+  const legMat = useMemo(() => mat(look.leg, { roughness: 0.45, clearcoat: 0.4 }), [look.leg]);
   // あし：つけねから 外へ のび、ひざで 下へ まがって、とがった つめで 地面に つく
   const legGeo = useMemo(
     () =>
@@ -288,9 +303,9 @@ function CentipedeBody({ anim, young }: { anim: ModelProps['anim']; young: boole
     const T = tergites.current;
     if (!T) return;
     const c = new THREE.Color();
-    for (let i = 0; i < SEGMENTS; i++) T.setColorAt(i, c.set(i === 0 ? (young ? '#c7754a' : '#c2401f') : young ? '#4a4a3a' : i % 2 ? '#1e2a26' : '#222e2a'));
+    for (let i = 0; i < SEGMENTS; i++) T.setColorAt(i, c.set(i === 0 ? look.head : look.body[i % 2 ? 0 : 1]));
     if (T.instanceColor) T.instanceColor.needsUpdate = true;
-  }, [lite, young]);
+  }, [lite, look]);
   useFrame(() => {
     const a = anim.current;
     const T = tergites.current;
@@ -340,8 +355,16 @@ function CentipedeBody({ anim, young }: { anim: ModelProps['anim']; young: boole
 
 /** トビズムカデ：赤い頭（とびいろの頭）、黒っぽい胴、黄色い 21 対の脚。頭の下に 毒の あご（顎肢） */
 function Centipede({ anim, molts, young }: ModelProps & { young: boolean }) {
+  return <CentipedeModel anim={anim} look={young ? TOBIZU_YOUNG : TOBIZU_ADULT} size={young ? 0.6 + molts * 0.1 : 1.45} />;
+}
+
+/** にわの おきゃくさん：ペルビアンジャイアントオオムカデ（いかくは 頭を もちあげて 毒の あごを 見せ、うしろの あしを あげる） */
+export function GiantCentipede({ anim }: { anim: ModelProps['anim'] }) {
+  return <CentipedeModel anim={anim} look={GIGANTEA} size={1} />;
+}
+
+function CentipedeModel({ anim, look, size }: { anim: ModelProps['anim']; look: CentipedeLook; size: number }) {
   const head = useRef<THREE.Group>(null);
-  const size = young ? 0.6 + molts * 0.1 : 1.45;
   useFrame(() => {
     const a = anim.current;
     // いかく：頭を もちあげて あごを ひらく
@@ -359,15 +382,15 @@ function Centipede({ anim, molts, young }: ModelProps & { young: boolean }) {
   const shell = useMemo(() => ({ roughness: 0.3, clearcoat: 1 }), []);
   return (
     <group scale={size}>
-      <CentipedeBody anim={anim} young={young} />
+      <CentipedeBody anim={anim} look={look} />
       <group ref={head} position={[0, 0.05, 0.47]}>
-        <Part geometry={plateGeo()} color={young ? '#c7754a' : '#c2401f'} surface={shell} scale={[0.055, 0.022, 0.05]} castShadow part="head" />
+        <Part geometry={plateGeo()} color={look.head} surface={shell} scale={[0.055, 0.022, 0.05]} castShadow part="head" />
         {/* 顎肢（毒の あご） */}
         {[1, -1].map((s) => (
           <Part
             key={s}
             geometry={cachedTube(`forc${s}`, [[0, 0, 0], [s * 0.03, -0.005, 0.03], [s * 0.005, -0.008, 0.06]], 0.01, 0.004, 8, 5)}
-            color="#7a2412"
+            color={look.forcipules}
             surface={shell}
             position={[s * 0.02, -0.01, 0.02]}
             part="forcipules"
@@ -375,8 +398,8 @@ function Centipede({ anim, molts, young }: ModelProps & { young: boolean }) {
         ))}
         <CompoundEye position={[0.035, 0.012, 0.02]} size={0.007} />
         <CompoundEye position={[-0.035, 0.012, 0.02]} size={0.007} />
-        <Antenna position={[0.02, 0.01, 0.04]} side={1} length={0.2} thick={0.006} kind="filiform" color="#d9973a" anim={anim} rotation={[0.5, 0.6, 0]} part="antenna" />
-        <Antenna position={[-0.02, 0.01, 0.04]} side={-1} length={0.2} thick={0.006} kind="filiform" color="#d9973a" anim={anim} rotation={[0.5, 0.6, 0]} part="antenna" />
+        <Antenna position={[0.02, 0.01, 0.04]} side={1} length={0.2} thick={0.006} kind="filiform" color={look.antenna} anim={anim} rotation={[0.5, 0.6, 0]} part="antenna" />
+        <Antenna position={[-0.02, 0.01, 0.04]} side={-1} length={0.2} thick={0.006} kind="filiform" color={look.antenna} anim={anim} rotation={[0.5, 0.6, 0]} part="antenna" />
       </group>
     </group>
   );

@@ -42,8 +42,8 @@ interface BattleStore {
   /** ゆっくりに する 終わりの 時刻（performance.now） */
   slowUntil: number;
   begin: (player: SpeciesId, pool: SpeciesId[]) => void;
-  push: () => void;
-  special: () => void;
+  /** 1 つだけの ボタン（押す・得意技・ふんばる） */
+  tap: () => void;
   step: (dt: number) => void;
   reset: () => void;
 }
@@ -111,16 +111,10 @@ export const useBattle = create<BattleStore>()((set, get) => {
     slowUntil: 0,
     begin: (player, pool) =>
       set((st) => ({ state: b.startBattle(player, b.pickOpponent(player, pool)), fact: null, slowUntil: 0, callout: null, round: st.round + 1 })),
-    push: () => {
+    tap: () => {
       const s = get().state;
       if (!s) return;
-      const r = b.playerPush(s);
-      if (r.state !== s) handle(r.state, r.events);
-    },
-    special: () => {
-      const s = get().state;
-      if (!s) return;
-      const r = b.playerSpecial(s);
+      const r = b.playerTap(s);
       if (r.state !== s) handle(r.state, r.events);
     },
     step: (dt) => {

@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { audio } from '../../audio/audio';
 import { BATTLE } from '../../data/battle';
 import { SPECIES, SPECIES_ORDER } from '../../data/species';
-import { BATTLE_SECONDS, beatPhase, canSpecial, fighting, timingOpen } from '../../sim/battle';
+import { BATTLE_SECONDS, beatIndex, fighting, ringFill, tapMode, timingOpen } from '../../sim/battle';
 import { playEvents } from '../../state/events';
 import { useBattle } from '../../state/battle';
 import { useGame } from '../../state/game';
@@ -19,8 +19,60 @@ const RESULT_TEXT = {
   draw: 'ひきわけ！ どっちも がんばったね',
 } as const;
 
-/** あそびかた（はじめの 画面に 出す） */
-const HOW_TO = 'わが ちぢんで ボタンに かさなったら おすと つよく おせるよ。ゲージが たまったら とくいわざ！ あいての わざが くる ときは ふんばろう';
+/** あそびかた：文字は みじかく、絵（ボタンの みほん）と 読み上げで つたえる。みほんを タップすると 読む */
+const HOW_TO = [
+  { mode: 'push', label: 'ひかったら タッチ', say: 'まるい ひかりが いっぱいに なって ひかったら タッチ！ つよく おせるよ' },
+  { mode: 'special', label: 'きらきらは わざ', say: 'ボタンが きらきらに なったら タッチ！ とくいわざが でるよ' },
+  { mode: 'brace', label: 'あかは ふんばれ', say: 'ボタンが あかく なったら、あいての わざが くるよ。タッチして ふんばろう' },
+] as const;
+
+/** 取組の 始めに 読む（どう 押すかを 声で） */
+const START_SAY = 'ひかったら タッチ！';
+
+function HowTo() {
+  return (
+    <div className="battle-howto" data-testid="battle-howto">
+      {HOW_TO.map((h) => (
+        <button key={h.mode} className="howto-tile" onClick={() => speak(h.say, true)} aria-label={h.say}>
+          <span className={`howto-btn mode-${h.mode}`} aria-hidden>
+            <Icon name={h.mode === 'special' ? 'sparkle' : 'paw'} />
+          </span>
+          <Ruby text={h.label} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * 取組が 終わった あと しばらくは 結果の ボタンを 押せない（連打の いきおいで 次へ 進まない）。
+ * 終わってから `minMs` たち、しかも 画面へ の タップが `quietMs` やんだら 押せる ように なる。
+ */
+function useSettledUnlock(key: string | null, minMs = 2000, quietMs = 700): boolean {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(false);
+    if (!key) return;
+    const start = performance.now();
+    let last = start;
+    const onDown = () => {
+      last = performance.now();
+    };
+    window.addEventListener('pointerdown', onDown, true);
+    const id = window.setInterval(() => {
+      const now = performance.now();
+      if (now - start >= minMs && now - last >= quietMs) {
+        setOpen(true);
+        window.clearInterval(id);
+      }
+    }, 100);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('pointerdown', onDown, true);
+    };
+  }, [key, minMs, quietMs]);
+  return open;
+}
 
 function Select() {
   const met = useGame((s) => s.met);
@@ -56,9 +108,7 @@ function Select() {
           ))}
         </div>
       )}
-      <p className="battle-howto">
-        <Ruby text={HOW_TO} />
-      </p>
+      <HowTo />
       <p className="sci">
         <Ruby text="※ ほんとうは ちがう しゅるいの むしどうしは たたかわないよ。これは あそびの すもうだよ。けがは しないよ" />
       </p>
@@ -78,32 +128,52 @@ function Fight() {
   const fact = useBattle((b) => b.fact);
   const factAt = useBattle((b) => b.factAt);
   const callout = useBattle((b) => b.callout);
-  const push = useBattle((b) => b.push);
-  const special = useBattle((b) => b.special);
+  const round = useBattle((b) => b.round);
+  const tap = useBattle((b) => b.tap);
   const begin = useBattle((b) => b.begin);
   const reset = useBattle((b) => b.reset);
+  const mode = tapMode(s);
+  const live = fighting(s);
   // 技の「ほんとうの話」を読み上げる
   useEffect(() => {
     if (fact) speak(fact);
   }, [factAt]);
+  // 声の 案内：始まりに「ひかったら タッチ」、取組で はじめて きらきら・あかく なった ときに ひとこと
+  const said = useRef({ round: -1, special: false, brace: false });
+  useEffect(() => {
+    const m = said.current;
+    if (m.round !== round) {
+      if (!live) return;
+      said.current = { round, special: false, brace: false };
+      speak(START_SAY);
+      return;
+    }
+    // 技の 話を 読んで いる 最中は じゃま しない
+    const busy = performance.now() - factAt < 4000;
+    if (mode === 'special' && !m.special && !busy) {
+      m.special = true;
+      speak('きらきら！ タッチで わざ！');
+    } else if (mode === 'brace' && !m.brace && !busy) {
+      m.brace = true;
+      speak('くるよ！ タッチで ふんばれ！');
+    }
+  }, [round, live, mode, factAt]);
   useEffect(() => {
     if (!s.result) return;
     const name = s.result === 'draw' ? '' : `${SPECIES[s.result === 'win' ? s.player : s.cpu].kana}の かち！ `;
     speak(`${name}${RESULT_TEXT[s.result]}`);
     if (s.result === 'win') playEvents.emit('sumoWin');
   }, [s.result, s.player, s.cpu]);
+  // 終わって すぐは 結果の ボタンを 押せない（連打が やむまで まつ）
+  const unlocked = useSettledUnlock(s.result ? `${round}` : null);
   const sp = BATTLE[s.player].special;
   const pct = Math.round(((s.meter + 1) / 2) * 100);
   const left = Math.max(0, Math.ceil(BATTLE_SECONDS - s.time));
-  const ready = canSpecial(s);
-  const live = fighting(s);
-  // タイミングの 輪：ちぢんで ボタンに かさなる ときが「いま！」
-  const phase = beatPhase(s.time);
-  // 0.68〜1.08 が「いま」。輪は 0.08 から ちぢみはじめ、0.95 で ぴったり、窓の おわり（0.08）まで かさなった まま
-  const k = ((phase - 0.08 + 1) % 1) / 0.87;
-  const ring = 1 + Math.max(0, 1 - k) * 0.9;
-  // この 輪で まだ 取って いない ときだけ「いま！」と 光る
-  const now = timingOpen(s);
+  // ボタンの まわりの 光：たまって いっぱいに なったら「いま！」
+  const fill = live && mode !== 'special' ? ringFill(s.time) : 0;
+  const now = live && mode !== 'special' && timingOpen(s);
+  // 「いま！」が 3 周 ちかく 取れて いない ときは ゆびで おしえる（取組の はじめも。できて いる 子には 出さない）
+  const hint = (now && beatIndex(s.time) - s.hitBeat > 2) || mode === 'special';
   const tell = s.cpuTell > 0;
   const intro = introText(s.intro);
   return (
@@ -146,7 +216,7 @@ function Fight() {
         </div>
       ) : null}
       {s.result ? (
-        <div className="sheet center-col" data-testid="battle-result">
+        <div className={`sheet center-col battle-result${unlocked ? ' open' : ''}`} data-testid="battle-result">
           {fact ? (
             <p className="battle-result-fact" data-testid="battle-fact">
               <Ruby text={fact} />
@@ -158,6 +228,7 @@ function Fight() {
           <div className="battle-result-btns">
             <button
               className="pill-btn"
+              disabled={!unlocked}
               onClick={() => {
                 audio.play('pop');
                 begin(s.player, SPECIES_ORDER);
@@ -169,6 +240,7 @@ function Fight() {
             </button>
             <button
               className="pill-btn ghost"
+              disabled={!unlocked}
               onClick={() => {
                 audio.play('pop');
                 reset();
@@ -182,26 +254,29 @@ function Fight() {
         </div>
       ) : (
         <div className={`battle-controls${live ? '' : ' waiting'}`}>
+          {/* ボタンは 1 つだけ。ふだんは 押す、きらきらは 得意技、あかは ふんばる */}
           <button
-            className={`special-btn${ready ? ' ready' : ''}`}
-            style={{ ['--charge' as string]: `${Math.round(s.playerCharge * 100)}%` }}
-            disabled={!ready}
-            onClick={() => special()}
-            data-testid="battle-special"
-          >
-            <span className="special-gauge" aria-hidden />
-            <Icon name="sparkle" />
-            <Ruby text={sp.label} />
-          </button>
-          <button
-            className={`push-btn${now && live ? ' now' : ''}${tell ? ' tell' : ''}`}
-            onPointerDown={() => push()}
+            className={`tap-btn mode-${mode}${now ? ' now' : ''}`}
+            style={{ ['--fill' as string]: fill.toFixed(3), ['--charge' as string]: s.playerCharge.toFixed(3) }}
+            onPointerDown={() => tap()}
             data-testid="battle-push"
-            aria-label="がんばれ"
+            data-mode={mode}
+            aria-label={mode === 'special' ? sp.label : mode === 'brace' ? 'ふんばれ' : 'がんばれ'}
           >
-            {live ? <span className="beat-ring" aria-hidden style={{ transform: `translate(-50%, -50%) scale(${ring})` }} /> : null}
-            <Icon name="paw" />
-            {tell ? 'ふんばれ！' : 'がんばれ！'}
+            <span className="tap-ring" aria-hidden />
+            <span className="tap-face">
+              <Icon name={mode === 'special' ? 'sparkle' : 'paw'} />
+              <span className="tap-label">
+                <Ruby text={mode === 'special' ? sp.label : mode === 'brace' ? 'ふんばれ！' : 'がんばれ！'} />
+              </span>
+            </span>
+            {/* 技ゲージ：ボタンの 下から たまる */}
+            <span className="tap-charge" aria-hidden />
+            {hint ? (
+              <span className="tap-hint" aria-hidden>
+                <Icon name="tap" />
+              </span>
+            ) : null}
           </button>
         </div>
       )}

@@ -7,6 +7,7 @@ import { newAnim, type CreatureAnim } from './anim';
 import { M, useBodyMotion } from './common';
 import { mergedGeo, shapeGeo, shapedTube, shellGeo as loftShell, taperedTube, abdomenY, abdomenZ, archGeo, bodyGeo, saddleGeo, shieldGeo, elytronHalf, spiderAbdomen, spiderLeg } from './geom';
 import { Antenna, CompoundEye, JumpLeg, Leg, LiteContext, Part, type AntennaKind, type JumpLegSpec, type LegSpec } from './parts';
+import { GiantCentipede } from './predators';
 
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる 虫より 軽い つくりにして、
@@ -1435,4 +1436,5 @@ export const VISITOR_MODELS = {
   hiari: Hiari,
   sashihariari: Sashihariari,
   seakagokegumo: Seakagokegumo,
+  oomukade: GiantCentipede,
 } as const;

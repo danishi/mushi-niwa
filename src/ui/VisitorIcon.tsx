@@ -267,6 +267,24 @@ const DRAW: Record<VisitorId, ReactElement> = {
       <ellipse cx="44" cy="62" rx="5" ry="3" fill="#ffffff" opacity={0.35} />
     </g>
   ),
+  oomukade: (
+    <g>
+      {/* えんじ色の 胴と 黄色い あし（上が 頭） */}
+      {Array.from({ length: 9 }, (_, i) => {
+        const y = 24 + i * 7.5;
+        const x = 50 + Math.sin(i * 0.7) * 8;
+        return <path key={i} d={`M${x - 8} ${y} L${x - 20} ${y + 5} M${x + 8} ${y} L${x + 20} ${y + 5}`} stroke="#d9a92a" strokeWidth={3} strokeLinecap="round" />;
+      })}
+      {Array.from({ length: 9 }, (_, i) => {
+        const y = 24 + i * 7.5;
+        const x = 50 + Math.sin(i * 0.7) * 8;
+        return <ellipse key={i} cx={x} cy={y} rx={10 - i * 0.3} ry={4.6} fill={i % 2 ? '#4c1812' : '#5a1e16'} {...S} strokeWidth={2.5} />;
+      })}
+      <path d="M41 88 L30 98 M49 88 L60 98" stroke="#d9a92a" strokeWidth={3} strokeLinecap="round" />
+      <ellipse cx="50" cy="15" rx="9" ry="7" fill="#8a2a16" {...S} strokeWidth={2.5} />
+      <path d="M44 10 Q36 2 28 4 M56 10 Q64 2 72 4" fill="none" stroke="#c98a3a" strokeWidth={3} strokeLinecap="round" />
+    </g>
+  ),
 };
 
 export function VisitorIcon({ id, silhouette = false }: { id: VisitorId; silhouette?: boolean }) {

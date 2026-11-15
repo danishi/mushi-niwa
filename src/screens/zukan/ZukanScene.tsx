@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { audio } from '../../audio/audio';
 import { newAnim } from '../../creatures/anim';
@@ -105,6 +105,15 @@ export function SpecimenView({ species, stage }: { species: SpeciesId; stage: nu
   );
 }
 
+/** InstancedMesh を ふくむか（インスタンスの 位置は useFrame で 決まる） */
+function hasInstances(g: THREE.Object3D | null): boolean {
+  let found = false;
+  g?.traverse((o) => {
+    if ((o as THREE.InstancedMesh).isInstancedMesh) found = true;
+  });
+  return found;
+}
+
 /**
  * にわの おきゃくさんを 台座の 上で 見せる。モデルの 大きさは 種ごとに ちがうので、
  * 外接箱から 横幅を そろえて 台の 上面に のせる。タップすると いつもの 反応（まるまる・あしを けるなど）。
@@ -117,20 +126,31 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
   const inner = useRef<THREE.Group>(null);
   const anim = useRef(newAnim());
   const gestures = useRef(new GestureRunner());
-  useLayoutEffect(() => {
+  // 外接箱から 大きさと 置き場所を そろえる。ムカデの 節（InstancedMesh）は 最初の useFrame で 位置が 決まるので、
+  // その 子だけ 1 フレーム目に 測りなおす（インスタンスの 外接箱は キャッシュされるので 捨ててから）。
+  // ほかの 子は 描く 前の 形の まま 測る（チョウの はねなどは useFrame で 立つので、測りなおすと 大きさが 変わる）
+  const measure = useCallback(() => {
     const f = fit.current;
     const g = inner.current;
     if (!f || !g) return;
     f.scale.setScalar(1);
     g.position.set(0, 0, 0);
-    f.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(g);
+    const sp = spin.current;
+    if (!sp) return;
+    sp.updateMatrixWorld(true);
+    g.traverse((o) => {
+      if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).boundingBox = null;
+    });
+    // 台座の 座標で 測る（台の 高さや 親の 動きに よらない）
+    const box = new THREE.Box3().setFromObject(g).applyMatrix4(new THREE.Matrix4().copy(sp.matrixWorld).invert());
     const size = box.getSize(new THREE.Vector3());
     const k = 1.25 / Math.max(0.05, size.x, size.z);
     const c = box.getCenter(new THREE.Vector3());
     g.position.set(-c.x, -box.min.y + (flier ? 0.08 / k : 0), -c.z);
     f.scale.setScalar(k);
-  }, [id, flier]);
+  }, [flier]);
+  useLayoutEffect(() => measure(), [id, measure]);
+  const frames = useRef(0);
   useFrame((_, dt) => {
     const a = anim.current;
     a.t += dt;
@@ -145,6 +165,13 @@ function GuestSpecimen({ id }: { id: VisitorId }) {
     gestures.current.update(dt, a, GUEST_GESTURES, !stepping && a.flap === 0 && a.startle < 0.1 && a.spray < 0.1);
     a.spray = THREE.MathUtils.damp(a.spray, 0, 1.5, dt);
     a.bounce = THREE.MathUtils.damp(a.bounce, 0, 6, dt);
+    if (++frames.current === 1 && spin.current && hasInstances(inner.current)) {
+      // 回転を 0 に して 測る（台座の 向きに そろえる）
+      const ry = spin.current.rotation.y;
+      spin.current.rotation.y = 0;
+      measure();
+      spin.current.rotation.y = ry;
+    }
     if (spin.current) spin.current.rotation.y += dt * 0.5;
   });
   return (
