@@ -1059,8 +1059,11 @@ interface AntLook {
   gasterSize: [number, number, number];
   /** こしの ふし（ヒアリ・グンタイアリは 2 つ、サシハリアリは 大きな 1 つ） */
   nodes: Array<{ z: number; s: [number, number, number] }>;
-  /** 大あご：short = ふつう、sickle = かまの ような 長い あご（グンタイアリの 兵隊）、teeth = 太い あご（サシハリアリ） */
-  jaws: 'short' | 'sickle' | 'teeth';
+  /** 大あご：short = ふつう、sickle = かまの ような 長い あご（グンタイアリの 兵隊）、teeth = 太い あご（サシハリアリ）、
+   *  long = 前へ のびる 細長い あご（内がわに 歯。ブルドッグアリ） */
+  jaws: 'short' | 'sickle' | 'teeth' | 'long';
+  /** 大あごの 色（省略すると 種ごとの 既定） */
+  jawColor?: string;
   /** おしりの 針 */
   sting: number;
   leg: LegSpec;
@@ -1084,7 +1087,8 @@ function AntBody({ anim, look, shadows = true }: { anim: AnimRef; look: AntLook;
       gaster.current.rotation.x = a.spray * 0.75 + (L.rattle ? Math.sin(a.t * 60) * 0.06 * a.spray : 0) + Math.sin(a.gait * 2) * 0.03 * a.walk;
     }
     if (jaws.current) {
-      const open = L.jaws === 'sickle' ? 0.12 : 0.1 + a.spray * 0.45;
+      // ブルドッグアリは ふだん 閉じぎみで、おどかす ときに 大きく ひらく
+      const open = L.jaws === 'sickle' ? 0.12 : L.jaws === 'long' ? 0.04 + a.spray * 0.55 : 0.1 + a.spray * 0.45;
       jaws.current.children.forEach((c, i) => (c.rotation.y = (i === 0 ? 1 : -1) * open));
     }
   });
@@ -1107,7 +1111,10 @@ function AntBody({ anim, look, shadows = true }: { anim: AnimRef; look: AntLook;
             <group key={s} position={[s * 0.014, 0, 0]}>
               {L.jaws === 'sickle' ? (
                 // かまの ような 長い 大あご：外へ ひろがってから 内がわへ まがる
-                <mesh geometry={sickleJawGeo()} material={mat('#3a2010', SURF.chitin(0.6))} scale={[s, 1, 1]} />
+                <mesh geometry={sickleJawGeo()} material={mat(L.jawColor ?? '#3a2010', SURF.chitin(0.6))} scale={[s, 1, 1]} />
+              ) : L.jaws === 'long' ? (
+                // 前へ まっすぐ のびて 先が 内がわへ まがる 細長い 大あご（内がわに のこぎりの 歯）
+                <mesh geometry={longJawGeo()} material={mat(L.jawColor ?? '#b0843a', SURF.chitin(0.55))} scale={[s * 1.25, 1.25, 1.2]} castShadow={shadows} />
               ) : (
                 <M color={L.jaws === 'teeth' ? '#1a0e08' : '#4a1c0c'} surface={SURF.chitin(0.6)} position={[-s * 0.004, 0, 0.01]} rotation={[0, -s * 0.5, 0]} scale={L.jaws === 'teeth' ? [0.007, 0.006, 0.02] : [0.005, 0.004, 0.014]} />
               )}
@@ -1162,6 +1169,45 @@ const sickleJawGeo = () =>
     ),
   ]);
 
+/** ブルドッグアリの 大あご（右がわ。左は x を 反転）：頭の 長さ より 長く 前へ のび、先は 内がわへ。内がわの ふちに 歯が ならぶ */
+const longJawGeo = () =>
+  mergedGeo('antLongJaw', () => {
+    const blade = shapedTube(
+      [
+        [0, 0, 0],
+        [0.003, -0.001, 0.02],
+        [0.002, -0.002, 0.042],
+        [-0.004, -0.002, 0.058],
+        [-0.011, -0.002, 0.066],
+      ],
+      (t) => {
+        const r = 0.0048 * (1 - t * 0.7) + 0.0006;
+        return [r, r * 0.6];
+      },
+      16,
+      8,
+    );
+    // 内がわ（-x）の 歯：根もとから 先へ 小さく なる
+    const teeth = [0.014, 0.024, 0.033, 0.042, 0.05].map((z, i) => {
+      const x = 0.0025 - (z > 0.042 ? (z - 0.042) * 0.4 : 0) - 0.003;
+      const len = 0.0045 - i * 0.0005;
+      return shapedTube(
+        [
+          [x, -0.0015, z],
+          [x - len * 0.6, -0.0015, z + 0.001],
+          [x - len, -0.0015, z + 0.003],
+        ],
+        (t) => {
+          const r = 0.0016 * (1 - t) + 0.0003;
+          return [r, r * 0.7];
+        },
+        4,
+        5,
+      );
+    });
+    return [blade, ...teeth];
+  });
+
 /* ───────────── ヒアリ（はたらきアリ）：赤茶の からだ、黒っぽい はら、毒の 針 ───────────── */
 
 const FIRE_ANT: AntLook = {
@@ -1206,6 +1252,33 @@ const BULLET_ANT: AntLook = {
 
 export function Sashihariari({ anim }: { anim: AnimRef }) {
   return <AntBody anim={anim} look={BULLET_ANT} />;
+}
+
+/* ───────────── ブルドッグアリ（Myrmecia gulosa）：赤茶の 頭と 胸、黒い はら、長い 大あご、大きな 目 ───────────── */
+
+const BULLDOG_ANT: AntLook = {
+  body: '#9a2a14',
+  gaster: '#141012',
+  head: [0.038, 0.027, 0.042],
+  headZ: 0.124,
+  gasterSize: [0.044, 0.038, 0.056],
+  // こしの ふしは 2 つ（腹柄節・後腹柄節）
+  nodes: [
+    { z: -0.014, s: [0.013, 0.016, 0.012] },
+    { z: -0.038, s: [0.018, 0.018, 0.014] },
+  ],
+  jaws: 'long',
+  jawColor: '#b0843a',
+  sting: 0.03,
+  leg: { femur: 0.088, tibia: 0.088, tarsus: 0.065, thick: 0.0075, tarsi: 3 },
+  antenna: { length: 0.12, thick: 0.0035, kind: 'filiform' },
+  // アリの 中でも とても 大きな 複眼
+  eye: 0.014,
+  surface: { ...SURF.granular(0.35), roughness: 0.5 },
+};
+
+export function Burudogguari({ anim }: { anim: AnimRef }) {
+  return <AntBody anim={anim} look={BULLDOG_ANT} />;
 }
 
 /* ───────────── グンタイアリ：はたらきアリの 行列（1 ぴきは 大あごの 長い 兵隊アリ） ───────────── */
@@ -1379,6 +1452,7 @@ export const VISITOR_MODELS = {
   guntaiari: Guntaiari,
   hiari: Hiari,
   sashihariari: Sashihariari,
+  burudogguari: Burudogguari,
   seakagokegumo: Seakagokegumo,
   oomukade: GiantCentipede,
   kurodokushibogumo: Kurodokushibogumo,

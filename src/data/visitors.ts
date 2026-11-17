@@ -1,6 +1,6 @@
 /**
  * にわに ときどき 来る「おきゃくさん」。育てる ことは できないが、見つけて タップすると ずかんに のる。
- * 事実は docs/visitors-research.md（-2〜-7 も）の 出典つき 調査に もとづく。
+ * 事実は docs/visitors-research.md（-2〜-8 も）の 出典つき 調査に もとづく。
  */
 export type VisitorId =
   | 'shiokara'
@@ -22,6 +22,7 @@ export type VisitorId =
   | 'guntaiari'
   | 'hiari'
   | 'sashihariari'
+  | 'burudogguari'
   | 'seakagokegumo'
   | 'oomukade'
   | 'kurodokushibogumo'
@@ -483,6 +484,36 @@ export const VISITORS: Record<VisitorId, VisitorDef> = {
       'https://dictionnaire-amoureux-des-fourmis.fr/UIEIS-IUSSI/IUSSI-Londres-1973/IUSSI-Londres-1973-Markl.pdf',
     ],
   },
+  burudogguari: {
+    id: 'burudogguari',
+    name: 'ブルドッグアリ',
+    kana: 'ぶるどっぐあり',
+    scientific: 'Myrmecia gulosa',
+    where: 'ground',
+    react: 'warn',
+    warnSfx: 'clack',
+    flier: false,
+    time: 'day',
+    facts: [
+      'ながい あごと、おしりに どくの はりを もって いるよ。みつけても さわらないでね',
+      'めが とても おおきくて よく みえるよ。ちかづく ものを みつけると、おいかけて くる ことも あるよ',
+      'ながさ 3センチにも なる、せかいでも とくに おおきな アリだよ',
+      'ぎょうれつは つくらないで、1ぴきずつ かりに でかけるよ。おとなは はなの みつも すきなんだ',
+      'なかまの ジャックジャンパーは、ぴょんと とびはねて むかって くるよ',
+    ],
+    abroad: 'ブルドッグアリは にほんには いないよ。オーストラリアに すんで いるんだ',
+    caution:
+      'オーストラリアにすむアリ（キバハリアリ属）で、日本にはいません。長い大あごではさみながら毒針で何度も刺し、強く痛みます。毒へのアレルギー（アナフィラキシー）で亡くなった例もあります。旅行先などで巣（地面の小さな穴や土の盛りあがり）に近づかないでください。刺されたら冷やして安静にし、じんましん・息苦しさ・めまいなどが出たら、すぐに医療機関を受診してください。',
+    color: '#9a2a14',
+    scale: 3.4,
+    sources: [
+      'https://en.wikipedia.org/wiki/Myrmecia_(ant)',
+      'https://en.wikipedia.org/wiki/Myrmecia_gulosa',
+      'https://australian.museum/learn/animals/insects/bull-ants/',
+      'https://pmc.ncbi.nlm.nih.gov/articles/PMC3049064/',
+      'https://www.newsweekjapan.jp/articles/-/4170',
+    ],
+  },
   seakagokegumo: {
     id: 'seakagokegumo',
     name: 'セアカゴケグモ',
@@ -776,6 +807,7 @@ export const VISITOR_ORDER: VisitorId[] = [
   'hakiriari',
   'guntaiari',
   'sashihariari',
+  'burudogguari',
   'hotaru',
   'enmakorogi',
   'dangomushi',

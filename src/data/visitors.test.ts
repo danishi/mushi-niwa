@@ -40,7 +40,7 @@ describe('garden visitors', () => {
     expect(VISITORS.oomukade.react).toBe('warn');
     expect(VISITORS.oomukade.safety).toBe(true);
     expect(VISITORS.oomukade.abroad).toBeTruthy();
-    for (const id of ['hiari', 'sashihariari', 'oomukade'] as const) {
+    for (const id of ['hiari', 'sashihariari', 'burudogguari', 'oomukade'] as const) {
       expect(VISITORS[id].react).toBe('warn');
       expect(VISITORS[id].caution).toBeTruthy();
       expect(VISITORS[id].facts[0]).toMatch(/さわらない/);
@@ -62,7 +62,9 @@ describe('garden visitors', () => {
     expect(VISITORS.herakuresu.caution).toMatch(/放さない/);
     // ヒアリの 大人向け 注意には 相談先が ある
     expect(VISITORS.hiari.caution).toContain('0570-046-110');
-    for (const id of ['guntaiari', 'hiari', 'sashihariari'] as const) expect(VISITORS[id].abroad).toBeTruthy();
+    for (const id of ['guntaiari', 'hiari', 'sashihariari', 'burudogguari'] as const) expect(VISITORS[id].abroad).toBeTruthy();
+    // ブルドッグアリは 昼に 上の 段を 歩いて 来て、タップで 大あごを ならして おどかす
+    expect(VISITORS.burudogguari).toMatchObject({ where: 'ground', react: 'warn', warnSfx: 'clack', flier: false, time: 'day' });
     for (const id of VISITOR_ORDER) {
       expect(VISITORS[id].facts.join('')).not.toContain('TODO');
       expect(VISITORS[id].sources.every((u) => u.startsWith('https://'))).toBe(true);

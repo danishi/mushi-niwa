@@ -263,6 +263,23 @@ const DRAW: Record<VisitorId, ReactElement> = {
       <path d="M40 20 Q28 12 22 18 M60 20 Q72 12 78 18" fill="none" {...S} strokeWidth={3} />
     </g>
   ),
+  burudogguari: (
+    <g>
+      {[50, 58, 66].map((y, i) => (
+        <path key={y} d={`M45 ${y} L${20 - i * 3} ${y + 10 + i * 6} M55 ${y} L${80 + i * 3} ${y + 10 + i * 6}`} {...S} strokeWidth={3} />
+      ))}
+      <ellipse cx="50" cy="88" rx="13" ry="11" fill="#141012" {...S} />
+      <path d="M50 98 L50 101" stroke="#141012" strokeWidth={3} strokeLinecap="round" />
+      <circle cx="50" cy="73" r="4" fill="#9a2a14" {...S} strokeWidth={2} />
+      <circle cx="50" cy="66" r="3.2" fill="#9a2a14" {...S} strokeWidth={2} />
+      <ellipse cx="50" cy="51" rx="7" ry="10" fill="#9a2a14" {...S} />
+      <ellipse cx="50" cy="31" rx="12" ry="11" fill="#9a2a14" {...S} />
+      <path d="M45 22 L42 6 Q43 2 48 4 M55 22 L58 6 Q57 2 52 4" fill="none" stroke="#b0843a" strokeWidth={4} strokeLinecap="round" />
+      <ellipse cx="39" cy="30" rx="4" ry="5" fill="#1a1210" />
+      <ellipse cx="61" cy="30" rx="4" ry="5" fill="#1a1210" />
+      <path d="M42 22 Q30 14 22 20 M58 22 Q70 14 78 20" fill="none" {...S} strokeWidth={2.5} />
+    </g>
+  ),
   seakagokegumo: (
     <g>
       {([
