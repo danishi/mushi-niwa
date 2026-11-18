@@ -118,7 +118,7 @@ function hasInstances(g: THREE.Object3D | null): boolean {
  * にわの おきゃくさんを 台座の 上で 見せる。モデルの 大きさは 種ごとに ちがうので、
  * 外接箱から 横幅を そろえて 台の 上面に のせる。タップすると いつもの 反応（まるまる・あしを けるなど）。
  */
-function GuestSpecimen({ id }: { id: VisitorId }) {
+export function GuestSpecimen({ id }: { id: VisitorId }) {
   const Model = VISITOR_MODELS[id];
   const flier = VISITORS[id].where === 'air';
   const spin = useRef<THREE.Group>(null);

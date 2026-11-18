@@ -7,7 +7,7 @@
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア。むしずもうは `battle`）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる。`?lite` は いちばん 軽い 描画（低画質・解像度 半分）に 固定） |
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア。むしずもうは `battle`、むしクイズは `quiz`）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる。`?lite` は いちばん 軽い 描画（低画質・解像度 半分）に 固定） |
 | `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
 | `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
 | `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要。iPad 横は `@wide` を 付けた テスト（横長の レイアウトに かかわる もの）だけ |
@@ -100,6 +100,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
     - ハキリアリは 日本に いない（ユーザー判断で ふつうに 来る）。`VisitorDef.abroad` に「とおくの くにの アリ」の 説明を 書き、ずかんに 出す。はっぱの きれはしを くわえて 歩く。出る場所は手前の本・立てふだ・切り株の当たり判定と重ならない所（上の段・棚の奥板・空中）。
   - しゃしん: カメラボタン（`src/ui/CameraButton.tsx`）は お世話画面（道具の 演出中は かくす）と かんさつ画面の 右上。かんさつ画面だけだと 見つけにくかったので 両方に 置く。`src/three/snapshot.ts`（`addAfterEffect` で描画直後に読む。preserveDrawingBuffer は使わない）→ `src/state/photos.ts`（端末内、30 枚まで）。ずかんの「しゃしん」タブで見る。大人は設定で消せる。
   - むしクイズ: `src/sim/quiz.ts` が種データから 3 択を作る（手書きの問題を増やさない）。入口は にわの「？」立てふだ。画面は `quiz`。
+  - 問題の 種類（ユーザー要望で ふやした）: だれ？・ごはん・よるの むし・昆虫じゃない・あしの 数 に 加えて、ようちゅうを 見せて「おおきく なると だれ？」（白い イモムシ形の 幼虫どうしは いっしょに 出さない `GRUBS`）、さなぎに ならない むし（成虫だけ 育てる 種は 出さない）、みずの なかで くらす むし、にわの おきゃくさんを 見せて「だれ？」（`Question.guest` → `GuestSpecimen`。見つけた 子を 多めに）、にほんに すんで いない（`abroad`）、さわっちゃ いけない（`safety`。ほかの 選択肢は `warn` でも 外国でも ない 子だけ）。選択肢は `Choice.kind = 'visitor'` も ある。
   - ずかんは タブ（むし／おきゃくさん／シール／しゃしん）。おきゃくさんも むしと 同じく 台の 上の 3D（`GuestSpecimen`、外接箱で 大きさを そろえる）＋説明パネル（`ui.zukanGuest`）。説明パネル（`DetailSheet`）は 続きが あると 下に「↓」を 出す。
 - **リロードで最新版になる**（ユーザー要望）: Service Worker は index.html を 先に取りおかず、ページは NetworkFirst（`cache: 'no-cache'`、4 秒で オフライン用の 保存版に 切りかえ）。js/css は ハッシュ付きなので precache。新しい SW は skipWaiting / clientsClaim で すぐ入れかわるが、遊んでいる最中の 自動再読みこみは しない（タイトル画面で、しかも 開いている ページが 古い ときだけ。ページは ネット優先で もう 最新の ことが 多く、毎回 読みこみなおすと 公開の たびに 最初の 画面が チラつく。`src/app/pwa.ts`）。アプリに もどったときにも 更新を確かめる。設定画面に 版（`__APP_VERSION__`、CI では コミットの 先頭 7 文字）を出す。
 - **3D アセットは外部に頼らない**: 虫・ジオラマはプロシージャル生成のみ（ロフト曲面・チューブ・プリミティブ）。音も Web Audio で合成（`src/audio/audio.ts`）。外部フォント・外部リクエストなし。

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { audio } from '../../audio/audio';
 import { SPECIES } from '../../data/species';
+import { VISITORS, type VisitorId } from '../../data/visitors';
 import { QUIZ_LENGTH, type Choice } from '../../sim/quiz';
 import { useGame } from '../../state/game';
 import { useProgress } from '../../state/progress';
@@ -11,19 +12,25 @@ import { speak } from '../../text/speech';
 import { Icon } from '../../ui/Icon';
 import { IconButton } from '../../ui/IconButton';
 import { SpeciesIcon } from '../../ui/SpeciesIcon';
+import { VisitorIcon } from '../../ui/VisitorIcon';
 import { FOOD_ICON, FOOD_LABEL } from '../../ui/ToolBar';
 
 function choiceText(c: Choice): string {
   if (c.kind === 'species') return SPECIES[c.id].name;
   if (c.kind === 'food') return FOOD_LABEL[c.id];
+  if (c.kind === 'visitor') return VISITORS[c.id].name;
   return `${c.n}ほん`;
 }
 
 function ChoiceFace({ c }: { c: Choice }) {
   if (c.kind === 'species') return <SpeciesIcon id={c.id} />;
   if (c.kind === 'food') return <Icon name={FOOD_ICON[c.id]} />;
+  if (c.kind === 'visitor') return <VisitorIcon id={c.id} />;
   return <span className="quiz-number">{c.n}</span>;
 }
+
+/** 見つけた おきゃくさん（クイズで 多めに 出す） */
+const seenGuests = () => useProgress.getState().visitors.filter((id): id is VisitorId => id in VISITORS);
 
 /** むしクイズ：5 もん。まちがえても こたえを 教えて 次へ（罰なし） */
 export function QuizHud() {
@@ -31,7 +38,7 @@ export function QuizHud() {
   const met = useGame((s) => s.met);
   const { questions, index, picked, correct, start, pick, next } = useQuiz();
   useEffect(() => {
-    start(met);
+    start(met, seenGuests());
     audio.startBgm('title');
   }, []); // 入ったときに 1 回だけ 問題を 作る
   const q = questions[index];
@@ -82,7 +89,7 @@ export function QuizHud() {
                 data-testid="quiz-again"
                 onClick={() => {
                   audio.play('pop');
-                  start(useGame.getState().met);
+                  start(useGame.getState().met, seenGuests());
                 }}
               >
                 <Icon name="play" /> もういちど

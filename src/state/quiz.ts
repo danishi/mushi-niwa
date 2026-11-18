@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { makeQuiz, type Question } from '../sim/quiz';
+import type { VisitorId } from '../data/visitors';
 import type { SpeciesId } from '../sim/types';
 
 interface QuizStore {
@@ -8,7 +9,8 @@ interface QuizStore {
   /** 今の 問題で えらんだ 番号（まだなら null） */
   picked: number | null;
   correct: number;
-  start: (met: readonly SpeciesId[]) => void;
+  /** guests: 見つけた おきゃくさん（多めに 出す） */
+  start: (met: readonly SpeciesId[], guests?: readonly VisitorId[]) => void;
   pick: (i: number) => boolean;
   next: () => void;
 }
@@ -18,7 +20,8 @@ export const useQuiz = create<QuizStore>()((set, get) => ({
   index: 0,
   picked: null,
   correct: 0,
-  start: (met) => set({ questions: makeQuiz(Math.random, met), index: 0, picked: null, correct: 0 }),
+  start: (met, guests = []) =>
+    set({ questions: makeQuiz(Math.random, met, undefined, guests), index: 0, picked: null, correct: 0 }),
   pick: (i) => {
     const s = get();
     const q = s.questions[s.index];

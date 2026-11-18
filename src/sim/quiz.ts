@@ -1,4 +1,5 @@
 import { SPECIES, SPECIES_ORDER } from '../data/species';
+import { discoveryFact, VISITOR_ORDER, VISITORS, type VisitorId } from '../data/visitors';
 import type { FoodId, SpeciesDef, SpeciesId } from './types';
 
 /**
@@ -8,9 +9,21 @@ import type { FoodId, SpeciesDef, SpeciesId } from './types';
 export type Choice =
   | { kind: 'species'; id: SpeciesId }
   | { kind: 'food'; id: FoodId }
+  | { kind: 'visitor'; id: VisitorId }
   | { kind: 'number'; n: number };
 
-export type QuestionKind = 'who' | 'food' | 'night' | 'notInsect' | 'legs';
+export type QuestionKind =
+  | 'who'
+  | 'food'
+  | 'night'
+  | 'notInsect'
+  | 'legs'
+  | 'young'
+  | 'noPupa'
+  | 'water'
+  | 'guest'
+  | 'abroad'
+  | 'safety';
 
 export interface Question {
   kind: QuestionKind;
@@ -18,6 +31,8 @@ export interface Question {
   prompt: string;
   /** 3D で 見せる 虫（いれば） */
   subject?: { species: SpeciesId; stage: number };
+  /** 3D で 見せる にわの おきゃくさん（いれば） */
+  guest?: VisitorId;
   choices: Choice[];
   answer: number;
   /** こたえの あとに 出す 説明（ルビ記法） */
@@ -195,19 +210,163 @@ function legsQuestion(rand: Rand): Question {
   };
 }
 
+/** 幼虫が 白い イモムシ形で 見分けにくい 種（「おおきく なると だれ？」で いっしょに 出さない） */
+const GRUBS: ReadonlySet<SpeciesId> = new Set<SpeciesId>(['kabutomushi', 'nokogiri', 'ookuwagata', 'gomadara']);
+
+/** こどもの 段階（ようちゅう）の 番号。たまご・さなぎ・まゆは のぞく */
+export function youngStage(sp: SpeciesDef): number | null {
+  const i = sp.stages.findIndex((s) => s.id === 'larva' || s.id === 'nymph');
+  return i >= 0 && i < adultIndex(sp) ? i : null;
+}
+
+/** さなぎ（まゆ）の 段階が ある */
+const hasPupa = (sp: SpeciesDef) => sp.stages.some((s) => s.id === 'pupa' || s.id === 'cocoon');
+/** どこかの 段階で 水の 中で くらす */
+const aquatic = (sp: SpeciesDef) =>
+  sp.habitat.substrate === 'water' || sp.stages.some((s) => s.habitat?.substrate === 'water');
+
+/** ようちゅうを 見せて「おおきく なると だれ？」 */
+function youngQuestion(rand: Rand, pool: SpeciesId[]): Question | null {
+  const candidates = pool.filter((id) => youngStage(SPECIES[id]) !== null);
+  if (candidates.length === 0) return null;
+  const id = pickOne(candidates, rand);
+  const sp = SPECIES[id];
+  const stage = youngStage(sp)!;
+  const others = shuffle(
+    SPECIES_ORDER.filter((x) => x !== id && !(GRUBS.has(id) && GRUBS.has(x))),
+    rand,
+  ).map((x): Choice => ({ kind: 'species', id: x }));
+  const a = arrange({ kind: 'species', id }, others, rand);
+  const label = sp.stages[stage]!.label;
+  const young = label === 'ようちゅう' ? `${sp.name}の ようちゅう` : `${label}（${sp.name}の ようちゅう）`;
+  return {
+    kind: 'young',
+    prompt: 'この こは おおきく なると だれに なる？',
+    subject: { species: id, stage },
+    ...a,
+    explain: `${young}だよ。おおきく なると ${sp.name}に なるんだ`,
+  };
+}
+
+/** 「さなぎに ならない むしは どれ？」（不完全変態）。成虫だけを 育てる 種は データに 幼虫期が ないので 出さない */
+function noPupaQuestion(rand: Rand): Question | null {
+  const insects = SPECIES_ORDER.filter((id) => !SPECIES[id].notInsect && SPECIES[id].stages.length > 1);
+  const right = insects.filter((id) => !hasPupa(SPECIES[id]));
+  const wrong = insects.filter((id) => hasPupa(SPECIES[id]));
+  if (right.length === 0 || wrong.length < 2) return null;
+  const id = pickOne(right, rand);
+  const a = arrange(
+    { kind: 'species', id },
+    shuffle(wrong, rand).map((x): Choice => ({ kind: 'species', id: x })),
+    rand,
+  );
+  return {
+    kind: 'noPupa',
+    prompt: 'さなぎに ならない むしは どれ？',
+    ...a,
+    explain: `${SPECIES[id].name}は さなぎに ならないよ。かわを ぬぐ たびに おおきく なって、そのまま おとなに なるんだ`,
+  };
+}
+
+/** 「みずの なかで くらす むしは どれ？」 */
+function waterQuestion(rand: Rand): Question | null {
+  const right = SPECIES_ORDER.filter((id) => aquatic(SPECIES[id]));
+  const wrong = SPECIES_ORDER.filter((id) => !aquatic(SPECIES[id]));
+  if (right.length === 0 || wrong.length < 2) return null;
+  const id = pickOne(right, rand);
+  const a = arrange(
+    { kind: 'species', id },
+    shuffle(wrong, rand).map((x): Choice => ({ kind: 'species', id: x })),
+    rand,
+  );
+  return {
+    kind: 'water',
+    prompt: 'みずの なかで くらす むしは どれ？',
+    ...a,
+    explain: `${SPECIES[id].name}は みずの なかで くらすよ`,
+  };
+}
+
+const visitorChoices = (ids: VisitorId[], rand: Rand) =>
+  shuffle(ids, rand).map((x): Choice => ({ kind: 'visitor', id: x }));
+
+/** にわの おきゃくさんを 見せて「だれ？」 */
+function guestQuestion(rand: Rand, pool: VisitorId[]): Question {
+  const id = pickOne(pool, rand);
+  const v = VISITORS[id];
+  const a = arrange({ kind: 'visitor', id }, visitorChoices(VISITOR_ORDER.filter((x) => x !== id), rand), rand);
+  return {
+    kind: 'guest',
+    prompt: 'にわに きた この おきゃくさんは だれ？',
+    guest: id,
+    ...a,
+    explain: `${v.name}だよ。${discoveryFact(v)}`,
+  };
+}
+
+/** 「にほんに すんで いない のは どれ？」 */
+function abroadQuestion(rand: Rand): Question | null {
+  const right = VISITOR_ORDER.filter((id) => VISITORS[id].abroad);
+  const wrong = VISITOR_ORDER.filter((id) => !VISITORS[id].abroad);
+  if (right.length === 0 || wrong.length < 2) return null;
+  const id = pickOne(right, rand);
+  const a = arrange({ kind: 'visitor', id }, visitorChoices(wrong, rand), rand);
+  return {
+    kind: 'abroad',
+    prompt: 'にほんには すんで いない のは どれ？',
+    ...a,
+    explain: VISITORS[id].abroad!,
+  };
+}
+
 /**
- * 1 回ぶんの 問題を 作る。met（出会った 虫）を 多めに 出すが、まだの 虫も 出る（ずかんへの 興味）。
+ * 「みつけても さわっちゃ いけない のは どれ？」（安全学習）。
+ * ほかの 選択肢は 日本に いる 危なく ない 子だけ（おどかす 子 `warn`・外国の 子は 入れない）。
  */
-export function makeQuiz(rand: Rand, met: readonly SpeciesId[], n = QUIZ_LENGTH): Question[] {
+function safetyQuestion(rand: Rand): Question | null {
+  const right = VISITOR_ORDER.filter((id) => VISITORS[id].safety);
+  const wrong = VISITOR_ORDER.filter((id) => {
+    const v = VISITORS[id];
+    return !v.safety && v.react !== 'warn' && !v.abroad;
+  });
+  if (right.length === 0 || wrong.length < 2) return null;
+  const id = pickOne(right, rand);
+  const a = arrange({ kind: 'visitor', id }, visitorChoices(wrong, rand), rand);
+  return {
+    kind: 'safety',
+    prompt: 'みつけても さわっちゃ いけない のは どれ？',
+    ...a,
+    explain: `${VISITORS[id].name}。${VISITORS[id].facts[0]!}`,
+  };
+}
+
+/**
+ * 1 回ぶんの 問題を 作る。met（出会った 虫）・guests（見つけた おきゃくさん）を 多めに 出すが、
+ * まだの 子も 出る（ずかんへの 興味）。
+ */
+export function makeQuiz(
+  rand: Rand,
+  met: readonly SpeciesId[],
+  n = QUIZ_LENGTH,
+  guests: readonly VisitorId[] = [],
+): Question[] {
   const pool = met.length >= 2 && rand() < 0.75 ? [...met] : [...SPECIES_ORDER];
+  const guestPool = guests.length >= 2 && rand() < 0.75 ? [...guests] : [...VISITOR_ORDER];
   const makers: Array<() => Question | null> = [
     () => whoQuestion(rand, pool),
     () => foodQuestion(rand, pool),
     () => whoQuestion(rand, [...SPECIES_ORDER]),
     () => foodQuestion(rand, [...SPECIES_ORDER]),
+    () => youngQuestion(rand, pool),
+    () => youngQuestion(rand, [...SPECIES_ORDER]),
+    () => guestQuestion(rand, guestPool),
     () => nightQuestion(rand),
     () => notInsectQuestion(rand),
     () => legsQuestion(rand),
+    () => noPupaQuestion(rand),
+    () => waterQuestion(rand),
+    () => abroadQuestion(rand),
+    () => safetyQuestion(rand),
   ];
   const out: Question[] = [];
   const used = new Set<string>();
