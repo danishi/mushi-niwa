@@ -2401,16 +2401,27 @@ ruby rt {
   height: 44px;
 }
 
-/* 横向きの スマホ：ひとことは 上の 段の まん中、えさの ボタンは 右下に たてに ならべて 巣を かくさない */
-@media (min-aspect-ratio: 6/5) and (max-height: 520px) {
+/* 横長の 画面：ひとことは 上の 段の まん中（地面の 上の 入口や えさを かくさない） */
+@media (min-aspect-ratio: 6/5) {
   .nest-hud .nest-bubble {
     position: absolute;
     top: calc(var(--safe-t) + 12px);
     left: 50%;
     transform: translateX(-50%);
-    max-width: 38vw;
+    max-width: min(46vw, 640px);
     margin: 0;
-    padding: 8px 14px;
+    padding: 8px 16px;
+  }
+
+  .nest-hud .nest-bubble.flight {
+    animation: none;
+  }
+}
+
+/* 横向きの スマホ：えさの ボタンは 右下に たてに ならべて 巣を かくさない */
+@media (min-aspect-ratio: 6/5) and (max-height: 520px) {
+  .nest-hud .nest-bubble {
+    max-width: 38vw;
     font-size: 15px;
   }
 

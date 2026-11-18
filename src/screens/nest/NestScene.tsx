@@ -15,6 +15,7 @@ import {
   type Nest,
   type Room,
 } from '../../sim/nest';
+import { env } from '../../state/env';
 import { useNest } from '../../state/nest';
 import { followed, useNestView } from '../../state/nestView';
 import { useUi } from '../../state/ui';
@@ -61,6 +62,26 @@ function Follow() {
     camera.lookAt(look);
   });
   return null;
+}
+
+/**
+ * 夜の あかり：地面の 中は 昼も 夜も 同じ くらいの 暗さなので、夜に 空の 光が 弱く なった ぶんを
+ * やわらかい 光で おぎなって 巣の 中を 見やすく する（ライトの 数は 昼も 同じに して シェーダを 作りなおさない）
+ */
+function NightFill() {
+  const amb = useRef<THREE.AmbientLight>(null);
+  const front = useRef<THREE.DirectionalLight>(null);
+  useFrame(() => {
+    const n = THREE.MathUtils.clamp(env.night, 0, 1);
+    if (amb.current) amb.current.intensity = n * 1.3;
+    if (front.current) front.current.intensity = n * 1.1;
+  });
+  return (
+    <>
+      <ambientLight ref={amb} color="#ffe6c4" intensity={0} />
+      <directionalLight ref={front} color="#fff0d8" position={[0.5, 1.5, 8]} intensity={0} />
+    </>
+  );
 }
 
 /* ───────────── 地面の 断面 ───────────── */
@@ -126,7 +147,8 @@ const Surface = memo(function Surface({ winter }: { winter: boolean }) {
   const snow = useMemo(() => mat('#f4f7fb', { roughness: 0.9 }), []);
   return (
     <group>
-      <mesh geometry={GEO.box()} material={ground} position={[0, -0.05, -4.5]} scale={[18, 0.1, 9]} receiveShadow />
+      {/* 草地は 断面の くぼみより 奥から（前の ふちが トンネルの 穴から 見えない ように） */}
+      <mesh geometry={GEO.box()} material={ground} position={[0, -0.05, -4.64]} scale={[18, 0.1, 9]} receiveShadow />
       <group position={[0, 0, -4.6]}>
         <Scatter count={900} radius={1} rect={[18, 8]} seed={21} geometry={bladeGeometry()} material={grassMat} colors={GRASS} scale={[0.3, 0.6]} tilt={0.5} />
       </group>
@@ -262,8 +284,24 @@ function Chambers({ nest }: { nest: Nest }) {
     [],
   );
   const count = (stage: string, alate?: boolean) => nest.brood.filter((b) => b.stage === stage && (alate === undefined || b.alate === alate)).length;
+  // 子の いる へや（タップで せわを 手つだう）
+  const broodRooms = [...new Set([count('egg') > 0 ? queenRoom : undefined, count('larva') + count('pupa') > 0 ? nursery : undefined])].filter((r): r is Room => !!r);
   return (
     <group>
+      {broodRooms.map((r) => (
+        <mesh
+          key={r.id}
+          visible={false}
+          position={[r.x, r.y, 0.02]}
+          onClick={(e) => {
+            e.stopPropagation();
+            nestTap.groom([e.point.x, r.y - r.h / 2 + 0.08, 0.04]);
+          }}
+        >
+          <boxGeometry args={[r.w, r.h + 0.06, 0.05]} />
+        </mesh>
+      ))}
+      {nest.phase === 'founding' && queenRoom ? <DigMarker room={queenRoom} color="#ffb3c7" /> : null}
       {/* たまごは 女王の そば、幼虫と まゆは 子どもの へや（育ちかたで 分けて おく） */}
       <Pile room={queenRoom} count={count('egg')} geometry={GEO.sphereLo()} material={m.egg} size={[0.017, 0.017, 0.025]} seed={1} />
       <Pile room={nursery} count={count('larva')} geometry={GEO.capsule()} material={m.larva} size={[0.028, 0.032, 0.028]} seed={2} lie />
@@ -276,10 +314,10 @@ function Chambers({ nest }: { nest: Nest }) {
   );
 }
 
-/** ほっている 所の しるし（ふわふわ 光る わ） */
-function DigMarker({ room }: { room: Room }) {
+/** ほっている 所・タップしてほしい へやの しるし（ふわふわ 光る わ） */
+function DigMarker({ room, color = '#ffe08a' }: { room: Room; color?: string }) {
   const ref = useRef<THREE.Mesh>(null);
-  const material = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffe08a', transparent: true, opacity: 0.8, depthWrite: false }), []);
+  const material = useMemo(() => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false }), [color]);
   useEffect(() => () => material.dispose(), [material]);
   useFrame(({ clock }) => {
     const m = ref.current;
@@ -533,6 +571,7 @@ export function NestScene() {
   return (
     <group>
       <Follow />
+      <NightFill />
       <Face nest={nest} />
       <Surface winter={winter} />
       {nest.phase !== 'empty' ? <Mound nest={nest} /> : null}

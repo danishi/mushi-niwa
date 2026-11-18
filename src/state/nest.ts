@@ -16,6 +16,7 @@ interface NestStore {
   placeBait: (x: number, kind: ns.BaitKind) => ns.BaitResult['ok'] | 'full' | 'phase';
   digAt: (p: ns.Pt) => true | Exclude<ns.DigCheck, { ok: true }>['reason'];
   flyOne: () => boolean;
+  groom: () => true | Exclude<ns.GroomResult, { ok: true }>['reason'];
   reset: () => void;
 }
 
@@ -71,6 +72,12 @@ export const useNest = create<NestStore>()(
         if (nest === before) return false;
         set({ nest });
         playEvents.emit('nestFlight');
+        return true;
+      },
+      groom: () => {
+        const r = ns.groom(get().nest);
+        if (!r.ok) return r.reason;
+        set({ nest: r.nest });
         return true;
       },
       reset: () => set({ nest: ns.newNest() }),

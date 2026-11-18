@@ -12,6 +12,8 @@ import {
   EGG_T,
   flightReady,
   flyOne,
+  groom,
+  GROOM_BOOST,
   FOUNDING_EGGS,
   inFlightWindow,
   LAND_T,
@@ -72,7 +74,7 @@ describe('ant nest', () => {
     expect(later.workers + later.brood.length).toBe(FOUNDING_EGGS);
   });
 
-  it('the first worker takes about 3 minutes of play', () => {
+  it('the first worker comes in under two minutes of play', () => {
     const r = advanceNest(founded(), EGG_T + LARVA_T + PUPA_T + 10);
     expect(r.events.some((e) => e.type === 'born' && e.first)).toBe(true);
   });
@@ -173,23 +175,24 @@ describe('ant nest', () => {
 
   it('seasons cycle through the year and winter pauses the nest', () => {
     expect(seasonAt(0)).toBe('natsu');
-    expect(seasonAt(YEAR * 0.3)).toBe('aki');
-    expect(seasonAt(YEAR * 0.6)).toBe('fuyu');
-    expect(seasonAt(YEAR * 0.8)).toBe('haru');
+    expect(seasonAt(YEAR * 0.4)).toBe('aki');
+    expect(seasonAt(YEAR * 0.7)).toBe('fuyu');
+    expect(seasonAt(YEAR * 0.85)).toBe('haru');
     expect(seasonAt(YEAR * 1.1)).toBe('natsu');
-    const winter = { ...withWorkers(), t: YEAR * 0.55, sugar: 10 };
+    const winter = { ...withWorkers(), t: YEAR * 0.67, sugar: 10 };
     const after = run(winter, 60);
     expect(after.brood).toEqual(winter.brood.map((b) => ({ ...b })));
     expect(wantOf(after)).toBe('winter');
   });
 
   it('a big enough colony raises winged ants in spring and they fly in May-June', () => {
-    let n: Nest = { ...withWorkers(), workers: ALATE_NEED, t: YEAR * 0.76, protein: 20, sugar: 0 };
+    let n: Nest = { ...withWorkers(), workers: ALATE_NEED, t: YEAR * 0.81, protein: 20, sugar: 0 };
     n = run(n, 2);
     expect(n.brood.filter((b) => b.alate)).toHaveLength(ALATE_EGGS);
     n = run(n, EGG_T + LARVA_T + PUPA_T + 5);
     expect(n.alates).toBe(ALATE_EGGS);
     // 5〜6 月の ころに とびたつ
+    n = run(n, Math.max(0, YEAR * 0.9 - n.t + 1));
     expect(inFlightWindow(n.t)).toBe(true);
     expect(inFlightWindow(YEAR * 0.8)).toBe(false);
     expect(flightReady(n)).toBe(true);
@@ -201,6 +204,28 @@ describe('ant nest', () => {
     // 同じ 年には もう 育てない
     n = run(n, 10);
     expect(n.brood.filter((b) => b.alate)).toHaveLength(0);
+  });
+
+  it('grooming the brood speeds it up, but hungry larvae still wait for insects', () => {
+    const n = founded();
+    const laid = run(n, 6);
+    const g = groom(laid);
+    expect(g.ok).toBe(true);
+    if (!g.ok) return;
+    expect(g.nest.brood[0]!.age).toBeCloseTo(laid.brood[0]!.age + GROOM_BOOST);
+    // 何度も 手つだうと 最初の はたらきアリが 早く 生まれる
+    let helped = laid;
+    for (let i = 0; i < 30; i++) {
+      const r = groom(helped);
+      if (r.ok) helped = r.nest;
+    }
+    expect(run(helped, 10).workers).toBeGreaterThan(0);
+    expect(run(laid, 10).workers).toBe(0);
+    expect(groom(newNest())).toEqual({ ok: false, reason: 'phase' });
+    expect(groom({ ...laid, t: YEAR * 0.7 })).toEqual({ ok: false, reason: 'winter' });
+    const waiting = { ...withWorkers(), brood: [{ stage: 'larva' as const, age: LARVA_T, alate: false, reserve: false }] };
+    expect(groom(waiting)).toEqual({ ok: false, reason: 'none' });
+    expect(wantOf(laid)).toBe('founding');
   });
 
   it('long catch-up is capped and stays consistent', () => {

@@ -45,7 +45,30 @@ const DIG_REPLY = {
   place: 'ほかの へやから すこし はなれた、ふかい ところを タップしてね',
 } as const;
 
+let lastGroom = 0;
+let groomTold = false;
+
 export const nestTap = {
+  /** たまご・幼虫・まゆを タップ：せわを 手つだう（育ちが 早まる） */
+  groom(at: [number, number, number]) {
+    const now = performance.now();
+    if (now - lastGroom < 220) return;
+    lastGroom = now;
+    const r = useNest.getState().groom();
+    if (r === true) {
+      audio.play('pop');
+      emitParticles('heart', at, 4);
+      if (!groomTold) {
+        groomTold = true;
+        sayNest('はたらきアリは たまごや ようちゅうを なめて きれいに するよ。タップすると はやく そだつよ');
+      }
+    } else if (r === 'winter') {
+      sayNest('ふゆは こどもも じっと ねているよ。はるを まとう');
+    } else if (r === 'none') {
+      audio.play('nope');
+      sayNest('ようちゅうが むしを まっているよ。ちいさな むしを あげよう');
+    }
+  },
   /** 地面の 上：巣の 場所を えらぶ／えさを おく */
   surface(x: number) {
     const n = useNest.getState().nest;

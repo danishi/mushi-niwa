@@ -92,23 +92,27 @@ export type NestEvent =
 
 /* ───────────── 決まり（遊びやすさの ための ちぢめた 時間・数） ───────────── */
 
-/** 1 年（遊んでいる 秒）。季節は 4 等分（なつ・あき・ふゆ・はる） */
-export const YEAR = 960;
-export const EGG_T = 40;
-export const LARVA_T = 40;
-export const PUPA_T = 40;
+/** 1 年（遊んでいる 秒）。季節は なつ・あき を 長く、ふゆ（なにも 進まない）を みじかく する */
+export const YEAR = 720;
+/** 季節の さかい目（1 年の 中の 位置）：なつ → あき → ふゆ → はる */
+const SEASON_AT = { aki: 0.35, fuyu: 0.65, haru: 0.8 };
+export const EGG_T = 20;
+export const LARVA_T = 25;
+export const PUPA_T = 25;
+/** 子の せわを タップで 手つだうと、子が その ぶん 早く 育つ（秒） */
+export const GROOM_BOOST = 2.5;
 /** 女王が おりて はねを おとし、最初の へやを ほりおえるまで */
 export const LAND_T = 12;
 /** 女王が ひとりで うむ 最初の たまご（約 10 こ） */
 export const FOUNDING_EGGS = 10;
-const FOUNDING_LAY_T = 5;
-const LAY_T = 10;
+const FOUNDING_LAY_T = 2;
+const LAY_T = 6;
 /** へや 1 つに 入る アリと 子の 数 */
 export const ROOM_CAP = 10;
 export const MAX_ROOMS = 10;
 export const WORKER_MAX = 60;
 /** はるに 羽アリを 育てる のに いる はたらきアリ */
-export const ALATE_NEED = 12;
+export const ALATE_NEED = 10;
 export const ALATE_EGGS = 6;
 export const STORE_MAX = 20;
 /** 地面に おける えさ（しゅるいごと。片方が 運べなく なっても もう 片方は おける） */
@@ -159,13 +163,13 @@ export function yearOf(t: number): number {
 
 export function seasonAt(t: number): Season {
   const p = yearPhase(t);
-  return p < 0.25 ? 'natsu' : p < 0.5 ? 'aki' : p < 0.75 ? 'fuyu' : 'haru';
+  return p < SEASON_AT.aki ? 'natsu' : p < SEASON_AT.fuyu ? 'aki' : p < SEASON_AT.haru ? 'fuyu' : 'haru';
 }
 
 /** 結婚飛行の ころ（はるの おわり〜なつの はじめ。5〜6 月） */
 export function inFlightWindow(t: number): boolean {
   const p = yearPhase(t);
-  return p >= 0.85 || p < 0.15;
+  return p >= 0.9 || p < 0.12;
 }
 
 export const SEASON_LABEL: Record<Season, string> = { natsu: 'なつ', aki: 'あき', fuyu: 'ふゆ', haru: 'はる' };
@@ -393,6 +397,25 @@ export function digAt(n: Nest, p: Pt): { ok: true; nest: Nest } | { ok: false; r
   return { ok: true, nest: { ...n, rooms: [...n.rooms, room], nextId: n.nextId + 1 } };
 }
 
+/** 育つのを 待っていない 子（せわを 手つだえる） */
+function groomable(n: Nest): boolean {
+  return n.brood.some((b) => !(b.stage === 'larva' && !b.reserve && b.age >= LARVA_T));
+}
+
+export type GroomResult = { ok: true; nest: Nest } | { ok: false; reason: 'phase' | 'winter' | 'none' };
+
+/**
+ * 子の せわを 手つだう（はたらきアリは たまごや 幼虫を なめて きれいに する）。
+ * 育ちが すこし 早まる。むしを 待っている 幼虫は えさが ないと 育たない まま。
+ */
+export function groom(n: Nest): GroomResult {
+  if (n.phase !== 'founding' && n.phase !== 'colony') return { ok: false, reason: 'phase' };
+  if (seasonAt(n.t) === 'fuyu') return { ok: false, reason: 'winter' };
+  if (!groomable(n)) return { ok: false, reason: 'none' };
+  const brood = n.brood.map((b) => (b.stage === 'larva' && !b.reserve && b.age >= LARVA_T ? b : { ...b, age: b.age + GROOM_BOOST }));
+  return { ok: true, nest: { ...n, brood } };
+}
+
 /** 結婚飛行：羽アリが 1 ぴき とびたつ */
 export function flyOne(n: Nest): Nest {
   if (!flightReady(n)) return n;
@@ -446,14 +469,15 @@ function step(n: Nest, dt: number, events: NestEvent[]) {
   for (const b of n.brood) {
     const g = { ...b, age: b.age + dt };
     if (g.stage === 'egg' && g.age >= EGG_T) {
-      next.push({ ...g, stage: 'larva', age: 0 });
+      // 手つだって 早まった ぶんは 次の 段階に もちこす
+      next.push({ ...g, stage: 'larva', age: g.age - EGG_T });
     } else if (g.stage === 'larva' && g.age >= LARVA_T) {
       // 幼虫が さなぎに なるには むし（タンパク質）が いる。最初の 子は 女王の たくわえで 育つ
-      if (g.reserve) next.push({ ...g, stage: 'pupa', age: 0 });
+      if (g.reserve) next.push({ ...g, stage: 'pupa', age: g.age - LARVA_T });
       else if (n.protein >= 1) {
         n.protein -= 1;
         n.trash += 0.25;
-        next.push({ ...g, stage: 'pupa', age: 0 });
+        next.push({ ...g, stage: 'pupa', age: g.age - LARVA_T });
       } else next.push({ ...g, age: LARVA_T });
     } else if (g.stage === 'pupa' && g.age >= PUPA_T) {
       if (g.alate) {
@@ -473,7 +497,7 @@ function step(n: Nest, dt: number, events: NestEvent[]) {
 
   // はたらきアリが えさを 運ぶ
   if (n.workers > 0 && n.baits.length > 0) {
-    n.forage += (dt * Math.min(n.workers, 8)) / 10;
+    n.forage += (dt * Math.min(n.workers, 8)) / 6;
     while (n.forage >= 1 && n.baits.length > 0) {
       const bi = n.baits.findIndex((b) => (b.kind === 'sugar' ? n.sugar : n.protein) < STORE_MAX);
       if (bi < 0) {
@@ -493,7 +517,7 @@ function step(n: Nest, dt: number, events: NestEvent[]) {
   const room = n.rooms.find((r) => r.dug < 1);
   if (room && n.workers > 0) {
     const len = polyLength(tunnelPoints(n, room));
-    const speed = 0.05 + 0.02 * Math.min(n.workers, 6);
+    const speed = 0.08 + 0.035 * Math.min(n.workers, 6);
     const r = { ...room, dug: Math.min(1, room.dug + (dt * speed) / (1 + len)) };
     n.rooms = n.rooms.map((x) => (x.id === r.id ? r : x));
     if (r.dug >= 1) events.push({ type: 'room', use: r.use });
@@ -516,17 +540,19 @@ export function advanceNest(n: Nest, dtPlay: number): { nest: Nest; events: Nest
 
 /* ───────────── 子どもへの ひとこと ───────────── */
 
-export type NestWant = 'site' | 'wait' | 'bug' | 'sugar' | 'room' | 'winter' | 'flight' | null;
+export type NestWant = 'site' | 'wait' | 'founding' | 'bug' | 'sugar' | 'room' | 'winter' | 'flight' | 'groom' | null;
 
 /** いま 巣が してほしい こと（ボタンを 光らせ、ひとことで 伝える） */
 export function wantOf(n: Nest): NestWant {
   if (n.phase === 'empty') return 'site';
-  if (n.phase === 'landing' || n.phase === 'founding') return 'wait';
+  if (n.phase === 'landing') return 'wait';
+  if (n.phase === 'founding') return 'founding';
   if (flightReady(n)) return 'flight';
   if (seasonAt(n.t) === 'fuyu') return 'winter';
   if (hungryLarvae(n) > 0 && !n.baits.some((b) => b.kind === 'bug')) return 'bug';
   if (population(n) >= capacity(n) && canRoomSoon(n)) return 'room';
   if (n.sugar < 1 && !n.baits.some((b) => b.kind === 'sugar')) return 'sugar';
+  if (groomable(n)) return 'groom';
   return null;
 }
 
