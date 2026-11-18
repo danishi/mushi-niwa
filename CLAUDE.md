@@ -7,7 +7,7 @@
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア。むしずもうは `battle`、むしクイズは `quiz`、アリの すは `nest`）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる。`?lite` は いちばん 軽い 描画（低画質・解像度 半分）に 固定） |
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア。むしずもうは `battle`、むしクイズは `quiz`、アリの すは `nest`）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる（アリの すの 通りすがりは `__forcePasser`・`__forceSoil`）。`__mushi.night.value = true` で夜にできる。`?lite` は いちばん 軽い 描画（低画質・解像度 半分）に 固定） |
 | `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
 | `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
 | `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要。iPad 横は `@wide` を 付けた テスト（横長の レイアウトに かかわる もの）だけ |
@@ -42,6 +42,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
   - 断面は 地面の 切り口: `nestPaint.ts` が 土の 面を Canvas に 描き、トンネルと へやを 透明に くりぬく（`alphaTest`）。うしろの 暗い 板で くぼみに 見える。外の 土の 面は UV を ワールド座標で そろえて 模様を つなげる（`worldPlane`）。描きなおしは ほる 進みが 5% 進んだ ときだけ（`faceKey`）。
   - アリの 動きは 見た目だけ（`NestAnts.tsx`。仕事は 巣の 状態から えらぶ：えさ運び・穴ほり（ほった 土を 入口の 山へ）・子守り・ごみ運び・休む・ふゆごもり・結婚飛行の 見はり）。横から 見た アリを 道の 床・かべに 足を つけて 歩かせる（`placeOnPath`）。画面に 出すのは 14 匹まで、遠くの アリは 軽い `NestAnt`（部品 12 こ）、寄って 見る アリと 女王は `AntBody`（`KURO_*`）。
   - 横長の 画面では ひとことを 上の 段の まん中に 置く（地面の 上の 入口・えさを かくさない。ユーザー指摘）。スマホ 横向きでは えさの ボタンも 右に たてに 並べる。
+  - 巣の まわりを 通る 生きもの（ユーザー要望。`NestGuests.tsx`）: 地面の 上は ずかんに のっている 子（育てた 虫の おとな・見つけた おきゃくさん。アリの なかまと ミミズは のぞく）が ときどき 通りすぎる。土の 中は ミミズ・カブトムシの 幼虫・セミの 幼虫（`SemiNymph`、`src/creatures/cicada.tsx`）が 巣とは 別の 道（`soilRoute`。トンネル・へやから `SOIL_CLEAR` はなれる）を 通り、うしろに 掘った あと（だんだん ふさがる 暗い まる）を のこす。タップで 名前と 豆知識を 話して びくっと する（ずかんの 記録は 変えない）。ふゆは 出ない。大きさは 測って そろえる（`Fit`）。E2E では `window.__forcePasser`・`window.__forceSoil` で 種類を きめられる。
   - 夜は 空の 光が 弱く なって 巣の 中が 見えにくいので、`NightFill`（あたたかい 環境光＋前からの 光）を 夜の 度合いで 足す（ユーザー指摘。ライトは 昼も 強さ 0 で 置いて シェーダを 作りなおさない）。シールは 3 まい（`nest-1`・`ant-10`・`nest-flight`）。
 - **ケースは 6 つまで**（ユーザー判断）: いっぱいのときは「あたらしい むし」→ どの子を もりに かえすか選ぶ → 思い出カード → あいたケースで種を選ぶ。途中で送り出しても罰はない。
 - **さわると いかく**: `SpeciesDef.threat`（spray / display / squeak / ooze）。かんさつモードで何度も触ると出る安全学習。生きた虫を捕まえる場面は描かず、えさは小皿の「ちいさな むし」で表す。

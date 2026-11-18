@@ -25,6 +25,7 @@ import { emitParticles } from '../../three/Particles';
 import { GEO, mat } from '../../three/materials';
 import { grainBump, grassTexture, leafTexture } from '../../three/textures';
 import { ANT_SCALE, ANT_Z, clearSelection, floorSpot, NestAnts, placeOnPath, selectAnt, SURF_Z } from './NestAnts';
+import { SoilCrawlers, SurfacePassers } from './NestGuests';
 import { nestTap } from './nestTap';
 import { createFaceTexture, FACE, faceKey, humusTexture, paintFace, soilFaceTexture, worldPlane } from './nestPaint';
 
@@ -583,6 +584,8 @@ export function NestScene() {
       {nest.phase !== 'empty' ? <Queen nest={nest} /> : null}
       <NestAnts workers={nest.workers} majors={nest.majors} />
       <Alates nest={nest} />
+      <SurfacePassers />
+      <SoilCrawlers />
       {/* タップの 当たり：土の 面（へやを ほる）・地面の 上（えさを おく／巣の 場所を えらぶ） */}
       <mesh
         material={hit}

@@ -4,6 +4,7 @@ import {
   ALATE_EGGS,
   ALATE_NEED,
   canDigAt,
+  clearOfNest,
   capacity,
   chooseSite,
   digAt,
@@ -27,6 +28,7 @@ import {
   roomAnchor,
   route,
   seasonAt,
+  soilRoute,
   tunnelPoints,
   wantOf,
   YEAR,
@@ -226,6 +228,37 @@ describe('ant nest', () => {
     const waiting = { ...withWorkers(), brood: [{ stage: 'larva' as const, age: LARVA_T, alate: false, reserve: false }] };
     expect(groom(waiting)).toEqual({ ok: false, reason: 'none' });
     expect(wantOf(laid)).toBe('founding');
+  });
+
+  it('soil creatures take their own path, away from the tunnels and rooms', () => {
+    let n = { ...withWorkers(), workers: 20, t: 0 };
+    for (const p of [
+      { x: -1.5, y: -2 },
+      { x: 1.6, y: -2.6 },
+      { x: 0.2, y: -3.4 },
+    ]) {
+      const r = digAt(n, p);
+      if (r.ok) n = run(r.nest, 200);
+    }
+    let seed = 7;
+    const rnd = () => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    let found = 0;
+    for (let i = 0; i < 30; i++) {
+      const path = soilRoute(n, rnd, [-0.5, -4.2]);
+      if (!path) continue;
+      found++;
+      // はしから 入って はしへ 出る
+      expect(Math.abs(path[0]!.x)).toBeGreaterThan(3);
+      expect(Math.abs(path[path.length - 1]!.x)).toBeGreaterThan(3);
+      for (const p of path) expect(clearOfNest(n, p)).toBe(true);
+    }
+    expect(found).toBeGreaterThan(20);
+    // 巣の まん中は 通れない
+    expect(clearOfNest(n, { x: n.rooms[0]!.x, y: n.rooms[0]!.y })).toBe(false);
+    expect(clearOfNest(n, { x: n.entranceX, y: -0.5 })).toBe(false);
   });
 
   it('long catch-up is capped and stays consistent', () => {

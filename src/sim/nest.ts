@@ -538,6 +538,74 @@ export function advanceNest(n: Nest, dtPlay: number): { nest: Nest; events: Nest
   return { nest: s, events };
 }
 
+/* ───────────── 土の 中を 通る 生きもの ───────────── */
+
+/** 土の 中の 生きものが 巣から はなれる きょり */
+export const SOIL_CLEAR = 0.3;
+/** 土の 中の 道を とれる 深さ・左右（断面の 外の 土から 入って、外へ 出る） */
+export const SOIL_BOUNDS = { minX: -3.2, maxX: 3.2, top: -0.45, bottom: -4.25 };
+
+function segDist(p: Pt, a: Pt, b: Pt): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const l2 = dx * dx + dy * dy;
+  const t = l2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+  return Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
+}
+
+/** その 点が 巣（トンネル・へや・入口の たて穴）から 十分 はなれているか */
+export function clearOfNest(n: Nest, p: Pt, clear = SOIL_CLEAR): boolean {
+  if (p.y > SOIL_BOUNDS.top || p.y < SOIL_BOUNDS.bottom) return false;
+  for (const r of n.rooms) {
+    if (r.dug <= 0) continue;
+    const pts = partOf(tunnelPoints(n, r), Math.min(1, r.dug * 2));
+    if (r.parent < 0) pts.unshift({ x: n.entranceX, y: 0.2 });
+    for (let i = 1; i < pts.length; i++) if (segDist(p, pts[i - 1]!, pts[i]!) < TUNNEL_W / 2 + clear) return false;
+    // 巣の へやは 床が 平らな だ円
+    const ex = (p.x - r.x) / (r.w / 2 + clear);
+    const ey = (p.y - r.y) / (r.h / 2 + clear);
+    if (ex * ex + ey * ey < 1) return false;
+  }
+  return true;
+}
+
+/**
+ * 土の 中を 通る 道（巣とは 別の 道）。左右の はしから はしへ 横切るか、片がわから 入って もどる。
+ * depth は 好きな 深さ（カブトムシの 幼虫は 浅い 腐葉土、セミの 幼虫は 根の あたり）。通れる 道が なければ null。
+ */
+export function soilRoute(n: Nest, rnd: () => number, depth: [number, number]): Pt[] | null {
+  const lo = Math.max(SOIL_BOUNDS.bottom + 0.05, Math.min(depth[0], depth[1]));
+  const hi = Math.min(SOIL_BOUNDS.top - 0.05, Math.max(depth[0], depth[1]));
+  for (let attempt = 0; attempt < 24; attempt++) {
+    const side = rnd() < 0.5 ? -1 : 1;
+    const y0 = lo + rnd() * (hi - lo);
+    const wob = 0.06 + rnd() * 0.1;
+    const phase = rnd() * Math.PI * 2;
+    const pts: Pt[] = [];
+    if (attempt % 2 === 0) {
+      // 横切る（ゆるやかに 波うつ）
+      const y1 = Math.max(lo, Math.min(hi, y0 + (rnd() - 0.5) * 0.8));
+      for (let i = 0; i <= 64; i++) {
+        const t = i / 64;
+        const x = side * (SOIL_BOUNDS.minX + (SOIL_BOUNDS.maxX - SOIL_BOUNDS.minX) * t);
+        pts.push({ x, y: y0 + (y1 - y0) * t + Math.sin(t * Math.PI * 3 + phase) * wob });
+      }
+    } else {
+      // 片がわから 入って、ぐるっと まわって もどる
+      const reach = 1.2 + rnd() * 1.4;
+      const dy = (rnd() < 0.5 ? -1 : 1) * (0.35 + rnd() * 0.3);
+      const edge = side * SOIL_BOUNDS.maxX;
+      for (let i = 0; i <= 48; i++) {
+        const t = i / 48;
+        const out = Math.sin(t * Math.PI);
+        pts.push({ x: edge - side * reach * out, y: y0 + dy * t + Math.sin(t * Math.PI * 2 + phase) * wob * 0.6 });
+      }
+    }
+    if (pts.every((p) => p.y <= SOIL_BOUNDS.top && p.y >= SOIL_BOUNDS.bottom && clearOfNest(n, p))) return pts;
+  }
+  return null;
+}
+
 /* ───────────── 子どもへの ひとこと ───────────── */
 
 export type NestWant = 'site' | 'wait' | 'founding' | 'bug' | 'sugar' | 'room' | 'winter' | 'flight' | 'groom' | null;
