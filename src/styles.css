@@ -2344,3 +2344,86 @@ ruby rt {
 .hud-row.center {
   justify-content: center;
 }
+
+/* ───────────── アリの すづくり ───────────── */
+
+.nest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nest-chip svg {
+  width: 26px;
+  height: 26px;
+}
+
+.nest-bubble {
+  align-self: center;
+  max-width: min(560px, 92vw);
+  margin-top: 8px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.nest-bubble.flight {
+  animation: nest-flight 1.2s ease-in-out infinite;
+}
+
+@keyframes nest-flight {
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 6px rgba(255, 209, 102, 0.6);
+  }
+}
+
+.nest-info {
+  align-self: center;
+  width: min(520px, 100%);
+  margin-bottom: 8px;
+  padding: 10px 12px;
+}
+
+.nest-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nest-info-row p {
+  flex: 1;
+  margin: 0;
+}
+
+.nest-info-icon svg {
+  width: 44px;
+  height: 44px;
+}
+
+/* 横向きの スマホ：ひとことは 上の 段の まん中、えさの ボタンは 右下に たてに ならべて 巣を かくさない */
+@media (min-aspect-ratio: 6/5) and (max-height: 520px) {
+  .nest-hud .nest-bubble {
+    position: absolute;
+    top: calc(var(--safe-t) + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 38vw;
+    margin: 0;
+    padding: 8px 14px;
+    font-size: 15px;
+  }
+
+  .nest-hud .toolbar {
+    position: absolute;
+    right: calc(var(--safe-r) + 12px);
+    bottom: calc(var(--safe-b) + 12px);
+    flex-direction: column;
+    gap: 30px;
+    border-radius: 48px;
+  }
+
+  .nest-hud .nest-info {
+    width: min(420px, 60vw);
+  }
+}

@@ -94,7 +94,7 @@ export function leafGeometry() {
 }
 
 /** 草の葉 1 枚（細長く、先が とがって しなる） */
-function bladeGeometry() {
+export function bladeGeometry() {
   return sharedGeo('blade', () => {
     const g = new THREE.BufferGeometry();
     const segs = 4;

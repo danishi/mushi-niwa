@@ -13,7 +13,9 @@ import type { CameraShot } from '../../three/CameraRig';
 import { Meadow } from '../../three/Diorama';
 import { emitParticles } from '../../three/Particles';
 import { GEO, mat } from '../../three/materials';
-import { barkTexture, signTexture, woodTexture } from '../../three/textures';
+import { barkTexture, grainBump, signTexture, woodTexture } from '../../three/textures';
+import { newAnim } from '../../creatures/anim';
+import { NestAnt } from '../../creatures/kurooari';
 import { SPECIES } from '../../data/species';
 import { GardenVisitors } from './Visitors';
 
@@ -34,16 +36,17 @@ export function slotPosition(slot: number): [number, number, number] {
  * - 縦長: 下に 草地が 広く あくので 手前に 大きめに
  * - 横長: 棚の 手前の 低い 所に 小さめに
  * - とても 横長（スマホ 横向き）: 下が せまいので 棚の 左右の あいた 所に
+ * 4 つめは アリの すの 土の 山（縦長では まん中の すこし 右の 手前、横長では ボタンの 右）。
  */
 function portalLayout(aspect: number, width: number): { scale: number; at: [number, number, number][] } {
   if (aspect < 1) {
-    return { scale: 1.3, at: [[-0.34 * width, 0, 4.4], [-0.12 * width, 0, 4.4], [0.31 * width, 0, 4.4]] };
+    return { scale: 1.3, at: [[-0.34 * width, 0, 4.4], [-0.12 * width, 0, 4.4], [0.31 * width, 0, 4.4], [0.07 * width, 0, 4.7]] };
   }
   if (aspect > 1.7) {
     const side = width / 2;
-    return { scale: 1.05, at: [[-side - 0.35, 0, 1.7], [-side - 0.7, 0, 0.4], [side + 0.5, 0, 1.2]] };
+    return { scale: 1.05, at: [[-side - 0.35, 0, 1.7], [-side - 0.7, 0, 0.4], [side + 0.5, 0, 1.2], [side - 0.3, 0, 2.15]] };
   }
-  return { scale: 1, at: [[-0.31 * width, 0, 2.9], [-0.15 * width, 0, 2.9], [0.29 * width, 0, 2.9]] };
+  return { scale: 1, at: [[-0.34 * width, 0, 2.9], [-0.19 * width, 0, 2.9], [0.33 * width, 0, 2.7], [0.17 * width, 0, 2.2]] };
 }
 
 export const gardenShot = (): CameraShot => ({
@@ -161,6 +164,40 @@ function StumpModel() {
   );
 }
 
+/** アリの すの 入口：土の 山と 穴、まわりを 歩く クロオオアリ */
+function AntHillModel() {
+  const soil = useMemo(() => mat('#8a6a50', { roughness: 1, bumpMap: grainBump(31, 48), bumpScale: 3 }), []);
+  const hole = useMemo(() => mat('#1c140e', { roughness: 1 }), []);
+  const ants = useRef<THREE.Group>(null);
+  const anims = useMemo(() => [0, 1, 2].map(() => ({ current: newAnim() })), []);
+  useFrame((_, dt) => {
+    if (ants.current) ants.current.rotation.y += dt * 0.6;
+    for (const a of anims) {
+      a.current.t += dt;
+      a.current.walk = 1;
+      a.current.gait += dt * 10;
+    }
+  });
+  return (
+    <group>
+      <mesh geometry={GEO.sphere()} material={soil} position={[0, 0, 0]} scale={[0.36, 0.17, 0.3]} castShadow receiveShadow />
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <mesh key={i} geometry={GEO.chunk()} material={soil} position={[Math.cos(i * 1.1) * 0.38, 0.015, Math.sin(i * 1.1) * 0.32]} scale={0.03 + (i % 3) * 0.01} />
+      ))}
+      <mesh geometry={GEO.sphere()} material={hole} position={[0, 0.15, 0.03]} scale={[0.07, 0.03, 0.06]} />
+      <group ref={ants}>
+        {anims.map((a, i) => (
+          <group key={i} rotation={[0, (i * Math.PI * 2) / 3, 0]}>
+            <group position={[0.44, 0, 0]} scale={0.7}>
+              <NestAnt anim={a} />
+            </group>
+          </group>
+        ))}
+      </group>
+    </group>
+  );
+}
+
 /** むしクイズの 立てふだ */
 export function SignModel() {
   const post = useMemo(() => mat('#ffffff', { map: barkTexture(), roughness: 0.95 }), []);
@@ -211,6 +248,11 @@ export function GardenScene() {
         <Portal position={at(1)} onTap={() => go('quiz')} label="むしクイズ" hit={[0.8 * pl.scale, 0.95 * pl.scale]}>
           <group scale={1.05 * pl.scale}>
             <SignModel />
+          </group>
+        </Portal>
+        <Portal position={at(3)} onTap={() => go('nest')} label="アリの す" hit={[0.85 * pl.scale, 0.5 * pl.scale]}>
+          <group scale={0.95 * pl.scale}>
+            <AntHillModel />
           </group>
         </Portal>
         <Portal position={at(2)} onTap={() => go('battle')} label="むしずもう" hit={[1.0 * pl.scale, 0.7 * pl.scale]}>

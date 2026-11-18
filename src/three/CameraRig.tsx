@@ -16,6 +16,8 @@ export interface CameraShot {
   shiftX?: number;
   /** 横長画面（アスペクト比 1.2 より 横長）での 上書き */
   wide?: Partial<Omit<CameraShot, 'wide'>>;
+  /** カメラを ほかの 部品が 毎フレーム 動かす（アリに ついていく など）。CameraRig は 位置を さわらない */
+  free?: boolean;
   /** ユーザーの回転・ピンチを許すか（虫ケースの中を覗く程度に制限） */
   orbit?: {
     minDistance: number;
@@ -69,6 +71,7 @@ export function CameraRig({ shot: base, locked = false }: { shot: CameraShot; lo
       camera.fov = THREE.MathUtils.damp(camera.fov, fov, 4, d);
       camera.updateProjectionMatrix();
     }
+    if (shot.free) moving.current = false;
     if (moving.current) {
       camera.position.x = THREE.MathUtils.damp(camera.position.x, goalPos.current.x, 3.5, d);
       camera.position.y = THREE.MathUtils.damp(camera.position.y, goalPos.current.y, 3.5, d);

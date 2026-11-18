@@ -1047,7 +1047,7 @@ export function Oosuzumebachi({ anim }: { anim: AnimRef }) {
 
 /* ───────────── アリ 3 種（docs/visitors-research-3.md）の 共通の からだ ───────────── */
 
-interface AntLook {
+export interface AntLook {
   /** 頭・むね・こしの 色 と はらの 色 */
   body: string;
   gaster: string;
@@ -1075,7 +1075,7 @@ interface AntLook {
   rattle?: boolean;
 }
 
-function AntBody({ anim, look, shadows = true }: { anim: AnimRef; look: AntLook; shadows?: boolean }) {
+export function AntBody({ anim, look, shadows = true }: { anim: AnimRef; look: AntLook; shadows?: boolean }) {
   const body = useBodyMotion(anim, 1);
   const gaster = useRef<THREE.Group>(null);
   const jaws = useRef<THREE.Group>(null);

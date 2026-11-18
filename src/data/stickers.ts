@@ -28,6 +28,9 @@ export const STICKERS: readonly StickerDef[] = [
   { id: 'visitor-5', label: 'おきゃくさん 5しゅるい', how: '5しゅるいの おきゃくさんを みつける', need: { stat: 'visitorKinds', n: 5 }, icon: 'bug', color: '#7cc46a' },
   { id: 'visitor-10', label: 'おきゃくさん 10しゅるい', how: '10しゅるいの おきゃくさんを みつける（よるにも くるよ）', need: { stat: 'visitorKinds', n: 10 }, icon: 'moon', color: '#5b6bb5' },
   { id: 'visitor-all', label: 'おきゃくさん ぜんいん', how: `${VISITOR_ORDER.length}しゅるいの おきゃくさんを みつける`, need: { stat: 'visitorKinds', n: VISITOR_ORDER.length }, icon: 'bug', color: '#5fb35f' },
+  { id: 'nest-1', label: 'アリの す', how: 'じょおうアリの すづくりを はじめる', need: { stat: 'nestFound', n: 1 }, icon: 'ant', color: '#8d6e63' },
+  { id: 'ant-10', label: 'はたらきアリ 10ぴき', how: 'アリの すで はたらきアリを 10ぴき そだてる', need: { stat: 'antBorn', n: 10 }, icon: 'ant', color: '#6d4c41' },
+  { id: 'nest-flight', label: 'けっこんひこう', how: 'はねアリが とびたつのを みおくる', need: { stat: 'nestFlight', n: 1 }, icon: 'sparkle', color: '#f6a35b' },
   { id: 'met-6', label: 'なかま 6しゅるい', how: '6しゅるいの むしを そだてる', need: { stat: 'met', n: 6 }, icon: 'book', color: '#a47148' },
   { id: 'met-all', label: 'むし はかせ', how: 'ぜんぶの むしを そだてる', need: { stat: 'met', n: SPECIES_ORDER.length }, icon: 'star', color: '#d4a017' },
 ];

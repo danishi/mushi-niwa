@@ -2,12 +2,13 @@ import { create } from 'zustand';
 import type { VisitorId } from '../data/visitors';
 import type { SpeciesId } from '../sim/types';
 
-export type Screen = 'boot' | 'title' | 'garden' | 'care' | 'observe' | 'zukan' | 'battle' | 'quiz';
+export type Screen = 'boot' | 'title' | 'garden' | 'care' | 'observe' | 'zukan' | 'battle' | 'quiz' | 'nest';
 
 export type ZukanTab = 'mushi' | 'guest' | 'sticker' | 'photo';
 
 export interface Cinematic {
-  kind: 'grow' | 'farewell' | 'tool';
+  /** follow: アリの すづくりで 選んだ アリに ついていく */
+  kind: 'grow' | 'farewell' | 'tool' | 'follow';
   target: [number, number, number];
   label: string;
   until: number;

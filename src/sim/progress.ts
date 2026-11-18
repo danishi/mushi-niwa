@@ -17,7 +17,10 @@ export type StatKey =
   | 'parts' // かんさつで 部位を 見た 回数
   | 'sumoWin' // むしずもうで 勝った 回数
   | 'threat' // いかくを 見た 回数
-  | 'nightCare'; // 夜に お世話した 回数
+  | 'nightCare' // 夜に お世話した 回数
+  | 'nestFound' // アリの 巣を はじめた 回数
+  | 'antBorn' // アリの 巣で 生まれた はたらきアリ
+  | 'nestFlight'; // 結婚飛行で とびたった 羽アリ
 
 /** 記録から 計算する 値（ゲーム本体の 状態を 見る） */
 export type DerivedKey = 'met' | 'visitorKinds';

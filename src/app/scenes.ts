@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { BattleScene, battleShot } from '../screens/battle/BattleScene';
 import { CareScene, careShot } from '../screens/care/CareScene';
 import { GardenScene, gardenShot } from '../screens/garden/GardenScene';
+import { NestScene, nestShot } from '../screens/nest/NestScene';
 import { ObserveScene, observeShot } from '../screens/observe/ObserveScene';
 import { QuizScene, quizShot } from '../screens/quiz/QuizScene';
 import { TitleScene, titleShot } from '../screens/title/TitleScene';
@@ -23,6 +24,7 @@ const REGISTRY: Partial<Record<Screen, SceneEntry>> = {
   zukan: { Scene: ZukanScene, shot: zukanShot },
   battle: { Scene: BattleScene, shot: battleShot },
   quiz: { Scene: QuizScene, shot: quizShot },
+  nest: { Scene: NestScene, shot: nestShot },
 };
 
 export function registerScene(screen: Screen, entry: SceneEntry) {

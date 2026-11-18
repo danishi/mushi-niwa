@@ -4,6 +4,7 @@ import { dayPhase, nightFromPhase, playSecondsFor } from '../sim/simulate';
 import { env } from '../state/env';
 import { FLAGS } from '../state/flags';
 import { useGame } from '../state/game';
+import { useNest } from '../state/nest';
 import { useSettings } from '../state/settings';
 import { useUi } from '../state/ui';
 
@@ -16,7 +17,10 @@ export const nightOverride = { value: null as boolean | null };
  * - リアルタイムモード: 復帰時に離れていた時間ぶん追いつく（上限つき）
  */
 export function SimDriver() {
-  const hydrated = useGame((s) => s.hydrated);
+  // 巣の 保存データも 読みおわってから 追いつき計算を する（先に 進めると 空の 巣を 進めて しまう）
+  const gameReady = useGame((s) => s.hydrated);
+  const nestReady = useNest((s) => s.hydrated);
+  const hydrated = gameReady && nestReady;
   useEffect(() => {
     if (!hydrated) return;
     const speed = FLAGS.speed;
@@ -29,6 +33,7 @@ export function SimDriver() {
       if (play > 1) {
         const phase = dayPhase(0, true, Date.now());
         useGame.getState().advance(play, nightFromPhase(phase), Date.now());
+        useNest.getState().advance(play);
       }
     }
     const step = () => {
@@ -48,6 +53,7 @@ export function SimDriver() {
       }
       env.targetNight = night ? 1 : 0;
       g.advance(play, night, now);
+      useNest.getState().advance(play);
     };
     const id = window.setInterval(step, 1000);
     const onVis = () => {
@@ -58,7 +64,10 @@ export function SimDriver() {
           const away = Date.now() - last;
           last = Date.now();
           const play = playSecondsFor(away, true);
-          if (play > 1) useGame.getState().advance(play, nightFromPhase(dayPhase(0, true, Date.now())), Date.now());
+          if (play > 1) {
+            useGame.getState().advance(play, nightFromPhase(dayPhase(0, true, Date.now())), Date.now());
+            useNest.getState().advance(play);
+          }
         }
       }
     };

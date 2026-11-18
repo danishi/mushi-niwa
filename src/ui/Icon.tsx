@@ -38,6 +38,7 @@ export type IconName =
   | 'next'
   | 'down'
   | 'fish'
+  | 'ant'
   | 'weed'
   | 'tap';
 
@@ -234,6 +235,15 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="M50 86 C40 66 60 50 48 30 C44 22 48 16 52 12" fill="none" stroke="#4f9a3e" strokeWidth={7} />
       <path d="M34 86 C28 70 40 60 34 44" fill="none" stroke="#5aa846" strokeWidth={6} />
       <path d="M66 86 C72 70 60 58 68 42" fill="none" stroke="#5aa846" strokeWidth={6} />
+    </g>
+  ),
+  ant: (
+    <g {...S}>
+      <path d="M30 44 L18 34 M30 56 L16 62 M50 50 L44 30 M50 54 L46 76 M66 50 L74 32 M66 54 L76 74" fill="none" strokeWidth={4} />
+      <ellipse cx="26" cy="50" rx="11" ry="9" fill="#3b302b" />
+      <ellipse cx="48" cy="52" rx="11" ry="8" fill="#3b302b" />
+      <ellipse cx="74" cy="54" rx="15" ry="12" fill="#3b302b" />
+      <path d="M20 44 Q14 30 24 24 M24 44 Q26 30 36 26" fill="none" strokeWidth={3} />
     </g>
   ),
   aphid: (

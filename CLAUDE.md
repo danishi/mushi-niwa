@@ -7,7 +7,7 @@
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア。むしずもうは `battle`、むしクイズは `quiz`）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる。`?lite` は いちばん 軽い 描画（低画質・解像度 半分）に 固定） |
+| `npm run dev` | 開発サーバー（`http://localhost:5173/mushi-niwa/`。`?fps` で FPS メーター、`?speed=30` で時間を 30 倍速、`?e2e` でテスト用フック `window.__mushi`（ストア。むしずもうは `battle`、むしクイズは `quiz`、アリの すは `nest`）と `window.__r3f`（three のシーン）。URL の スイッチは `src/state/flags.ts` で まとめて 読む。`?e2e` では おきゃくさんが すぐ来て、`window.__forceVisitor` で種類を指定できる。`__mushi.night.value = true` で夜にできる。`?lite` は いちばん 軽い 描画（低画質・解像度 半分）に 固定） |
 | `npm run build` | 型チェック（tsc 7）＋本番ビルド（`dist/`） |
 | `npm test` | Vitest（ロジックのユニットテスト。`src/**/*.test.ts`） |
 | `npm run e2e` | Playwright（WebKit で iPhone 16 縦 / iPad Pro 11 横）。先に `npm run build` が必要。iPad 横は `@wide` を 付けた テスト（横長の レイアウトに かかわる もの）だけ |
@@ -29,12 +29,19 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 
 - **Canvas は 1 つだけ常駐**させ、画面遷移では中身（シーン）と DOM の HUD だけを入れ替える（iOS で WebGL コンテキストを作り直さない）。画面→シーン/カメラの対応は `src/app/scenes.ts`、HUD は `src/app/App.tsx`。
 - **ゲームロジックは `src/sim/` の純 TS**。React / three を import しない。固定ステップ（1 秒）で進め、描画 FPS とは独立。Vitest で検証する。
-- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md`（最初の 6 種）と `docs/species-research-2.md`（オオカマキリ・トビズムカデ・マダラサソリ・ゴマダラカミキリ）、`docs/visitors-research.md`（にわの おきゃくさん 最初の 5 種）、`docs/species-research-3.md`（オオクワガタ と おきゃくさん 8 種）、`docs/species-research-4.md`（ノコギリクワガタ・オオムラサキ・ナナフシモドキ・ウスバカゲロウ・ゲンゴロウ）、`docs/visitors-research-2.md`（おきゃくさん オニヤンマ・ハキリアリ・オオスズメバチ）、`docs/species-research-5.md`（マルクビツチハンミョウ）、`docs/visitors-research-3.md`（おきゃくさん グンタイアリ・ヒアリ・サシハリアリ）、`docs/visitors-research-4.md`（おきゃくさん セアカゴケグモ）、`docs/visitors-research-5.md`（おきゃくさん ペルビアンジャイアントオオムカデ）、`docs/visitors-research-6.md`（おきゃくさん クロドクシボグモ・カバキコマチグモ・ルブロンオオツチグモ・タランチュラ・ヘラクレスオオカブト・オオエンマハンミョウ）、`docs/visitors-research-7.md`（おきゃくさん ミミズ・アシダカグモ と オカダンゴムシの 体の つくり）、`docs/visitors-research-8.md`（おきゃくさん ブルドッグアリ）の出典付き調査に基づく。ムカデ・サソリは昆虫ではないので `notInsect` を付け、ずかんで説明する。
+- **虫の生態データは `src/data/species/*.ts`**。ロジックに直書きしない。新しい種はデータ（＋`src/creatures/` のモデル）を足すだけで動く構造を保つ。生態の事実は `docs/species-research.md`（最初の 6 種）と `docs/species-research-2.md`（オオカマキリ・トビズムカデ・マダラサソリ・ゴマダラカミキリ）、`docs/visitors-research.md`（にわの おきゃくさん 最初の 5 種）、`docs/species-research-3.md`（オオクワガタ と おきゃくさん 8 種）、`docs/species-research-4.md`（ノコギリクワガタ・オオムラサキ・ナナフシモドキ・ウスバカゲロウ・ゲンゴロウ）、`docs/visitors-research-2.md`（おきゃくさん オニヤンマ・ハキリアリ・オオスズメバチ）、`docs/species-research-5.md`（マルクビツチハンミョウ）、`docs/visitors-research-3.md`（おきゃくさん グンタイアリ・ヒアリ・サシハリアリ）、`docs/visitors-research-4.md`（おきゃくさん セアカゴケグモ）、`docs/visitors-research-5.md`（おきゃくさん ペルビアンジャイアントオオムカデ）、`docs/visitors-research-6.md`（おきゃくさん クロドクシボグモ・カバキコマチグモ・ルブロンオオツチグモ・タランチュラ・ヘラクレスオオカブト・オオエンマハンミョウ）、`docs/visitors-research-7.md`（おきゃくさん ミミズ・アシダカグモ と オカダンゴムシの 体の つくり）、`docs/visitors-research-8.md`（おきゃくさん ブルドッグアリ）、`docs/ant-nest-research.md`（アリの すづくりの クロオオアリ）の出典付き調査に基づく。ムカデ・サソリは昆虫ではないので `notInsect` を付け、ずかんで説明する。
 - **むしずもう（異種対戦）**: ユーザー要望で入れる。ケガ・罰なしの押し合いミニゲーム。得意技は各種の実際の防御行動から取り、「実際には異なる種どうしは戦わない」注記を出す。
   - 遊びの しかけ（ユーザー要望で 深くした。`src/sim/battle.ts`、Vitest あり）: はじめに「はっけよい」（`intro`、押せない）。**ボタンは 1 つだけ**（ユーザー要望。`playerTap`／`tapMode`）: ふだんは 押す（黄色）、技ゲージが いっぱいなら 得意技（きらきら）、相手の 合図の 間は 押したままで ふんばる（赤。押して いる 間は 青く しずむ）。ボタンの まわりの 光が 1 周 たまって いっぱいに 光った ときに 押すと 強い（`ringFill`・`gradeAt`：ok / good / great。good / great は 1 周に 1 回だけ）。続けて 取ると コンボ（`comboBoost`、最大 2 倍）。光が 半分 すぎた あたりで あわてて 押すか（`tooEarly`）1 周 のがすと とぎれる。押すと 技ゲージが たまる（ボタンの 下の ふち）。相手は 技の 前に 合図（`cpuTell`。顔が 赤く 光り「ふんばれ！」）、**ふんばりは 押しっぱなし**（ユーザー要望。`playerPress`・`pressing`）: 技が くる 瞬間に 押したままなら まるごと、合図の 間に 押したが はなして しまったら 半分。指を はなすのは ボタンの 外でも 拾う（window の pointerup）。長押しの メニュー・選択を 出さない（`touch-action: none` など）。ばらばらに 1 秒 3〜7 回 押しても ほぼ 勝てる（10 秒 前後）。光に あわせると 8 秒 ほど。ゆっくり（1 秒 2 回）や 指が ふるえる 連打は 引き分けが ふえる（押されて いる 子には CPU が 手かげん）。
   - 操作の 伝えかた（ユーザー要望で 文字を へらした）: 選ぶ 画面は 長い 説明文を やめ、ボタンの みほん 3 つ（ひかったら タッチ／きらきらは わざ／あかは おしたまま）。はじめて あそぶ ときは 虫を えらんだ あとに あそびかた（`HowToGuide`。うごく みほん＋読み上げを 1 つずつ、さいごは 赤い ボタンを 1 秒 押したままに する れんしゅう）。見おわると `settings.sumoHowtoDone`。みほんを タップすると その 説明を もういちど 見られる。取組の 始めと、はじめて きらきら・あかく なった ときに 声で ひとこと。「いま！」を 何周も のがして いる 子と 技の ときだけ、ボタンの 横に ゆびの アイコン（`tap`）。
   - 取組の あと（ユーザー要望）: 連打の いきおいで 次へ 進まないよう、結果の ボタンは 終わって 2 秒 たち、しかも 画面への タップが 0.7 秒 やむまで 押せない（`useSettledUnlock`、`disabled`）。結果の 板は すこし おくれて 出る。
   - 演出（`src/screens/battle/BattleScene.tsx`）: 入場 → にらみあいの アップ →「のこった！」で ぶつかる。カメラは `Director` が 毎フレーム 上書き（CameraRig の あとに 動く）。ぶつかりの いきおい・ゆれ・衝撃の 輪・応援は モジュールの 可変オブジェクト `stage`（React state に 入れない）。技は 寄って ゆっくり（`slowUntil`。取組の 時間も ゆっくり）。勝ち名乗りは 勝った 虫へ 寄って 回り、紙ふぶき（パーティクル `confetti`）。土俵は 切り株＋俵＋のぼり旗、後ろの 丸太の ベンチで おきゃくさんの 虫が 応援（`LiteContext`）。音は `taiko`・`clash`・`cheer`。できごとは `battleFx`（`src/state/battle.ts`）で 3D に 届け、HUD は `callout`（いいね！・ふんばれ！・技の 名前・〇〇の かち！）。技の ほんとうの 話は ボタンの すぐ 上に 出す（まん中の 3D を かくさない）。
+- **アリの すづくり**（ユーザー要望。「もっと遊べるゲーム」を 提案して えらばれた。種類・見せかた・操作・すすみかたは ユーザー判断）: クロオオアリ 1 種。画面は `nest`、入口は にわの 4 つめの 3D の 入口（土の 山。`portalLayout` の 4 つめ）。
+  - ロジックは `src/sim/nest.ts`（純 TS・Vitest あり）、保存は `src/state/nest.ts`（`mushi-niwa:nest`。時間は `SimDriver` が ほかの 虫と いっしょに 進める）。できごとは `nestEvents`、シールは `playEvents`（`nestFound`・`antBorn`・`nestFlight`）。
+  - 1 年の サイクル（`YEAR` = 遊んで 16 分、なつ→あき→ふゆ→はる）: 巣の 場所を えらぶ（地面の 上を タップ）→ 女王が おりて はねを おとし 穴を ほる（`landing`）→ なにも 食べずに 最初の 約 10 この 子を 育てる（`founding`。えさは いらない）→ はたらきアリが えさを 運ぶ（`colony`）→ ふゆは 育たない・動かない → はるに はたらきアリが 12 匹 いれば 羽アリ 6 匹 → 5〜6 月（`inFlightWindow`）に 地面へ 出て、タップで とびたつ（結婚飛行）。羽アリは 本当は 4〜5 年目からなので、出た ときに そう 話す。
+  - 子どもの 操作は タップだけ: 地面の 上＝えさ（`あまい みつ` で 女王が たまごを うむ、`ちいさな むし` で 幼虫が さなぎに なる）、土の 中＝へやを ほる 場所（いちばん 近い へやから ジグザグの トンネル。へやは 1 つ 10 匹ぶん。いっぱいに なると 女王は うまない）、アリ・女王＝カメラが ついていって していることを 話す（`cinematic.kind = 'follow'` と `Follow`）。罰は なく、えさが ないと 幼虫が 待つ だけ。
+  - 断面は 地面の 切り口: `nestPaint.ts` が 土の 面を Canvas に 描き、トンネルと へやを 透明に くりぬく（`alphaTest`）。うしろの 暗い 板で くぼみに 見える。外の 土の 面は UV を ワールド座標で そろえて 模様を つなげる（`worldPlane`）。描きなおしは ほる 進みが 5% 進んだ ときだけ（`faceKey`）。
+  - アリの 動きは 見た目だけ（`NestAnts.tsx`。仕事は 巣の 状態から えらぶ：えさ運び・穴ほり（ほった 土を 入口の 山へ）・子守り・ごみ運び・休む・ふゆごもり・結婚飛行の 見はり）。横から 見た アリを 道の 床・かべに 足を つけて 歩かせる（`placeOnPath`）。画面に 出すのは 14 匹まで、遠くの アリは 軽い `NestAnt`（部品 12 こ）、寄って 見る アリと 女王は `AntBody`（`KURO_*`）。
+  - スマホ 横向きでは えさの ボタンを 右に たてに 並べ、ひとことを 上の 段の まん中に 置く（巣を かくさない）。シールは 3 まい（`nest-1`・`ant-10`・`nest-flight`）。
 - **ケースは 6 つまで**（ユーザー判断）: いっぱいのときは「あたらしい むし」→ どの子を もりに かえすか選ぶ → 思い出カード → あいたケースで種を選ぶ。途中で送り出しても罰はない。
 - **さわると いかく**: `SpeciesDef.threat`（spray / display / squeak / ooze）。かんさつモードで何度も触ると出る安全学習。生きた虫を捕まえる場面は描かず、えさは小皿の「ちいさな むし」で表す。
 - **お世話の わかりやすさ**: 道具を使う間はカメラが寄り（`cinematic.kind = 'tool'`）、終わると吹き出しが よろこびに変わる（`ui.reaction`）。初回は お手本（`tutorialStep`、`settings.tutorialDone`）。吹き出しは drei の `Html` ではなく、3D 側で画面座標を計算して DOM を重ねる（`BubbleAnchor` + `WantBubble`）。
@@ -118,7 +125,7 @@ Vite 8 / TypeScript 7 / React 19 / three 0.187 / @react-three/fiber 9 / drei 10 
 
 ```
 src/app/          App・World(Canvas)・画面レジストリ・PWA 登録
-src/screens/      title / garden / care / observe / zukan / battle / quiz / settings（各画面のシーンと HUD）
+src/screens/      title / garden / care / observe / zukan / battle / quiz / nest / settings（各画面のシーンと HUD）
 src/three/        共有 3D（写実マテリアル・Canvas テクスチャ、カメラリグ、ライト、画質、ジオラマ、パーティクル）
 src/creatures/    虫のプロシージャルモデルとアニメーション
 src/sim/          純 TS のゲームロジック

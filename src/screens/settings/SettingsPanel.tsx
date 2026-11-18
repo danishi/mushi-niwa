@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { audio } from '../../audio/audio';
 import { useSettings, type QualitySetting } from '../../state/settings';
 import { useGame } from '../../state/game';
+import { useNest } from '../../state/nest';
 import { renderHealthLine } from '../../three/renderHealth';
 import { usePhotos } from '../../state/photos';
 import { useProgress } from '../../state/progress';
@@ -106,6 +107,7 @@ export function SettingsPanel({ extra }: { extra?: ReactNode }) {
               if (window.confirm('この端末の むしにわ のデータをすべて消します。元に戻せません。よろしいですか？')) {
                 useGame.getState().resetAll();
                 useProgress.getState().reset();
+                useNest.getState().reset();
                 usePhotos.getState().clear();
                 close(false);
                 useUi.getState().go('title', null);

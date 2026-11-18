@@ -3,6 +3,7 @@ import { SettingsPanel } from '../screens/settings/SettingsPanel';
 import { BattleHud } from '../screens/battle/BattleHud';
 import { CareHud } from '../screens/care/CareHud';
 import { GardenHud } from '../screens/garden/GardenHud';
+import { NestHud } from '../screens/nest/NestHud';
 import { ObserveHud } from '../screens/observe/ObserveHud';
 import { QuizHud } from '../screens/quiz/QuizHud';
 import { TitleHud } from '../screens/title/TitleHud';
@@ -26,6 +27,7 @@ const HUDS: Partial<Record<Screen, ComponentType>> = {
   zukan: ZukanHud,
   battle: BattleHud,
   quiz: QuizHud,
+  nest: NestHud,
 };
 
 export function App() {
