@@ -12,6 +12,7 @@ import {
   seasonAt,
   tunnelPoints,
   type Bait,
+  type Season,
   type Nest,
   type Room,
 } from '../../sim/nest';
@@ -26,6 +27,7 @@ import { GEO, mat } from '../../three/materials';
 import { grainBump, grassTexture, leafTexture } from '../../three/textures';
 import { ANT_SCALE, ANT_Z, clearSelection, floorSpot, NestAnts, placeOnPath, selectAnt, SURF_Z } from './NestAnts';
 import { SoilCrawlers, SurfacePassers } from './NestGuests';
+import { GRASS_BY_SEASON, SeasonDecor } from './NestSeasons';
 import { nestTap } from './nestTap';
 import { createFaceTexture, FACE, faceKey, humusTexture, paintFace, soilFaceTexture, worldPlane } from './nestPaint';
 
@@ -139,10 +141,10 @@ function Face({ nest }: { nest: Nest }) {
   );
 }
 
-const GRASS = ['#5f8f2f', '#6e9c36', '#7aa83e', '#557f29', '#8bb04a'];
 
-/** 地面の 上（草地）。ふゆは 雪が つもる */
-const Surface = memo(function Surface({ winter }: { winter: boolean }) {
+/** 地面の 上（草地）。季節で 草の 色と 飾り（桜・ひまわり・落ち葉・雪）が かわる */
+const Surface = memo(function Surface({ season }: { season: Season }) {
+  const winter = season === 'fuyu';
   const ground = useMemo(() => mat('#ffffff', { map: grassTexture(), roughness: 0.95, bumpMap: grainBump(70, 96), bumpScale: 2 }), []);
   const grassMat = useMemo(() => mat('#ffffff', { roughness: 0.7, side: THREE.DoubleSide }), []);
   const snow = useMemo(() => mat('#f4f7fb', { roughness: 0.9 }), []);
@@ -151,9 +153,10 @@ const Surface = memo(function Surface({ winter }: { winter: boolean }) {
       {/* 草地は 断面の くぼみより 奥から（前の ふちが トンネルの 穴から 見えない ように） */}
       <mesh geometry={GEO.box()} material={ground} position={[0, -0.05, -4.64]} scale={[18, 0.1, 9]} receiveShadow />
       <group position={[0, 0, -4.6]}>
-        <Scatter count={900} radius={1} rect={[18, 8]} seed={21} geometry={bladeGeometry()} material={grassMat} colors={GRASS} scale={[0.3, 0.6]} tilt={0.5} />
+        <Scatter count={900} radius={1} rect={[18, 8]} seed={21} geometry={bladeGeometry()} material={grassMat} colors={GRASS_BY_SEASON[season]} scale={[0.3, 0.6]} tilt={0.5} />
       </group>
-      {winter ? <mesh geometry={GEO.box()} material={snow} position={[0, 0.006, -4.5]} scale={[18, 0.012, 9]} receiveShadow /> : null}
+      {winter ? <mesh geometry={GEO.box()} material={snow} position={[0, 0.006, -4.64]} scale={[18, 0.012, 9]} receiveShadow /> : null}
+      <SeasonDecor season={season} />
     </group>
   );
 });
@@ -564,7 +567,7 @@ function Alates({ nest }: { nest: Nest }) {
 /** アリの すづくり：地面の 断面に クロオオアリの 巣が 育っていく */
 export function NestScene() {
   const nest = useNest((s) => s.nest);
-  const winter = nest.phase !== 'empty' && seasonAt(nest.t) === 'fuyu';
+  const season: Season = nest.phase === 'empty' ? 'natsu' : seasonAt(nest.t);
   const dig = digging(nest);
   const hit = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), []);
   useEffect(() => () => hit.dispose(), [hit]);
@@ -574,7 +577,7 @@ export function NestScene() {
       <Follow />
       <NightFill />
       <Face nest={nest} />
-      <Surface winter={winter} />
+      <Surface season={season} />
       {nest.phase !== 'empty' ? <Mound nest={nest} /> : null}
       {nest.baits.map((b) => (
         <BaitModel key={b.id} bait={b} />
