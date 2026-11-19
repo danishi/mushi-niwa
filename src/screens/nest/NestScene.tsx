@@ -150,12 +150,12 @@ const Surface = memo(function Surface({ season }: { season: Season }) {
   const snow = useMemo(() => mat('#f4f7fb', { roughness: 0.9 }), []);
   return (
     <group>
-      {/* 草地は 断面の くぼみより 奥から（前の ふちが トンネルの 穴から 見えない ように） */}
-      <mesh geometry={GEO.box()} material={ground} position={[0, -0.05, -4.64]} scale={[18, 0.1, 9]} receiveShadow />
+      {/* 草地は うすい 板で 断面の ふちまで（くぼみの 奥の かべと 同じ 面に ならない ように。同じ 面だと ちらつく） */}
+      <mesh geometry={GEO.box()} material={ground} position={[0, -0.003, -4.501]} scale={[18, 0.006, 9]} receiveShadow />
       <group position={[0, 0, -4.6]}>
         <Scatter count={900} radius={1} rect={[18, 8]} seed={21} geometry={bladeGeometry()} material={grassMat} colors={GRASS_BY_SEASON[season]} scale={[0.3, 0.6]} tilt={0.5} />
       </group>
-      {winter ? <mesh geometry={GEO.box()} material={snow} position={[0, 0.006, -4.64]} scale={[18, 0.012, 9]} receiveShadow /> : null}
+      {winter ? <mesh geometry={GEO.box()} material={snow} position={[0, 0.007, -4.501]} scale={[18, 0.012, 9]} receiveShadow /> : null}
       <SeasonDecor season={season} />
     </group>
   );

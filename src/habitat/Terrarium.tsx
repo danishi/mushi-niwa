@@ -120,10 +120,12 @@ function Water({ clean, top }: { clean: number; top: number }) {
     body.opacity = 0.2 + dirt * 0.3;
     if (ripple.current) ripple.current.position.y = WATER_LEVEL + Math.sin(clock.elapsedTime * 1.3) * 0.006;
   });
-  const h = WATER_LEVEL - top;
+  // 水の かたまりは 底の 砂利・水面の 板と 同じ 高さに しない（同じ 面だと しまもようが ちらつく）
+  const bottom = top + 0.015;
+  const h = WATER_LEVEL - 0.015 - bottom;
   return (
     <group>
-      <mesh material={body} geometry={GEO.box()} position={[0, top + h / 2, 0]} scale={[w - 0.04, h, d - 0.04]} renderOrder={3} />
+      <mesh material={body} geometry={GEO.box()} position={[0, bottom + h / 2, 0]} scale={[w - 0.04, h, d - 0.04]} renderOrder={3} />
       <mesh ref={ripple} material={surface} rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_LEVEL, 0]} renderOrder={4}>
         <planeGeometry args={[w - 0.04, d - 0.04]} />
       </mesh>

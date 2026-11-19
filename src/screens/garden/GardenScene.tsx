@@ -188,7 +188,8 @@ function AntHillModel() {
       <group ref={ants}>
         {anims.map((a, i) => (
           <group key={i} rotation={[0, (i * Math.PI * 2) / 3, 0]}>
-            <group position={[0.44, 0, 0]} scale={0.7}>
+            {/* 回る 向き（-Z）へ 頭を むける */}
+            <group position={[0.44, 0, 0]} rotation={[0, Math.PI, 0]} scale={0.7}>
               <NestAnt anim={a} />
             </group>
           </group>
